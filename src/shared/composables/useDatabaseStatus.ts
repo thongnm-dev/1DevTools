@@ -1,5 +1,4 @@
 import { readonly, ref } from "vue";
-import { isMockMode } from "@/tauri/commands/_base";
 import { checkDatabaseStatus, saveDatabaseConfig } from "@/tauri/commands/database-config";
 import type { SaveDatabaseConfigRequest } from "@/models/database-config";
 
@@ -14,19 +13,8 @@ const statusMessage = ref("");
 // so the config form is shown even though a (broken) config already exists.
 const wantsReconfigure = ref(false);
 
-/**
- * Runs the database configuration/connectivity check. In mock mode (browser
- * dev, or `tauri:dev` with VITE_MOCK=true) the database is assumed ready so
- * the app reaches login/menu without a real Postgres backend.
- */
+/** Runs the database configuration/connectivity check. */
 async function check(): Promise<boolean> {
-  if (isMockMode()) {
-    isConfigured.value = true;
-    isConnected.value = true;
-    hasChecked.value = true;
-    return true;
-  }
-
   isChecking.value = true;
   try {
     const status = await checkDatabaseStatus();

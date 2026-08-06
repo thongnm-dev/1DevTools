@@ -21,20 +21,6 @@ export function canUseTauriRuntime(): boolean {
   return typeof window !== "undefined" && typeof (window as TauriWindow).__TAURI_INTERNALS__?.invoke === "function";
 }
 
-/**
- * True when a handful of commands (login, menu, permissions) should return
- * mock data instead of calling the real Rust backend, so the layout can be
- * reviewed without one. Applies to plain browser dev (no Tauri runtime at
- * all) and, when explicitly opted in via VITE_MOCK=true (see
- * .env.development.local), to `tauri:dev` too — there the Tauri runtime is
- * present but the Postgres backend may not be configured/reachable yet.
- * Never active outside of dev builds.
- */
-export function isMockMode(): boolean {
-  if (!import.meta.env.DEV) return false;
-  return !canUseTauriRuntime() || import.meta.env.VITE_MOCK === "true";
-}
-
 export function friendlyError(error: unknown): string {
   if (isBackendErrorPayload(error)) {
     const key = ERROR_CODE_KEYS[error.code];

@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
-import { canUseTauriRuntime, isMockMode } from "@/tauri/commands/_base";
+import { canUseTauriRuntime } from "@/tauri/commands/_base";
 import { listMenuConfigs } from "@/tauri/commands/menu-config";
 import { listEffectiveMenuPermissions } from "@/tauri/commands/menu-permission";
 import type { MenuConfig } from "@/models/menu-config";
@@ -91,7 +91,7 @@ export const useMenuStore = defineStore("menu", () => {
   }
 
   async function load(userId: number) {
-    if (!canUseTauriRuntime() && !isMockMode()) {
+    if (!canUseTauriRuntime()) {
       clear();
       return;
     }
