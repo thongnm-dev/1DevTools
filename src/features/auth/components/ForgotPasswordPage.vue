@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { RouterLink } from "vue-router";
+import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import { friendlyError } from "@/tauri/commands/_base";
 import { requestPasswordReset, verifyPasswordReset } from "@/tauri/commands/auth";
+
+const { t } = useI18n();
 
 type Step = "username" | "code" | "done";
 
@@ -17,7 +20,7 @@ const loading = ref(false);
 const error = ref("");
 async function submitUsername() {
   if (!username.value.trim()) {
-    error.value = "Vui lòng nhập tên đăng nhập.";
+    error.value = t("auth.forgotPassword.usernameRequired");
     return;
   }
 
@@ -36,7 +39,7 @@ async function submitUsername() {
 
 async function submitCode() {
   if (!code.value.trim()) {
-    error.value = "Vui lòng nhập mã xác nhận.";
+    error.value = t("auth.forgotPassword.codeRequired");
     return;
   }
 
@@ -77,11 +80,15 @@ async function resendCode() {
           <i class="pi pi-envelope text-xl" />
         </div>
         <div>
-          <h1 class="page-title leading-tight">Quên mật khẩu</h1>
+          <h1 class="page-title leading-tight">{{ t("auth.forgotPassword.title") }}</h1>
           <p class="mt-1 text-sm text-muted">
-            <template v-if="step === 'username'">Nhập tên đăng nhập để nhận mã xác nhận qua email.</template>
-            <template v-else-if="step === 'code'">Nhập mã xác nhận đã gửi đến <strong>{{ maskedEmail }}</strong></template>
-            <template v-else>Mật khẩu đã được đặt lại thành công.</template>
+            <template v-if="step === 'username'">{{ t("auth.forgotPassword.subtitleUsername") }}</template>
+            <template v-else-if="step === 'code'">
+              <i18n-t keypath="auth.forgotPassword.subtitleCode" tag="span">
+                <template #email><strong>{{ maskedEmail }}</strong></template>
+              </i18n-t>
+            </template>
+            <template v-else>{{ t("auth.forgotPassword.subtitleDone") }}</template>
           </p>
         </div>
       </div>
@@ -89,7 +96,7 @@ async function resendCode() {
       <!-- Step 1: Enter username -->
       <form v-if="step === 'username'" class="mt-6 space-y-4" @submit.prevent="submitUsername">
         <label class="block">
-          <span class="text-xs font-bold text-muted">Username</span>
+          <span class="text-xs font-bold text-muted">{{ t("auth.forgotPassword.username") }}</span>
           <div class="mt-1 flex h-10 items-center gap-2 rounded-md border border-divider bg-panel px-3 text-ink hover:border-brand focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20">
             <i class="pi pi-user shrink-0 text-muted" />
             <InputText
@@ -112,7 +119,7 @@ async function resendCode() {
         <Button
           :disabled="loading"
           :icon="loading ? 'pi pi-spinner pi-spin' : 'pi pi-send'"
-          :label="loading ? 'Đang gửi...' : 'Gửi mã xác nhận'"
+          :label="loading ? t('auth.forgotPassword.sending') : t('auth.forgotPassword.send')"
           class="w-full"
           type="submit"
         />
@@ -121,7 +128,7 @@ async function resendCode() {
       <!-- Step 2: Enter verification code -->
       <form v-else-if="step === 'code'" class="mt-6 space-y-4" @submit.prevent="submitCode">
         <label class="block">
-          <span class="text-xs font-bold text-muted">Mã xác nhận (6 chữ số)</span>
+          <span class="text-xs font-bold text-muted">{{ t("auth.forgotPassword.code") }}</span>
           <div class="mt-1 flex h-10 items-center gap-2 rounded-md border border-divider bg-panel px-3 text-ink hover:border-brand focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20">
             <i class="pi pi-key shrink-0 text-muted" />
             <InputText
@@ -135,9 +142,9 @@ async function resendCode() {
         </label>
 
         <p class="text-xs text-muted">
-          Mã có hiệu lực trong 30 phút.
+          {{ t("auth.forgotPassword.codeHint") }}
           <button type="button" class="text-brand hover:underline" :disabled="loading" @click="resendCode">
-            Gửi lại mã
+            {{ t("auth.forgotPassword.resend") }}
           </button>
         </p>
 
@@ -151,7 +158,7 @@ async function resendCode() {
         <Button
           :disabled="loading"
           :icon="loading ? 'pi pi-spinner pi-spin' : 'pi pi-check'"
-          :label="loading ? 'Đang xác nhận...' : 'Xác nhận'"
+          :label="loading ? t('auth.forgotPassword.confirming') : t('auth.forgotPassword.confirm')"
           class="w-full"
           type="submit"
         />
@@ -160,19 +167,19 @@ async function resendCode() {
       <!-- Step 3: Success -->
       <div v-else class="mt-6 space-y-3">
         <div class="banner-success">
-          <p class="font-semibold">Mật khẩu đã được đặt lại thành công!</p>
-          <p class="mt-1">Vui lòng đăng nhập bằng mật khẩu mới bên dưới và đổi lại mật khẩu sau khi đăng nhập.</p>
+          <p class="font-semibold">{{ t("auth.forgotPassword.successTitle") }}</p>
+          <p class="mt-1">{{ t("auth.forgotPassword.successHint") }}</p>
         </div>
 
         <div class="rounded-md border border-divider bg-canvas px-4 py-3">
-          <span class="text-xs font-bold text-muted">Mật khẩu mới</span>
+          <span class="text-xs font-bold text-muted">{{ t("auth.forgotPassword.newPassword") }}</span>
           <p class="mt-1 font-mono text-lg font-bold tracking-wider text-brand">{{ tempPassword }}</p>
         </div>
       </div>
 
       <p class="mt-4 text-center text-sm">
         <RouterLink to="/login" class="text-brand hover:underline">
-          Quay lại đăng nhập
+          {{ t("auth.forgotPassword.backToLogin") }}
         </RouterLink>
       </p>
     </section>

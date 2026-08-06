@@ -1,23 +1,41 @@
 //! Kiểu lỗi chung (AppError) cho toàn bộ ứng dụng.
 //!
 //! Hỗ trợ chuyển đổi tự động từ lỗi `std::io::Error` thông qua `From` trait.
+//!
+//! Mỗi lỗi mang một `code` ổn định (ví dụ `AUTH_INVALID_CREDENTIALS`) để frontend
+//! map sang khóa i18n và dịch theo ngôn ngữ đang chọn — backend không cần biết
+//! locale của client. `message` chỉ dùng cho log và làm fallback hiển thị khi
+//! frontend chưa có bản dịch cho `code` đó.
 
+use serde::Serialize;
 use std::fmt::{Debug, Display, Formatter};
 
+/// Mã lỗi mặc định khi chưa gán `code` cụ thể — frontend sẽ hiển thị nguyên `message`.
+pub const UNKNOWN_ERROR_CODE: &str = "UNKNOWN";
+
 /// Kiểu lỗi thống nhất cho toàn bộ tầng business logic và data access.
-///
-/// Chứa một `message` dạng chuỗi, có thể hiển thị trực tiếp cho người dùng
-/// hoặc trả về frontend qua IPC.
 #[derive(Debug)]
 pub struct AppError {
-    /// Nội dung mô tả lỗi, có thể hiển thị trực tiếp cho người dùng.
+    /// Mã lỗi ổn định để frontend dịch theo ngôn ngữ đang chọn.
+    code: String,
+    /// Nội dung mô tả lỗi (tiếng Anh), dùng cho log và làm fallback hiển thị.
     message: String,
 }
 
 impl AppError {
-    /// Tạo lỗi mới từ bất kỳ giá trị nào có thể chuyển thành `String`.
+    /// Tạo lỗi mới với mã mặc định `UNKNOWN` — `message` sẽ được hiển thị trực tiếp
+    /// cho người dùng vì frontend chưa có bản dịch riêng cho lỗi này.
     pub fn new(message: impl Into<String>) -> Self {
         Self {
+            code: UNKNOWN_ERROR_CODE.to_string(),
+            message: message.into(),
+        }
+    }
+
+    /// Tạo lỗi mới với `code` ổn định để frontend map sang khóa i18n.
+    pub fn with_code(code: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            code: code.into(),
             message: message.into(),
         }
     }
@@ -39,12 +57,25 @@ impl From<std::io::Error> for AppError {
     }
 }
 
-/// Ghi log lỗi (dạng Debug chi tiết) rồi trả về thông báo sạch (dạng Display)
-/// cho frontend — dùng cho `.map_err(log_err)` ở tầng command.
-///
-/// Ghi log giữ nguyên `{e:?}` (ví dụ `AppError { message: "..." }`) để tiện chẩn đoán,
-/// nhưng chuỗi trả về frontend chỉ là nội dung message, không kèm wrapper.
-pub fn log_err(e: impl Debug + Display) -> String {
-    log::error!("{e:?}");
-    e.to_string()
+/// Payload lỗi gửi qua IPC cho frontend. `code` để dịch, `message` để log/fallback.
+#[derive(Debug, Serialize)]
+pub struct AppErrorPayload {
+    pub code: String,
+    pub message: String,
+}
+
+impl From<&AppError> for AppErrorPayload {
+    fn from(error: &AppError) -> Self {
+        Self {
+            code: error.code.clone(),
+            message: error.message.clone(),
+        }
+    }
+}
+
+/// Ghi log lỗi (dạng Debug chi tiết) rồi trả về payload `{code, message}` cho
+/// frontend — dùng cho `.map_err(log_err)` ở tầng command.
+pub fn log_err(error: AppError) -> AppErrorPayload {
+    log::error!("{error:?}");
+    AppErrorPayload::from(&error)
 }

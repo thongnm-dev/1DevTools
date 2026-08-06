@@ -1,5 +1,6 @@
 //! Tauri command handlers cho cấu hình kết nối database.
 
+use crate::app::error::AppErrorPayload;
 use crate::models::db_config::{DatabaseConfig, DatabaseStatus, SaveDatabaseConfigRequest};
 use crate::services::db_config_service;
 
@@ -18,7 +19,7 @@ pub fn get_database_config() -> Option<DatabaseConfig> {
 
 /// Chỉ thử kết nối với cấu hình cho trước, không ghi file (nút "Kiểm tra").
 #[tauri::command]
-pub async fn test_database_config(request: SaveDatabaseConfigRequest) -> Result<(), String> {
+pub async fn test_database_config(request: SaveDatabaseConfigRequest) -> Result<(), AppErrorPayload> {
     db_config_service::test_config(request)
         .await
         .map_err(crate::app::error::log_err)
@@ -28,7 +29,7 @@ pub async fn test_database_config(request: SaveDatabaseConfigRequest) -> Result<
 #[tauri::command]
 pub async fn save_database_config(
     request: SaveDatabaseConfigRequest,
-) -> Result<DatabaseStatus, String> {
+) -> Result<DatabaseStatus, AppErrorPayload> {
     db_config_service::save_config(request)
         .await
         .map_err(crate::app::error::log_err)

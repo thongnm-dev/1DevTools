@@ -50,7 +50,7 @@ fn load_smtp_config() -> AppResult<SmtpConfig> {
 
     let from_name = section
         .get("FROM_NAME")
-        .unwrap_or("Manager System Helps")
+        .unwrap_or("1Devtools")
         .to_string();
 
     let from_email = section
@@ -88,7 +88,7 @@ pub async fn send_reset_code(to_email: &str, to_name: &str, code: &str) -> AppRe
   </div>
   <p style="color:#64748b;font-size:14px">Mã này có hiệu lực trong <strong>30 phút</strong>. Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
   <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0">
-  <p style="color:#94a3b8;font-size:12px;margin:0">Manager System Helps</p>
+  <p style="color:#94a3b8;font-size:12px;margin:0">1Devtools</p>
 </div>"#
     );
 

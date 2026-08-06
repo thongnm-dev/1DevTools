@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { AppRoute } from "@/app/router/routes";
 import Button from "primevue/button";
 import { applyTheme, type ThemeMode } from "@/shared/config/themeTokens";
 import { useNavigationHistory } from "@/shared/composables/useNavigationHistory";
 import { useTabNavigation } from "@/shared/composables/useTabNavigation";
+import { useLocale } from "@/shared/composables/useLocale";
 
 defineProps<{
   route: AppRoute;
@@ -31,6 +33,12 @@ function loadTheme(): ThemeMode {
 const theme = ref<ThemeMode>(loadTheme());
 const { canGoBack, backTitle, goBack } = useNavigationHistory();
 const { tabMode } = useTabNavigation();
+const { t } = useI18n();
+const { locale, setLocale } = useLocale();
+
+function toggleLocale() {
+  setLocale(locale.value === "vi" ? "en" : "vi");
+}
 
 function toggleTheme() {
   theme.value = theme.value === "dark" ? "light" : "dark";
@@ -60,33 +68,42 @@ function toggleTheme() {
       <Button
         v-if="canGoBack && !tabMode"
         icon="pi pi-arrow-left"
-        :label="backTitle ? `Back to ${backTitle}` : 'Back'"
+        :label="backTitle ? t('common.backTo', { name: backTitle }) : t('common.back')"
         severity="secondary"
         outlined
         size="small"
-        :title="backTitle ? `Back to ${backTitle}` : 'Back'"
+        :title="backTitle ? t('common.backTo', { name: backTitle }) : t('common.back')"
         class="mt-3"
         @click="goBack"
       />
     </div>
     <div class="flex shrink-0 items-center gap-2">
       <Button
+        :label="locale === 'vi' ? 'EN' : 'VI'"
+        severity="secondary"
+        outlined
+        rounded
+        size="small"
+        :title="t('common.switchLanguage')"
+        @click="toggleLocale"
+      />
+      <Button
         :icon="theme === 'dark' ? 'pi pi-sun' : 'pi pi-moon'"
         severity="secondary"
         outlined
         rounded
         size="small"
-        :title="theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'"
+        :title="theme === 'dark' ? t('common.switchToLightMode') : t('common.switchToDarkMode')"
         @click="toggleTheme"
       />
       <Button
         v-if="username"
         icon="pi pi-sign-out"
-        label="Logout"
+        :label="t('common.logout')"
         severity="secondary"
         outlined
         size="small"
-        title="Logout"
+        :title="t('common.logout')"
         @click="emit('logout')"
       />
     </div>

@@ -9,22 +9,28 @@ pub async fn login(request: LoginRequest) -> AppResult<LoginResponse> {
     let password = request.password.trim();
 
     if username.is_empty() || password.is_empty() {
-        return Err(AppError::new("Username and password are required."));
+        return Err(AppError::with_code(
+            "AUTH_REQUIRED_FIELDS",
+            "Username and password are required.",
+        ));
     }
 
     let user = auth_store::find_user_by_username(username)
         .await?
-        .ok_or_else(|| AppError::new("Invalid username or password."))?;
+        .ok_or_else(|| AppError::with_code("AUTH_INVALID_CREDENTIALS", "Invalid username or password."))?;
 
     if !user.is_active {
-        return Err(AppError::new("Account is disabled. Please contact administrator."));
+        return Err(AppError::with_code(
+            "AUTH_ACCOUNT_DISABLED",
+            "Account is disabled. Please contact administrator.",
+        ));
     }
 
     let valid = bcrypt::verify(password, &user.password_hash)
-        .map_err(|e| AppError::new(format!("Password verification failed: {e}")))?;
+        .map_err(|e| AppError::with_code("INTERNAL_ERROR", format!("Password verification failed: {e}")))?;
 
     if !valid {
-        return Err(AppError::new("Invalid username or password."));
+        return Err(AppError::with_code("AUTH_INVALID_CREDENTIALS", "Invalid username or password."));
     }
 
     let roles = auth_store::get_user_roles(user.id).await?;
@@ -41,19 +47,25 @@ pub async fn login(request: LoginRequest) -> AppResult<LoginResponse> {
 pub async fn request_password_reset(username: &str) -> AppResult<String> {
     let username = username.trim();
     if username.is_empty() {
-        return Err(AppError::new("Vui lòng nhập tên đăng nhập."));
+        return Err(AppError::with_code("AUTH_USERNAME_REQUIRED", "Username is required."));
     }
 
     let user = auth_store::find_user_by_username(username)
         .await?
-        .ok_or_else(|| AppError::new("Tài khoản không tồn tại."))?;
+        .ok_or_else(|| AppError::with_code("AUTH_ACCOUNT_NOT_FOUND", "Account not found."))?;
 
     if !user.is_active {
-        return Err(AppError::new("Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên."));
+        return Err(AppError::with_code(
+            "AUTH_ACCOUNT_DISABLED",
+            "Account is disabled. Please contact administrator.",
+        ));
     }
 
     if user.email.trim().is_empty() {
-        return Err(AppError::new("Tài khoản chưa được cấu hình email. Vui lòng liên hệ quản trị viên."));
+        return Err(AppError::with_code(
+            "AUTH_EMAIL_NOT_CONFIGURED",
+            "Account has no email configured. Please contact administrator.",
+        ));
     }
 
     let code = generate_code();
@@ -71,28 +83,31 @@ pub async fn verify_password_reset(username: &str, code: &str) -> AppResult<Stri
     let code = code.trim();
 
     if username.is_empty() || code.is_empty() {
-        return Err(AppError::new("Vui lòng nhập đầy đủ thông tin."));
+        return Err(AppError::with_code("AUTH_FIELDS_REQUIRED", "All fields are required."));
     }
 
     let user = auth_store::find_user_by_username(username)
         .await?
-        .ok_or_else(|| AppError::new("Tài khoản không tồn tại."))?;
+        .ok_or_else(|| AppError::with_code("AUTH_ACCOUNT_NOT_FOUND", "Account not found."))?;
 
     let valid = auth_store::verify_reset_code(user.id, code).await?;
     if !valid {
         if !auth_store::has_unexpired_code(user.id).await? {
-            return Err(AppError::new("Mã xác nhận đã hết hạn. Vui lòng yêu cầu mã mới."));
+            return Err(AppError::with_code(
+                "AUTH_RESET_CODE_EXPIRED",
+                "Verification code has expired. Please request a new one.",
+            ));
         }
-        return Err(AppError::new("Mã xác nhận không đúng."));
+        return Err(AppError::with_code("AUTH_RESET_CODE_INVALID", "Verification code is incorrect."));
     }
 
     let default_password = "Aa@123456";
     let password_hash = bcrypt::hash(default_password, 12)
-        .map_err(|e| AppError::new(format!("Failed to hash password: {e}")))?;
+        .map_err(|e| AppError::with_code("INTERNAL_ERROR", format!("Failed to hash password: {e}")))?;
 
     let updated = auth_store::reset_password(user.id, &password_hash).await?;
     if !updated {
-        return Err(AppError::new("Đặt lại mật khẩu thất bại."));
+        return Err(AppError::with_code("AUTH_RESET_FAILED", "Failed to reset password."));
     }
 
     Ok(default_password.to_string())

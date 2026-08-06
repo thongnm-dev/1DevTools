@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { RouterLink, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import Checkbox from "primevue/checkbox";
 import InputText from "primevue/inputtext";
@@ -12,6 +13,7 @@ import { friendlyError } from "@/tauri/commands/_base";
 import { login as tauriLogin } from "@/tauri/commands/auth";
 import loginCover from "@/assets/logincover.jpg";
 
+const { t } = useI18n();
 const router = useRouter();
 const auth = useAuthStore();
 const menu = useMenuStore();
@@ -24,7 +26,7 @@ const error = ref("");
 
 async function submitLogin() {
   if (!username.value.trim() || !password.value.trim()) {
-    error.value = "Vui lòng nhập tên đăng nhập và mật khẩu.";
+    error.value = t("auth.login.requiredFields");
     return;
   }
 
@@ -57,14 +59,14 @@ async function submitLogin() {
           <i class="pi pi-lock text-xl" />
         </div>
         <div>
-          <h1 class="page-title leading-tight">Manager System Helps</h1>
-          <p class="mt-1 text-sm text-muted">Sign in to continue.</p>
+          <h1 class="page-title leading-tight">{{ t("auth.login.title") }}</h1>
+          <p class="mt-1 text-sm text-muted">{{ t("auth.login.subtitle") }}</p>
         </div>
       </div>
 
       <form class="mt-6 space-y-4" @submit.prevent="submitLogin">
         <label class="block">
-          <span class="text-xs font-bold text-muted">Username</span>
+          <span class="text-xs font-bold text-muted">{{ t("auth.login.username") }}</span>
           <div class="mt-1 flex h-10 items-center gap-2 rounded-md border border-divider bg-panel px-3 text-ink hover:border-brand focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20">
             <i class="pi pi-user shrink-0 text-muted" />
             <InputText
@@ -78,7 +80,7 @@ async function submitLogin() {
         </label>
 
         <label class="block">
-          <span class="text-xs font-bold text-muted">Password</span>
+          <span class="text-xs font-bold text-muted">{{ t("auth.login.password") }}</span>
           <div class="mt-1 flex h-10 items-center gap-2 rounded-md border border-divider bg-panel px-3 text-ink hover:border-brand focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20">
             <i class="pi pi-lock shrink-0 text-muted" />
             <Password
@@ -95,7 +97,7 @@ async function submitLogin() {
 
         <div class="flex cursor-pointer items-center gap-2 select-none">
           <Checkbox v-model="rememberMe" binary input-id="remember-me" />
-          <label for="remember-me" class="cursor-pointer text-sm text-ink">Ghi nhớ thông tin đăng nhập</label>
+          <label for="remember-me" class="cursor-pointer text-sm text-ink">{{ t("auth.login.rememberMe") }}</label>
         </div>
 
         <p
@@ -108,7 +110,7 @@ async function submitLogin() {
         <Button
           :disabled="loading"
           :icon="loading ? 'pi pi-spinner pi-spin' : 'pi pi-sign-in'"
-          :label="loading ? 'Đang đăng nhập...' : 'Login'"
+          :label="loading ? t('auth.login.submitting') : t('auth.login.submit')"
           class="w-full !text-white"
           type="submit"
         />
@@ -116,7 +118,7 @@ async function submitLogin() {
 
       <p class="mt-4 text-center text-sm">
         <RouterLink to="/forgot-password" class="text-brand hover:underline">
-          Quên mật khẩu?
+          {{ t("auth.login.forgotPassword") }}
         </RouterLink>
       </p>
     </section>

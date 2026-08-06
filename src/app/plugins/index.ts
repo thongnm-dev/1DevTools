@@ -4,6 +4,7 @@ import PrimeVue from "primevue/config";
 import { definePreset } from "@primevue/themes";
 import Aura from "@primevue/themes/aura";
 import Tooltip from "primevue/tooltip";
+import { i18n } from "@/shared/i18n";
 
 // Thu nhỏ nút PrimeVue cỡ mặc định trong app — chỉnh riêng token của component
 // `button`, không đụng `formField` nên input/select không đổi. Nút size="small"
@@ -23,6 +24,7 @@ const CompactAura = definePreset(Aura, {
 
 export function registerPlugins(app: App) {
   app.use(createPinia());
+  app.use(i18n);
   app.use(PrimeVue, {
     theme: {
       preset: CompactAura,
