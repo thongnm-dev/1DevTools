@@ -17,4 +17,6 @@ mod services {
     pub mod menu_permission_service;
     /// Service đọc cấu hình phân trang DataTable từ config.ini.
     pub mod pagination_service;
+    /// Dữ liệu mock dùng khi database chưa kết nối được (chỉ debug build).
+    pub mod mock_data;
 }
