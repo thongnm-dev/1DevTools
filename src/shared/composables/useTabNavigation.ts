@@ -12,7 +12,7 @@ export type TabItem = {
 const TAB_MODE_KEY = "msh.app.tabMode";
 const tabMode = ref(
   typeof window !== "undefined" &&
-    window.localStorage.getItem(TAB_MODE_KEY) === "true",
+  window.localStorage.getItem(TAB_MODE_KEY) === "true",
 );
 const tabs = ref<TabItem[]>([]);
 const activeTabKey = ref<string | null>(null);

@@ -2,7 +2,7 @@ import { i18n, DEFAULT_LOCALE, isAppLocale, type AppLocale } from "@/shared/i18n
 
 // Same storage key/object used by the theme toggle (see themeTokens.ts) so both
 // preferences live together under one `msh.app.settings` blob.
-const SETTINGS_KEY = "msh.app.settings";
+const SETTINGS_KEY = "1devtools.settings";
 
 type StoredSettings = { theme?: string; locale?: string };
 

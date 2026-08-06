@@ -43,9 +43,7 @@ function formatDateTime(value: string): string {
 </script>
 
 <template>
-  <footer
-    class="flex items-center gap-6 overflow-hidden border-t border-divider px-4 py-2 text-sm text-muted"
-  >
+  <footer class="flex items-center gap-6 overflow-hidden border-t border-divider px-4 py-2 text-sm text-muted">
     <span class="status-item flex items-center gap-2" title="Login">
       <i class="pi pi-user shrink-0 text-brand" />
       <strong class="min-w-0 truncate text-ink">{{ auth.user?.full_name || auth.user?.username || '-' }}</strong>
@@ -60,20 +58,14 @@ function formatDateTime(value: string): string {
     </span>
 
     <template v-if="updater.isTauri">
-      <span
-        v-if="updater.status.value === 'checking'"
-        class="status-item ml-auto flex items-center gap-2"
-        title="Đang kiểm tra bản cập nhật"
-      >
+      <span v-if="updater.status.value === 'checking'" class="status-item ml-auto flex items-center gap-2"
+        title="Đang kiểm tra bản cập nhật">
         <i class="pi pi-spin pi-spinner shrink-0 text-brand" />
         <span class="min-w-0 truncate">Đang kiểm tra cập nhật…</span>
       </span>
 
-      <span
-        v-else-if="updater.status.value === 'downloading'"
-        class="status-item ml-auto flex items-center gap-2"
-        :title="`Đang tải bản cập nhật ${updater.version.value ?? ''}`"
-      >
+      <span v-else-if="updater.status.value === 'downloading'" class="status-item ml-auto flex items-center gap-2"
+        :title="`Đang tải bản cập nhật ${updater.version.value ?? ''}`">
         <i class="pi pi-spin pi-spinner shrink-0 text-brand" />
         <span class="min-w-0 truncate">
           Đang tải bản cập nhật
@@ -84,54 +76,35 @@ function formatDateTime(value: string): string {
         </span>
       </span>
 
-      <button
-        v-else-if="updater.status.value === 'ready'"
-        type="button"
+      <button v-else-if="updater.status.value === 'ready'" type="button"
         class="status-item update-ready ml-auto flex items-center gap-2 rounded font-medium text-brand hover:underline"
-        title="Nhấn để cài đặt bản cập nhật"
-        @click="onUpdateClick"
-      >
+        title="Nhấn để cài đặt bản cập nhật" @click="onUpdateClick">
         <i class="pi pi-download shrink-0" />
         <span class="min-w-0 truncate">Bản cập nhật sẵn sàng.</span>
       </button>
 
-      <span
-        v-else-if="updater.status.value === 'installing'"
-        class="status-item ml-auto flex items-center gap-2"
-        title="Đang cài đặt bản cập nhật"
-      >
+      <span v-else-if="updater.status.value === 'installing'" class="status-item ml-auto flex items-center gap-2"
+        title="Đang cài đặt bản cập nhật">
         <i class="pi pi-spin pi-spinner shrink-0 text-brand" />
         <span class="min-w-0 truncate">Đang cài đặt…</span>
       </span>
 
-      <button
-        v-else-if="updater.status.value === 'error'"
-        type="button"
+      <button v-else-if="updater.status.value === 'error'" type="button"
         class="status-item ml-auto flex items-center gap-2 rounded text-red-600 hover:underline"
-        :title="updater.errorMessage.value ?? 'Không thể cập nhật'"
-        @click="onCheckUpdate"
-      >
+        :title="updater.errorMessage.value ?? 'Không thể cập nhật'" @click="onCheckUpdate">
         <i class="pi pi-exclamation-triangle shrink-0" />
         <span class="min-w-0 truncate">Cập nhật thất bại. Thử lại</span>
       </button>
 
-      <button
-        v-else
-        type="button"
+      <button v-else type="button"
         class="status-item ml-auto flex items-center gap-2 rounded text-muted hover:text-brand"
-        title="Kiểm tra bản cập nhật"
-        @click="onCheckUpdate"
-      >
+        title="Kiểm tra bản cập nhật" @click="onCheckUpdate">
         <i class="pi pi-sync shrink-0" />
         <span class="min-w-0 truncate">Kiểm tra cập nhật</span>
       </button>
     </template>
 
-    <span
-      class="status-item flex items-center gap-2"
-      :class="updater.isTauri ? '' : 'ml-auto'"
-      title="Version"
-    >
+    <span class="status-item flex items-center gap-2" :class="updater.isTauri ? '' : 'ml-auto'" title="Version">
       <i class="pi pi-desktop shrink-0 text-brand" />
       <strong class="min-w-0 truncate text-ink">{{ props.info.version }}</strong>
     </span>

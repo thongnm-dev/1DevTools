@@ -84,61 +84,39 @@ watch(
 <template>
   <StartupScreen v-if="shell.isBootstrapping.value" />
 
-  <ConnectionErrorScreen
-    v-else-if="!network.hasConnectedOnce.value && !network.isOnline.value"
-    :is-checking="network.isChecking.value"
-    @retry="network.retry()"
-  />
+  <ConnectionErrorScreen v-else-if="!network.hasConnectedOnce.value && !network.isOnline.value"
+    :is-checking="network.isChecking.value" @retry="network.retry()" />
 
-  <DatabaseErrorScreen
-    v-else-if="
-      database.hasChecked.value &&
-      database.isConfigured.value &&
-      !database.isConnected.value &&
-      !database.wantsReconfigure.value
-    "
-  />
+  <DatabaseErrorScreen v-else-if="
+    database.hasChecked.value &&
+    database.isConfigured.value &&
+    !database.isConnected.value &&
+    !database.wantsReconfigure.value
+  " />
 
-  <DatabaseConfigScreen
-    v-else-if="database.hasChecked.value && !database.isConnected.value"
-  />
+  <DatabaseConfigScreen v-else-if="database.hasChecked.value && !database.isConnected.value" />
 
   <template v-else-if="isAuthPage">
     <router-view />
   </template>
 
   <main v-else class="relative grid h-screen grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-canvas text-ink">
-    <section
-      :class="[
-        'grid min-h-0 overflow-hidden transition-[grid-template-columns] duration-200',
-        shell.isSidebarCollapsed.value
-          ? 'grid-cols-[72px_minmax(0,1fr)]'
-          : 'grid-cols-[240px_minmax(0,1fr)]',
-      ]"
-    >
-      <AppSidebar
-        :active-menu="activeMenu"
-        :is-collapsed="shell.isSidebarCollapsed.value"
-        @menu-change="handleMenuChange"
-        @toggle-collapse="shell.toggleSidebar()"
-      />
+    <section :class="[
+      'grid min-h-0 overflow-hidden transition-[grid-template-columns] duration-200',
+      shell.isSidebarCollapsed.value
+        ? 'grid-cols-[72px_minmax(0,1fr)]'
+        : 'grid-cols-[240px_minmax(0,1fr)]',
+    ]">
+      <AppSidebar :active-menu="activeMenu" :is-collapsed="shell.isSidebarCollapsed.value"
+        @menu-change="handleMenuChange" @toggle-collapse="shell.toggleSidebar()" />
 
-      <section class="min-h-0 overflow-hidden px-6 py-2">
+      <section class="min-h-0 overflow-hidden px-6 py-6">
         <div class="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
-          <AppHeader
-            :route="currentAppRoute"
-            :username="auth.user?.username"
-            @logout="handleLogout"
-          />
+          <AppHeader :route="currentAppRoute" :username="auth.user?.username" @logout="handleLogout" />
 
-          <AppTabBar
-            v-if="tabNav.tabMode.value && tabNav.tabs.value.length > 0"
-            :tabs="tabNav.tabs.value"
-            :active-key="tabNav.activeTabKey.value"
-            class="-mt-1 -mb-1"
-            @activate="tabNav.activateTab"
-            @close="tabNav.closeTab"
-          />
+          <AppTabBar v-if="tabNav.tabMode.value && tabNav.tabs.value.length > 0" :tabs="tabNav.tabs.value"
+            :active-key="tabNav.activeTabKey.value" class="-mt-1 -mb-1" @activate="tabNav.activateTab"
+            @close="tabNav.closeTab" />
 
           <router-view v-slot="{ Component }">
             <keep-alive :max="tabNav.tabMode.value ? 20 : 1">
@@ -152,30 +130,20 @@ watch(
     <AppBottomBar :info="shell.systemInfo.value" />
 
     <!-- Floating toggle bubble -->
-    <button
-      :style="{
-        position: 'fixed',
-        left: shell.isSidebarCollapsed.value ? '72px' : '240px',
-        top: shell.isSidebarCollapsed.value ? '10px' : '20px',
-        transform: 'translateX(-50%)',
-        zIndex: 9999,
-      }"
+    <button :style="{
+      position: 'fixed',
+      left: shell.isSidebarCollapsed.value ? '72px' : '240px',
+      top: shell.isSidebarCollapsed.value ? '10px' : '20px',
+      transform: 'translateX(-50%)',
+      zIndex: 9999,
+    }"
       class="flex p-4 h-7 w-7 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-text shadow-md transition-all duration-200 hover:bg-sidebar-hover hover:text-sidebar-text-active"
-      :title="shell.isSidebarCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar'"
-      @click="shell.toggleSidebar()"
-    >
+      :title="shell.isSidebarCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar'" @click="shell.toggleSidebar()">
       <i :class="['pi text-md p-10', shell.isSidebarCollapsed.value ? 'pi-chevron-right' : 'pi-chevron-left']" />
     </button>
 
-    <div
-      v-if="!network.isOnline.value"
-      class="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4"
-    >
-      <NetworkStatusBanner
-        class="w-full max-w-2xl"
-        :is-checking="network.isChecking.value"
-        @retry="network.retry()"
-      />
+    <div v-if="!network.isOnline.value" class="pointer-events-none fixed inset-x-0 top-3 z-50 flex justify-center px-4">
+      <NetworkStatusBanner class="w-full max-w-2xl" :is-checking="network.isChecking.value" @retry="network.retry()" />
     </div>
   </main>
 

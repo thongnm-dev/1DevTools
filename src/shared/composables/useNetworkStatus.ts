@@ -1,5 +1,5 @@
 import { readonly, ref } from "vue";
-import { canUseTauriRuntime } from "@/tauri/commands/_base";
+import { canUseTauriRuntime, isMockMode } from "@/tauri/commands/_base";
 import { checkInternetConnection } from "@/tauri/commands/system";
 
 // Interval between background reachability probes while the app is running.
@@ -23,7 +23,7 @@ let started = false;
  * the Vite dev server keeps working.
  */
 async function runProbe(): Promise<boolean> {
-  if (canUseTauriRuntime()) {
+  if (canUseTauriRuntime() && !isMockMode()) {
     try {
       return await checkInternetConnection();
     } catch {

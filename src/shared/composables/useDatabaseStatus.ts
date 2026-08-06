@@ -1,5 +1,5 @@
 import { readonly, ref } from "vue";
-import { canUseTauriRuntime } from "@/tauri/commands/_base";
+import { isMockMode } from "@/tauri/commands/_base";
 import { checkDatabaseStatus, saveDatabaseConfig } from "@/tauri/commands/database-config";
 import type { SaveDatabaseConfigRequest } from "@/models/database-config";
 
@@ -15,11 +15,12 @@ const statusMessage = ref("");
 const wantsReconfigure = ref(false);
 
 /**
- * Runs the database configuration/connectivity check. In browser dev (no Tauri
- * runtime) the database is assumed ready so the Vite dev server keeps working.
+ * Runs the database configuration/connectivity check. In mock mode (browser
+ * dev, or `tauri:dev` with VITE_MOCK=true) the database is assumed ready so
+ * the app reaches login/menu without a real Postgres backend.
  */
 async function check(): Promise<boolean> {
-  if (!canUseTauriRuntime()) {
+  if (isMockMode()) {
     isConfigured.value = true;
     isConnected.value = true;
     hasChecked.value = true;
