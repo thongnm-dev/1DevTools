@@ -1,0 +1,25 @@
+[database]
+host=localhost
+port=5432
+dbname=1devtools
+user=postgres
+password=admin@123456
+
+[SMTP]
+HOST=smtp.gmail.com
+PORT=587
+USERNAME=
+PASSWORD=
+FROM_NAME=1Devtools
+FROM_EMAIL=
+
+[IPADRESS]
+IPADRESS_LIST=
+
+[pagination]
+ROWS=20
+ROWS_PER_PAGE_OPTIONS=20, 50, 100
+ROWS_COMPACT=10
+ROWS_PER_PAGE_OPTIONS_COMPACT=10, 20, 50
+PAGINATOR_TEMPLATE=FirstPageLink PrevPageLink PageLinks NextPageLink LastPageLink RowsPerPageDropdown CurrentPageReport
+CURRENT_PAGE_REPORT_TEMPLATE=Showing {first} to {last} of {totalRecords}

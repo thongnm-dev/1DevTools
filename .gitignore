@@ -1,0 +1,18 @@
+dist/
+node_modules/
+release/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript compiled files
+src/**/*.js
+src/**/*.d.ts
+src/**/*.js.map
+src/**/*.d.ts.map
+
+src-tauri/target/
+src-tauri/config.ini
+src-tauri/config/

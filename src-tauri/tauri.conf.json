@@ -1,0 +1,50 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "1DevTools",
+  "version": "0.1.0",
+  "identifier": "com.1devtools",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://127.0.0.1:1429",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "1DevTools",
+        "width": 1200,
+        "height": 760,
+        "minWidth": 980,
+        "minHeight": 600,
+        "center": true,
+        "resizable": true,
+        "maximized": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "resources": []
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/thongnm-dev/1devtools/releases/latest/download/latest.json"
+      ],
+      "pubkey": ""
+    }
+  }
+}

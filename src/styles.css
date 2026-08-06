@@ -1,0 +1,499 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color: rgb(var(--color-ink));
+    background: rgb(var(--color-canvas));
+    font-family:
+      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+      sans-serif;
+    font-size: 15px;
+  }
+
+  /* Giá trị màu của .force-light được sinh từ LIGHT_THEME qua
+     injectForceLightStyle() (themeTokens.ts) — KHÔNG khai báo literal ở đây. */
+  .force-light {
+    color: rgb(var(--color-ink));
+    background: rgb(var(--color-canvas));
+  }
+
+  .force-light .p-inputtext,
+  .force-light .p-password-input,
+  .force-light .p-inputnumber-input {
+    background: rgb(var(--color-panel)) !important;
+    color: rgb(var(--color-ink)) !important;
+    border-color: rgb(var(--color-border)) !important;
+  }
+
+  .force-light .p-inputtext:enabled:focus,
+  .force-light .p-password-input:enabled:focus,
+  .force-light .p-inputnumber-input:enabled:focus {
+    border-color: rgb(var(--color-brand)) !important;
+  }
+
+  /* Inputs embedded inside a bordered wrapper (icon + field) — keep them
+     transparent so the wrapper owns the background/border/focus ring. */
+  .embedded-input.p-inputtext,
+  .force-light .embedded-input.p-inputtext,
+  .embedded-input.p-inputtext:enabled:hover,
+  .embedded-input.p-inputtext:enabled:focus,
+  .force-light .embedded-input.p-inputtext:enabled:focus {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .force-light .p-checkbox:not(.p-checkbox-checked) .p-checkbox-box {
+    background: rgb(var(--color-panel)) !important;
+    border-color: rgb(var(--color-border)) !important;
+  }
+
+  .force-light .p-checkbox.p-checkbox-checked .p-checkbox-box {
+    background: rgb(var(--color-brand)) !important;
+    border-color: rgb(var(--color-brand)) !important;
+  }
+
+  .force-light .p-button {
+    background: rgb(var(--color-brand)) !important;
+    border-color: rgb(var(--color-brand)) !important;
+  }
+
+  .force-light .p-button.p-button-secondary,
+  .force-light .p-button.p-button-outlined {
+    background: transparent !important;
+    color: rgb(var(--color-ink)) !important;
+    border-color: rgb(var(--color-border)) !important;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  #app {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    margin: 0;
+    min-width: 900px;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+}
+
+@keyframes startup-loading-bounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+
+  40% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}
+
+@layer components {
+  /* ── Tiêu đề & header chuẩn ─────────────────────────────── */
+  .page-title {
+    @apply text-lg font-semibold text-ink;
+  }
+
+  .page-subtitle {
+    @apply mt-1 text-sm text-muted;
+  }
+
+  .section-title {
+    @apply text-sm font-bold text-ink;
+  }
+
+  .section-eyebrow {
+    @apply text-xs font-bold uppercase tracking-wide text-muted;
+  }
+
+  /* ── Banner thông báo ───────────────────────────────────── */
+  .banner {
+    @apply flex items-start gap-2 rounded-lg border px-3 py-2 text-sm;
+  }
+
+  .banner-danger {
+    @apply banner border-danger-border bg-danger-soft text-danger;
+  }
+
+  .banner-warning {
+    @apply banner border-warning-border bg-warning-soft text-warning;
+  }
+
+  .banner-success {
+    @apply banner border-success-border bg-success-soft text-success;
+  }
+
+  .banner-info {
+    @apply banner border-info-border bg-info-soft text-info;
+  }
+
+  /* ── Badge trạng thái ───────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-2xs font-bold;
+  }
+
+  .badge-success {
+    @apply badge bg-success-soft text-success;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning-soft text-warning;
+  }
+
+  .badge-danger {
+    @apply badge bg-danger-soft text-danger;
+  }
+
+  .badge-info {
+    @apply badge bg-info-soft text-info;
+  }
+
+  .badge-neutral {
+    @apply badge bg-canvas text-secondary;
+  }
+
+  /* ── Focus ring chuẩn ───────────────────────────────────── */
+  .field-ring {
+    @apply focus:border-brand focus:ring-2 focus:ring-brand/20;
+  }
+
+  .startup-loading-gif {
+    @apply inline-flex h-10 w-24 items-center justify-center gap-2 rounded-full bg-panel shadow-sm ring-1 ring-divider;
+  }
+
+  .startup-loading-gif > span {
+    animation: startup-loading-bounce 1.1s ease-in-out infinite;
+    @apply h-2.5 w-2.5 rounded-full bg-brand;
+  }
+
+  .startup-loading-gif > span:nth-child(2) {
+    animation-delay: 0.12s;
+  }
+
+  .startup-loading-gif > span:nth-child(3) {
+    animation-delay: 0.24s;
+  }
+
+  .startup-loading-gif > span:nth-child(4) {
+    animation-delay: 0.36s;
+  }
+
+  .status-item {
+    @apply flex min-w-0 items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-medium;
+  }
+
+  .status-item > span {
+    @apply min-w-0 truncate;
+  }
+
+  /* ── Toggle chip / segmented filter chuẩn ──────────────────
+     Dùng cho mọi nhóm filter dạng chip/segmented switch (trạng thái,
+     chế độ hiển thị...). Một nơi duy nhất quyết định size/font — xem
+     ToggleChip.vue để dùng qua component thay vì lặp lại class này.
+     "segment": segmented control 2-3 lựa chọn loại trừ nhau (theme,
+     view mode, active/inactive). "filter": chip multi-select nằm
+     trong wrapper viền (status filter dạng flex-wrap). */
+  .toggle-chip {
+    @apply flex h-9 items-center justify-center gap-2 rounded-md px-3 text-sm font-bold transition;
+  }
+
+  .toggle-chip-active {
+    @apply toggle-chip bg-panel text-ink shadow-sm;
+  }
+
+  .toggle-chip-inactive {
+    @apply toggle-chip text-muted hover:text-secondary;
+  }
+
+  .filter-chip {
+    @apply flex min-w-0 items-center justify-center gap-1.5 truncate rounded px-2 py-1 text-sm font-semibold transition;
+  }
+
+  .filter-chip-active {
+    @apply filter-chip bg-brand text-on-brand;
+  }
+
+  .filter-chip-inactive {
+    @apply filter-chip text-secondary hover:bg-canvas;
+  }
+
+  /* ── Context menu row chuẩn ─────────────────────────────────
+     Một nguồn duy nhất cho mọi dòng context-menu (chuột phải) trong
+     app — thay vì mỗi trang tự định nghĩa class riêng. */
+  .ctx-menu-item {
+    @apply flex w-full items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm text-secondary transition-colors hover:bg-canvas hover:text-brand disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .ctx-menu-item-danger {
+    @apply ctx-menu-item text-red-600 hover:bg-red-50 hover:text-red-600;
+  }
+
+  .ctx-menu-item > .pi,
+  .ctx-menu-item-danger > .pi {
+    @apply shrink-0 text-xs;
+  }
+
+  .table-cell {
+    @apply border-b border-divider px-3 py-2.5 text-left align-middle text-secondary;
+  }
+
+  .table-head {
+    @apply sticky top-0 z-10 border-b border-divider bg-canvas px-3 py-2.5 text-left text-xs font-bold text-ink;
+  }
+
+  .app-data-table {
+    @apply min-w-full;
+  }
+
+  .app-data-table .p-datatable-wrapper {
+    @apply min-h-0 overflow-auto;
+  }
+
+  .app-data-table .p-datatable-table {
+    @apply border-collapse;
+  }
+
+  .app-data-table .p-datatable-thead > tr > th {
+    @apply sticky top-0 z-10 border-b border-divider bg-canvas px-3 py-2.5 text-left text-xs font-bold text-ink;
+  }
+
+  .app-data-table .p-datatable-tbody > tr > td {
+    @apply border-b border-divider px-3 py-2.5 text-left align-middle text-secondary;
+  }
+
+  .app-data-table .p-datatable-tbody > tr:hover {
+    @apply bg-sidebar-hover;
+  }
+
+  .app-data-table .p-datatable-emptymessage > td {
+    @apply h-40 text-center text-muted;
+  }
+
+  .num {
+    @apply text-right tabular-nums whitespace-nowrap;
+  }
+
+  .app-calendar {
+    @apply inline-flex items-center overflow-hidden;
+  }
+
+  .app-calendar .p-inputtext {
+    @apply h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-inherit shadow-none outline-none;
+  }
+
+  .app-calendar .p-inputtext:hover,
+  .app-calendar .p-inputtext:enabled:hover,
+  .app-calendar .p-inputtext:focus,
+  .app-calendar .p-inputtext:enabled:focus {
+    border-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  .app-calendar .p-datepicker-trigger {
+    @apply h-full shrink-0 border-0 bg-transparent px-3 text-muted shadow-none outline-none;
+  }
+
+  .app-calendar .p-datepicker-trigger:hover,
+  .app-calendar .p-datepicker-trigger:focus,
+  .app-calendar .p-datepicker-trigger:enabled:hover,
+  .app-calendar .p-datepicker-trigger:enabled:focus {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+
+  .fieldset-nested .p-fieldset-legend {
+    @apply rounded-md border border-divider bg-panel text-ink shadow-sm;
+  }
+
+  .p-fieldset p-toggleable-content .p-fieldset-legend {
+    @apply border-divider;
+  }
+
+  .p-fieldset-legend,
+  .p-fieldset-legend a,
+  .p-fieldset-legend span {
+    @apply text-sm font-bold;
+  }
+
+  .fieldset-nested >* .p-fieldset-content {
+    @apply p-0;
+  }
+}
+
+.p-fieldset.p-fieldset-toggleable .p-fieldset-legend a {
+  min-height: 2.5rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 700;
+}
+
+.p-fieldset .p-fieldset-legend,
+.p-fieldset .p-fieldset-legend-text {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 700;
+}
+
+.p-fieldset.p-component {
+  background: rgb(var(--color-panel));
+  border-color: rgb(var(--color-border));
+  color: rgb(var(--color-ink));
+}
+
+.p-fieldset .p-fieldset-content-container,
+.p-fieldset .p-fieldset-content {
+  background: transparent;
+}
+
+.p-fieldset .p-fieldset-legend {
+  background: rgb(var(--color-panel));
+  border-color: rgb(var(--color-border));
+}
+
+.p-fieldset .p-fieldset-toggle-button,
+.p-fieldset .p-fieldset-legend-label {
+  background: transparent;
+  color: rgb(var(--color-ink));
+}
+
+.app-data-table.p-datatable .p-datatable-thead > tr > th {
+  background: rgb(var(--color-canvas));
+  color: rgb(var(--color-ink));
+  border-color: rgb(var(--color-border));
+}
+
+.app-data-table.p-datatable .p-datatable-tbody > tr {
+  background: rgb(var(--color-panel));
+  color: rgb(var(--color-text-secondary));
+}
+
+.app-data-table.p-datatable .p-datatable-tbody > tr:nth-child(even) {
+  background: rgb(var(--color-canvas));
+}
+
+.app-data-table.p-datatable .p-datatable-tbody > tr:hover {
+  background: rgb(var(--color-sidebar-hover-bg));
+}
+
+.app-data-table.p-datatable .p-datatable-tbody > tr > td {
+  border-color: rgb(var(--color-border));
+}
+
+/* PrimeVue DataTable — align with app theme tokens */
+.p-datatable {
+  background: rgb(var(--color-panel)) !important;
+  color: rgb(var(--color-ink)) !important;
+}
+
+.p-datatable .p-datatable-table-container {
+  background: rgb(var(--color-panel)) !important;
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  background: rgb(var(--color-canvas)) !important;
+  color: rgb(var(--color-ink)) !important;
+  border-color: rgb(var(--color-border)) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  background: rgb(var(--color-panel)) !important;
+  color: rgb(var(--color-text-secondary)) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr:nth-child(even) {
+  background: rgb(var(--color-canvas)) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  border-color: rgb(var(--color-border)) !important;
+}
+
+.p-datatable .p-datatable-tbody > tr:hover {
+  background: rgb(var(--color-sidebar-hover-bg)) !important;
+}
+
+.p-datatable .p-datatable-tfoot > tr > td,
+.p-datatable .p-datatable-footer {
+  background: rgb(var(--color-panel)) !important;
+  color: rgb(var(--color-text-muted)) !important;
+  border-color: rgb(var(--color-border)) !important;
+}
+
+/* PrimeVue Tabs — align with app theme tokens */
+.p-tabs {
+  background: rgb(var(--color-panel)) !important;
+}
+
+.p-tablist {
+  background: rgb(var(--color-panel)) !important;
+}
+
+.p-tab {
+  background: rgb(var(--color-panel)) !important;
+  color: rgb(var(--color-text-secondary)) !important;
+}
+
+.p-tab:hover {
+  color: rgb(var(--color-ink)) !important;
+}
+
+.p-tab[data-p-active="true"] {
+  color: rgb(var(--color-ink)) !important;
+}
+
+.p-tabpanels {
+  background: rgb(var(--color-panel)) !important;
+  color: rgb(var(--color-ink)) !important;
+}
+
+.p-tabpanel {
+  background: rgb(var(--color-panel)) !important;
+}
+
+/* PrimeVue Dialog — làm nổi bật dialog đang mở (viền + shadow), làm mờ nền phía sau */
+.p-dialog-mask {
+  background: rgb(2 6 23 / 0.55) !important;
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.p-dialog {
+  border: 1px solid rgb(var(--color-brand) / 0.4) !important;
+  box-shadow:
+    0 0 0 3px rgb(var(--color-brand) / 0.12),
+    var(--shadow-float) !important;
+}
+
+/* SQL syntax highlight — nguồn màu duy nhất cho SqlEditorPage & StoreProcedurePage */
+:root {
+  --sql-kw: #2563eb;
+  --sql-str: #16a34a;
+  --sql-com: #6b7280;
+  --sql-num: #b45309;
+}
+[data-theme="dark"] {
+  --sql-kw: #93c5fd;
+  --sql-str: #86efac;
+  --sql-com: #9ca3af;
+  --sql-num: #fcd34d;
+}
