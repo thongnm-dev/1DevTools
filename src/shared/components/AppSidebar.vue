@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import { useMenuStore } from "@/app/stores/menu";
 import type { MenuKey } from "@/models/app";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   activeMenu: MenuKey;
@@ -53,8 +56,8 @@ function tooltipOpts(label: string) {
     <!-- Header -->
     <div :class="['border-b border-sidebar-border', isCollapsed ? 'p-3' : 'p-5']">
       <div :class="['flex items-center', isCollapsed ? 'justify-center' : 'gap-2']">
-        <img src="@/assets/logo.png" alt="Logo" class="h-8 w-8 shrink-0 rounded-lg" />
-        <span v-if="!isCollapsed" class="text-lg font-bold text-sidebar-title">1Devtools</span>
+        <img src="@/assets/logo.png" :alt="t('shell.logoAlt')" class="h-8 w-8 shrink-0 rounded-lg" />
+        <span v-if="!isCollapsed" class="text-lg font-bold text-sidebar-title">{{ t('shell.appName') }}</span>
       </div>
     </div>
 

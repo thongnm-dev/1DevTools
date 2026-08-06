@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/app/stores/auth";
 import { useAppUpdater } from "@/shared/composables/useAppUpdater";
 import type { SystemInfo } from "@/models/system";
@@ -8,6 +9,7 @@ const props = defineProps<{
   info: SystemInfo;
 }>();
 
+const { t } = useI18n();
 const auth = useAuthStore();
 
 const updater = useAppUpdater();
@@ -44,31 +46,31 @@ function formatDateTime(value: string): string {
 
 <template>
   <footer class="flex items-center gap-6 overflow-hidden border-t border-divider px-4 py-2 text-sm text-muted">
-    <span class="status-item flex items-center gap-2" title="Login">
+    <span class="status-item flex items-center gap-2" :title="t('bottomBar.loginTooltip')">
       <i class="pi pi-user shrink-0 text-brand" />
       <strong class="min-w-0 truncate text-ink">{{ auth.user?.full_name || auth.user?.username || '-' }}</strong>
     </span>
-    <span class="status-item flex items-center gap-2" title="Date time">
+    <span class="status-item flex items-center gap-2" :title="t('bottomBar.dateTimeTooltip')">
       <i class="pi pi-clock shrink-0 text-brand" />
       <strong class="min-w-0 truncate text-ink">{{ formatDateTime(props.info.timestamp) }}</strong>
     </span>
-    <span class="status-item flex items-center gap-2" title="IP">
+    <span class="status-item flex items-center gap-2" :title="t('bottomBar.ipTooltip')">
       <i class="pi pi-globe shrink-0 text-brand" />
       <strong class="min-w-0 truncate text-ink">{{ props.info.ip_address }}</strong>
     </span>
 
     <template v-if="updater.isTauri">
       <span v-if="updater.status.value === 'checking'" class="status-item ml-auto flex items-center gap-2"
-        title="Đang kiểm tra bản cập nhật">
+        :title="t('bottomBar.checkingUpdate')">
         <i class="pi pi-spin pi-spinner shrink-0 text-brand" />
-        <span class="min-w-0 truncate">Đang kiểm tra cập nhật…</span>
+        <span class="min-w-0 truncate">{{ t('bottomBar.checkingUpdate') }}</span>
       </span>
 
       <span v-else-if="updater.status.value === 'downloading'" class="status-item ml-auto flex items-center gap-2"
-        :title="`Đang tải bản cập nhật ${updater.version.value ?? ''}`">
+        :title="t('bottomBar.downloadingUpdateTitle', { version: updater.version.value ?? '' })">
         <i class="pi pi-spin pi-spinner shrink-0 text-brand" />
         <span class="min-w-0 truncate">
-          Đang tải bản cập nhật
+          {{ t('bottomBar.downloadingUpdate') }}
           <template v-if="updater.downloadPercent.value !== null">
             {{ updater.downloadPercent.value }}%
           </template>
@@ -78,33 +80,33 @@ function formatDateTime(value: string): string {
 
       <button v-else-if="updater.status.value === 'ready'" type="button"
         class="status-item update-ready ml-auto flex items-center gap-2 rounded font-medium text-brand hover:underline"
-        title="Nhấn để cài đặt bản cập nhật" @click="onUpdateClick">
+        :title="t('bottomBar.updateReadyTooltip')" @click="onUpdateClick">
         <i class="pi pi-download shrink-0" />
-        <span class="min-w-0 truncate">Bản cập nhật sẵn sàng.</span>
+        <span class="min-w-0 truncate">{{ t('bottomBar.updateReady') }}</span>
       </button>
 
       <span v-else-if="updater.status.value === 'installing'" class="status-item ml-auto flex items-center gap-2"
-        title="Đang cài đặt bản cập nhật">
+        :title="t('bottomBar.installingTooltip')">
         <i class="pi pi-spin pi-spinner shrink-0 text-brand" />
-        <span class="min-w-0 truncate">Đang cài đặt…</span>
+        <span class="min-w-0 truncate">{{ t('bottomBar.installing') }}</span>
       </span>
 
       <button v-else-if="updater.status.value === 'error'" type="button"
         class="status-item ml-auto flex items-center gap-2 rounded text-red-600 hover:underline"
-        :title="updater.errorMessage.value ?? 'Không thể cập nhật'" @click="onCheckUpdate">
+        :title="updater.errorMessage.value ?? t('bottomBar.updateFailedTooltip')" @click="onCheckUpdate">
         <i class="pi pi-exclamation-triangle shrink-0" />
-        <span class="min-w-0 truncate">Cập nhật thất bại. Thử lại</span>
+        <span class="min-w-0 truncate">{{ t('bottomBar.updateFailed') }}</span>
       </button>
 
       <button v-else type="button"
         class="status-item ml-auto flex items-center gap-2 rounded text-muted hover:text-brand"
-        title="Kiểm tra bản cập nhật" @click="onCheckUpdate">
+        :title="t('bottomBar.checkUpdate')" @click="onCheckUpdate">
         <i class="pi pi-sync shrink-0" />
-        <span class="min-w-0 truncate">Kiểm tra cập nhật</span>
+        <span class="min-w-0 truncate">{{ t('bottomBar.checkUpdate') }}</span>
       </button>
     </template>
 
-    <span class="status-item flex items-center gap-2" :class="updater.isTauri ? '' : 'ml-auto'" title="Version">
+    <span class="status-item flex items-center gap-2" :class="updater.isTauri ? '' : 'ml-auto'" :title="t('bottomBar.versionTooltip')">
       <i class="pi pi-desktop shrink-0 text-brand" />
       <strong class="min-w-0 truncate text-ink">{{ props.info.version }}</strong>
     </span>

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
+
+const { t } = useI18n();
 
 const props = defineProps<{
   visible: boolean;
@@ -120,7 +123,7 @@ function pick(icon: string) {
     @update:visible="emit('update:visible', $event)"
   >
     <template #header>
-      <h3 class="font-bold text-ink">Choose Icon</h3>
+      <h3 class="font-bold text-ink">{{ t('iconPicker.header') }}</h3>
     </template>
 
     <div class="space-y-3">
@@ -129,15 +132,15 @@ function pick(icon: string) {
         <InputText
           v-model="search"
           class="embedded-input w-full border-0 !bg-transparent !py-2 !text-sm"
-          placeholder="Search icons... (e.g. home, user, chart)"
+          :placeholder="t('iconPicker.searchPlaceholder')"
           autofocus
         />
       </span>
 
-      <p class="text-xs text-muted">{{ filtered.length }} icons</p>
+      <p class="text-xs text-muted">{{ t('iconPicker.count', { count: filtered.length }) }}</p>
 
       <div class="max-h-[400px] overflow-auto rounded-md border border-divider bg-canvas p-2">
-        <div v-if="filtered.length === 0" class="py-8 text-center text-sm text-muted">No icons match "{{ search }}"</div>
+        <div v-if="filtered.length === 0" class="py-8 text-center text-sm text-muted">{{ t('iconPicker.noMatch', { search }) }}</div>
         <div v-else class="grid grid-cols-8 gap-1">
           <button
             v-for="icon in filtered"

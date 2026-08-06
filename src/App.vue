@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import { useRoute, useRouter } from "vue-router";
 import { useAppShell } from "@/shared/composables/useAppShell";
 import { useNetworkStatus } from "@/shared/composables/useNetworkStatus";
@@ -21,6 +22,7 @@ import AppBottomBar from "@/shared/components/AppBottomBar.vue";
 import AppToast from "@/shared/components/AppToast.vue";
 import GlobalLoading from "@/shared/components/GlobalLoading.vue";
 
+const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
 const auth = useAuthStore();
@@ -138,7 +140,7 @@ watch(
       zIndex: 9999,
     }"
       class="flex p-4 h-7 w-7 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-text shadow-md transition-all duration-200 hover:bg-sidebar-hover hover:text-sidebar-text-active"
-      :title="shell.isSidebarCollapsed.value ? 'Expand sidebar' : 'Collapse sidebar'" @click="shell.toggleSidebar()">
+      :title="shell.isSidebarCollapsed.value ? t('shell.expandSidebar') : t('shell.collapseSidebar')" @click="shell.toggleSidebar()">
       <i :class="['pi text-md p-10', shell.isSidebarCollapsed.value ? 'pi-chevron-right' : 'pi-chevron-left']" />
     </button>
 

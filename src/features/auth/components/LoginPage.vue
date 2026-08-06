@@ -74,7 +74,7 @@ async function submitLogin() {
               class="h-full min-w-0 flex-1 border-0 bg-transparent text-sm shadow-none outline-none"
               autocomplete="username"
               autofocus
-              placeholder="username"
+              :placeholder="t('auth.login.usernamePlaceholder')"
             />
           </div>
         </label>
@@ -88,7 +88,7 @@ async function submitLogin() {
               class="h-full min-w-0 flex-1 border-0 bg-transparent text-sm shadow-none outline-none [&_input]:h-full [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:shadow-none [&_input]:outline-none"
               input-class="!border-0 !bg-transparent !shadow-none !outline-none !ring-0 !p-0"
               autocomplete="current-password"
-              placeholder="password"
+              :placeholder="t('auth.login.passwordPlaceholder')"
               :feedback="false"
               toggle-mask
             />

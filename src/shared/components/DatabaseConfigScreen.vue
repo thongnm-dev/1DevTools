@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Password from "primevue/password";
@@ -13,6 +14,7 @@ import { useDatabaseStatus } from "@/shared/composables/useDatabaseStatus";
 import { useAuthStore } from "@/app/stores/auth";
 import { loginRoute } from "@/app/router/routes";
 
+const { t } = useI18n();
 const router = useRouter();
 const auth = useAuthStore();
 const database = useDatabaseStatus();
@@ -55,21 +57,21 @@ onMounted(async () => {
 
 function showError(text: string) {
   pendingStatus = null;
-  dialog.value = { type: "error", title: "Không thành công", text, proceed: false };
+  dialog.value = { type: "error", title: t("databaseConfig.errorTitle"), text, proceed: false };
 }
 
 /** Validate the form and build a request, or show an error dialog and return null. */
 function buildRequest(): SaveDatabaseConfigRequest | null {
   if (!form.value.host.trim()) {
-    showError("Vui lòng nhập Host.");
+    showError(t("databaseConfig.hostRequired"));
     return null;
   }
   if (!form.value.dbname.trim()) {
-    showError("Vui lòng nhập tên database (dbname).");
+    showError(t("databaseConfig.dbNameRequired"));
     return null;
   }
   if (!form.value.port || form.value.port <= 0) {
-    showError("Port không hợp lệ.");
+    showError(t("databaseConfig.portInvalid"));
     return null;
   }
   return {
@@ -90,7 +92,7 @@ async function runTest() {
   try {
     await testDatabaseConfig(request);
     pendingStatus = null;
-    dialog.value = { type: "success", title: "Kết nối thành công", text: "Kết nối tới database thành công.", proceed: false };
+    dialog.value = { type: "success", title: t("databaseConfig.successTitle"), text: t("databaseConfig.successText"), proceed: false };
   } catch (e) {
     showError(friendlyError(e));
   } finally {
@@ -109,8 +111,8 @@ async function submit() {
     pendingStatus = status;
     dialog.value = {
       type: "success",
-      title: "Lưu cấu hình thành công",
-      text: "Đã lưu cấu hình và kết nối database thành công. Nhấn OK để vào ứng dụng.",
+      title: t("databaseConfig.saveSuccessTitle"),
+      text: t("databaseConfig.saveSuccessText"),
       proceed: true,
     };
   } catch (e) {
@@ -139,18 +141,18 @@ function acknowledge() {
     class="force-light flex h-screen min-h-[640px] min-w-[900px] items-center justify-center overflow-hidden bg-canvas text-ink"
     data-theme="light">
     <section class="flex w-full max-w-md flex-col gap-6 rounded-xl border border-divider bg-panel p-8 shadow-card"
-      aria-label="Cau hinh database">
+      :aria-label="t('databaseConfig.ariaLabel')">
       <div class="flex flex-col items-center gap-3 text-center">
         <span aria-hidden="true" class="flex h-16 w-16 items-center justify-center rounded-full bg-brand/10 text-brand">
           <i class="pi pi-database text-2xl" />
         </span>
         <div class="flex flex-col gap-1">
-          <h1 class="text-lg font-bold text-ink">Cấu hình kết nối database</h1>
+          <h1 class="text-lg font-bold text-ink">{{ t('databaseConfig.title') }}</h1>
           <p class="text-sm text-secondary">
             {{
               database.isConfigured.value
-                ? "Không kết nối được tới database. Vui lòng kiểm tra lại thông tin bên dưới."
-                : "Ứng dụng chưa được cấu hình database. Vui lòng nhập thông tin kết nối để tiếp tục."
+                ? t('databaseConfig.descriptionError')
+                : t('databaseConfig.descriptionEmpty')
             }}
           </p>
         </div>
@@ -164,42 +166,42 @@ function acknowledge() {
       <form class="flex flex-col gap-3" @submit.prevent="submit">
         <div class="grid grid-cols-[minmax(0,1fr)_120px] gap-3">
           <label class="block">
-            <span class="text-xs font-bold text-muted">Host <span class="text-red-500">*</span></span>
-            <InputText v-model="form.host" class="mt-1 w-full" placeholder="localhost" autocomplete="off" />
+            <span class="text-xs font-bold text-muted">{{ t('databaseConfig.host') }} <span class="text-red-500">*</span></span>
+            <InputText v-model="form.host" class="mt-1 w-full" :placeholder="t('databaseConfig.hostPlaceholder')" autocomplete="off" />
           </label>
           <label class="block">
-            <span class="text-xs font-bold text-muted">Port <span class="text-red-500">*</span></span>
+            <span class="text-xs font-bold text-muted">{{ t('databaseConfig.port') }} <span class="text-red-500">*</span></span>
             <InputNumber v-model="form.port" class="mt-1 w-full" input-class="w-full" :min="1" :max="65535"
-              :useGrouping="false" placeholder="5432" />
+              :useGrouping="false" :placeholder="t('databaseConfig.portPlaceholder')" />
           </label>
         </div>
 
         <label class="block">
-          <span class="text-xs font-bold text-muted">Database (dbname) <span class="text-red-500">*</span></span>
-          <InputText v-model="form.dbname" class="mt-1 w-full" placeholder="management_systems" autocomplete="off" />
+          <span class="text-xs font-bold text-muted">{{ t('databaseConfig.dbName') }} <span class="text-red-500">*</span></span>
+          <InputText v-model="form.dbname" class="mt-1 w-full" :placeholder="t('databaseConfig.dbNamePlaceholder')" autocomplete="off" />
         </label>
 
         <label class="block">
-          <span class="text-xs font-bold text-muted">User</span>
-          <InputText v-model="form.user" class="mt-1 w-full" placeholder="postgres" autocomplete="off" />
+          <span class="text-xs font-bold text-muted">{{ t('databaseConfig.user') }}</span>
+          <InputText v-model="form.user" class="mt-1 w-full" :placeholder="t('databaseConfig.userPlaceholder')" autocomplete="off" />
         </label>
 
         <label class="block">
-          <span class="text-xs font-bold text-muted">Password</span>
-          <Password v-model="form.password" class="mt-1 w-full" input-class="w-full" placeholder="••••••"
+          <span class="text-xs font-bold text-muted">{{ t('databaseConfig.password') }}</span>
+          <Password v-model="form.password" class="mt-1 w-full" input-class="w-full" :placeholder="t('databaseConfig.passwordPlaceholder')"
             autocomplete="off" :feedback="false" toggle-mask />
         </label>
 
         <div class="mt-2 grid grid-cols-2 gap-3">
           <Button :icon="isTesting ? 'pi pi-spinner pi-spin' : undefined"
-            :label="isTesting ? 'Đang kiểm tra...' : 'Kiểm tra kết nối'" severity="secondary" outlined
+            :label="isTesting ? t('databaseConfig.testing') : t('databaseConfig.testConnection')" severity="secondary" outlined
             :disabled="isTesting || isSaving" @click="runTest" />
 
           <Button :icon="isSaving ? 'pi pi-spinner pi-spin' : undefined"
-            :label="isSaving ? 'Đang lưu...' : 'Lưu cấu hình'" type="submit" :disabled="isTesting || isSaving" />
+            :label="isSaving ? t('databaseConfig.saving') : t('databaseConfig.save')" type="submit" :disabled="isTesting || isSaving" />
         </div>
 
-        <Button v-if="database.wantsReconfigure.value" icon="pi pi-arrow-left" label="Quay lại" text size="small"
+        <Button v-if="database.wantsReconfigure.value" icon="pi pi-arrow-left" :label="t('databaseConfig.back')" text size="small"
           class="mt-1 self-center" :disabled="isTesting || isSaving" @click="database.cancelReconfigure()" />
       </form>
     </section>
@@ -222,7 +224,7 @@ function acknowledge() {
       <p class="text-sm text-secondary">{{ dialog?.text }}</p>
 
       <template #footer>
-        <Button label="OK" @click="acknowledge" />
+        <Button :label="t('common.ok')" @click="acknowledge" />
       </template>
     </Dialog>
   </main>

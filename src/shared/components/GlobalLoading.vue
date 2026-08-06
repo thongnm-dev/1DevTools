@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { useGlobalLoading } from "@/shared/composables/useGlobalLoading";
 
 const { isLoading } = useGlobalLoading();
+const { t } = useI18n();
 </script>
 
 <template>
@@ -9,7 +11,7 @@ const { isLoading } = useGlobalLoading();
     <div v-if="isLoading" class="global-loading-overlay">
       <div class="global-loading-card">
         <div class="global-loading-spinner" />
-        <span class="global-loading-text">Loading...</span>
+        <span class="global-loading-text">{{ t('common.loading') }}</span>
       </div>
     </div>
   </Transition>

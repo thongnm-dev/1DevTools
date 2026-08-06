@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 
 defineProps<{
@@ -8,6 +9,8 @@ defineProps<{
 const emit = defineEmits<{
   (event: "retry"): void;
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -16,7 +19,7 @@ const emit = defineEmits<{
   >
     <section
       aria-live="assertive"
-      aria-label="Loi ket noi mang"
+      :aria-label="t('connectionError.ariaLabel')"
       class="flex max-w-md select-none flex-col items-center gap-6 px-8 text-center"
       role="alert"
     >
@@ -41,16 +44,15 @@ const emit = defineEmits<{
       </span>
 
       <div class="flex flex-col gap-2">
-        <h1 class="text-lg font-semibold text-ink">Không có kết nối mạng</h1>
+        <h1 class="text-lg font-semibold text-ink">{{ t('connectionError.title') }}</h1>
         <p class="text-sm text-secondary">
-          Ứng dụng cần kết nối internet để hoạt động. Vui lòng kiểm tra kết nối
-          mạng của bạn rồi thử lại.
+          {{ t('connectionError.description') }}
         </p>
       </div>
 
       <Button
         :icon="isChecking ? 'pi pi-spinner pi-spin' : undefined"
-        :label="isChecking ? 'Đang kiểm tra...' : 'Thử lại'"
+        :label="isChecking ? t('common.checking') : t('common.retry')"
         :disabled="isChecking"
         @click="emit('retry')"
       />

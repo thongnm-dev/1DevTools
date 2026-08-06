@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 
 defineProps<{
@@ -8,6 +9,8 @@ defineProps<{
 const emit = defineEmits<{
   (event: "retry"): void;
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -21,11 +24,10 @@ const emit = defineEmits<{
     </svg>
 
     <span class="flex-1 font-medium">
-      Mất kết nối mạng. Một số thao tác có thể không hoạt động cho đến khi kết
-      nối được khôi phục.
+      {{ t('network.offlineMessage') }}
     </span>
 
-    <Button :icon="isChecking ? 'pi pi-spinner pi-spin' : undefined" :label="isChecking ? 'Đang thử...' : 'Thử lại'"
+    <Button :icon="isChecking ? 'pi pi-spinner pi-spin' : undefined" :label="isChecking ? t('network.retrying') : t('common.retry')"
       severity="danger" outlined size="small" :disabled="isChecking" @click="emit('retry')" />
   </div>
 </template>

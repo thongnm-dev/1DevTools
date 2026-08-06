@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import type { TabItem } from "@/shared/composables/useTabNavigation";
 
 defineProps<{
@@ -10,6 +11,8 @@ const emit = defineEmits<{
   activate: [key: string];
   close: [key: string];
 }>();
+
+const { t } = useI18n();
 </script>
 
 <template>
@@ -26,7 +29,7 @@ const emit = defineEmits<{
         activeKey === tab.key
           ? 'opacity-60 hover:bg-red-500/20 hover:text-red-600 hover:opacity-100'
           : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 hover:bg-red-500/20 hover:text-red-600',
-      ]" title="Close tab" @click.stop="emit('close', tab.key)">
+      ]" :title="t('shell.closeTab')" @click.stop="emit('close', tab.key)">
         <i class="pi pi-times" />
       </button>
     </div>

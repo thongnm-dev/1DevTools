@@ -104,7 +104,7 @@ async function resendCode() {
               class="h-full min-w-0 flex-1 border-0 bg-transparent text-sm shadow-none outline-none"
               autocomplete="username"
               autofocus
-              placeholder="username"
+              :placeholder="t('auth.forgotPassword.usernamePlaceholder')"
             />
           </div>
         </label>
@@ -135,7 +135,7 @@ async function resendCode() {
               v-model="code"
               class="h-full min-w-0 flex-1 border-0 bg-transparent text-sm tracking-[6px] font-bold shadow-none outline-none"
               maxlength="6"
-              placeholder="000000"
+              :placeholder="t('auth.forgotPassword.codePlaceholder')"
               inputmode="numeric"
             />
           </div>
