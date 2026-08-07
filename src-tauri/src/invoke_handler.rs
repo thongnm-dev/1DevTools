@@ -12,6 +12,7 @@ use commands::menu_commands::*;
 use commands::menu_permission_commands::*;
 use commands::pagination_commands::*;
 use commands::system_commands::*;
+use commands::terminal_commands::*;
 use commands::user_commands::*;
 
 /// Xây dựng handler cho `Builder::invoke_handler`, gộp toàn bộ command đã đăng ký.
@@ -41,8 +42,10 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         list_effective_menu_permissions,
         // === Pagination config command ===
         get_pagination_config,
-        // === Explorer command (dùng bởi Git Desktop: "Show in folder") ===
+        // === Explorer commands (dùng bởi Git Desktop "Show in folder" và cây thư mục Terminal) ===
         explorer_open,
+        explorer_read_dir,
+        explorer_open_file,
         // === Git Desktop commands: quản lý danh sách repo (JSON cục bộ) ===
         git_list_repos,
         git_add_repo,
@@ -108,6 +111,11 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         git_worktree_remove,
         // === Git Desktop commands: file watcher (auto-refresh tab Changes) ===
         git_watch_start,
-        git_watch_stop
+        git_watch_stop,
+        // === Terminal commands (PTY nhúng: spawn/write/resize/kill) ===
+        terminal_spawn,
+        terminal_write,
+        terminal_resize,
+        terminal_kill
     ]
 }

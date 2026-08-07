@@ -25,4 +25,6 @@ mod services {
     pub mod git_watch_service;
     /// Mở file/folder trong Explorer/Finder — dùng bởi màn hình Git Desktop.
     pub mod explorer_service;
+    /// Service quản lý các phiên terminal nhúng (pseudo-terminal / PTY).
+    pub mod terminal_service;
 }

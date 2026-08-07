@@ -36,6 +36,7 @@ import GitGraphDialog from "./GitGraphDialog.vue";
 import GitCommitBrowserDialog from "./GitCommitBrowserDialog.vue";
 import GitBlameDialog from "./GitBlameDialog.vue";
 import GitLogDialog from "./GitLogDialog.vue";
+import GitAgentTerminalDialog from "./GitAgentTerminalDialog.vue";
 
 const { t } = useI18n();
 const git = useGit();
@@ -367,6 +368,12 @@ function openGraphDialog() {
   graphDialogVisible.value = true;
 }
 
+// === Mở terminal với AI Agent ===
+const agentTerminalDialogVisible = ref(false);
+function openAgentTerminalDialog() {
+  agentTerminalDialogVisible.value = true;
+}
+
 // === Context menu trên history ===
 const commitMenu = ref<{ x: number; y: number; commit: GitCommit } | null>(null);
 
@@ -597,10 +604,10 @@ onUnmounted(closeCommitMenu);
           <template v-if="git.activeRepo.value">
             <button
               class="flex h-7 items-center gap-1 rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand"
-              :title="t('git.page.graphTitle')"
-              @click="openGraphDialog"
+              :title="t('git.page.openAgentTerminal')"
+              @click="openAgentTerminalDialog"
             >
-              <i class="pi pi-sitemap text-[11px]" /> {{ t("git.page.graph") }}
+              <i class="pi pi-microchip-ai text-[11px]" /> {{ t("git.page.agent") }}
             </button>
             <button
               class="flex h-7 items-center rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand"
@@ -698,6 +705,9 @@ onUnmounted(closeCommitMenu);
                 </button>
                 <button class="ctx-menu-item" @click="logDialogVisible = true;">
                   <i class="pi pi-list-check text-xs" /> {{ t("git.page.menu.showLog") }}
+                </button>
+                <button class="ctx-menu-item" @click="openGraphDialog">
+                  <i class="pi pi-sitemap text-xs" /> {{ t("git.page.menu.showGraph") }}
                 </button>
               </div>
             </div>
@@ -1221,6 +1231,7 @@ onUnmounted(closeCommitMenu);
     <GitGraphDialog v-model:visible="graphDialogVisible" :git="git" :on-file-context="openFileMenu" />
     <GitCommitBrowserDialog v-model:visible="browserDialogVisible" :git="git" :on-file-context="openFileMenu" />
     <GitLogDialog v-model:visible="logDialogVisible" :git="git" />
+    <GitAgentTerminalDialog v-model:visible="agentTerminalDialogVisible" :git="git" />
     <GitBlameDialog
       v-model:visible="blameDialogVisible"
       :git="git"

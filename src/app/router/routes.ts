@@ -24,6 +24,12 @@ export const appRoutes: AppRoute[] = [
     subtitle: "Browse, commit, and manage local Git repositories.",
   },
   {
+    key: "terminal",
+    path: "/terminal",
+    title: "Terminal",
+    subtitle: "Embedded shell with multiple tabs and a working-directory file tree.",
+  },
+  {
     key: "login",
     path: "/login",
     title: "Login",
@@ -60,6 +66,11 @@ export const vueRoutes: RouteRecordRaw[] = [
     path: "/git",
     component: () => import("@/features/git/components/GitDesktopPage.vue"),
     meta: { key: "git" as MenuKey },
+  },
+  {
+    path: "/terminal",
+    component: () => import("@/features/terminal/components/TerminalPage.vue"),
+    meta: { key: "terminal" as MenuKey },
   },
   {
     path: "/login",

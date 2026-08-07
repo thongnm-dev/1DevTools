@@ -19,4 +19,6 @@ mod commands {
     pub mod git_commands;
     /// Command mở file/folder trong Explorer/Finder.
     pub mod explorer_commands;
+    /// Tauri IPC commands cho module Terminal nhúng.
+    pub mod terminal_commands;
 }

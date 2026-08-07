@@ -112,7 +112,7 @@ watch(
       <AppSidebar :active-menu="activeMenu" :is-collapsed="shell.isSidebarCollapsed.value"
         @menu-change="handleMenuChange" @toggle-collapse="shell.toggleSidebar()" />
 
-      <section class="min-h-0 overflow-hidden px-6 py-6">
+      <section class="min-h-0 overflow-hidden px-6 pt-6 pb-2">
         <div class="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
           <AppHeader :route="currentAppRoute" :username="auth.user?.username" @logout="handleLogout" />
 

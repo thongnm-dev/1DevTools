@@ -8,3 +8,4 @@ export * from "./user";
 export * from "./pagination";
 export * from "./git";
 export * from "./explorer";
+export * from "./terminal";

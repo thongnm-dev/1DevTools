@@ -15,4 +15,6 @@ mod models {
     pub mod menu_permission;
     /// Model cho màn hình Git Desktop.
     pub mod git;
+    /// Model cho explorer nhanh (cây thư mục Terminal, "Show in folder").
+    pub mod explorer;
 }

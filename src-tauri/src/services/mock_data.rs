@@ -41,6 +41,15 @@ pub fn mock_menu_configs() -> Vec<MenuEntity> {
             order: 10,
         },
         MenuEntity {
+            key: "terminal".into(),
+            title: "Terminal".into(),
+            path: "/terminal".into(),
+            icon: "pi-desktop".into(),
+            group: UNGROUPED.into(),
+            visible: true,
+            order: 11,
+        },
+        MenuEntity {
             key: "ai-chat".into(),
             title: "Chat Assistant".into(),
             path: "/ai/chat".into(),
