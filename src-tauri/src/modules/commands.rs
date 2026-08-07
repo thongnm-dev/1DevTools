@@ -21,4 +21,6 @@ mod commands {
     pub mod explorer_commands;
     /// Tauri IPC commands cho module Terminal nhúng.
     pub mod terminal_commands;
+    /// Commands cho màn hình Docker Desktop (thao tác docker + quản lý project build).
+    pub mod docker_commands;
 }

@@ -6,6 +6,7 @@
 
 use commands::auth_commands::*;
 use commands::db_config_commands::*;
+use commands::docker_commands::*;
 use commands::explorer_commands::*;
 use commands::git_commands::*;
 use commands::menu_commands::*;
@@ -116,6 +117,29 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         terminal_spawn,
         terminal_write,
         terminal_resize,
-        terminal_kill
+        terminal_kill,
+        // === Docker Desktop commands: trạng thái + container/image ===
+        docker_available,
+        docker_start_desktop,
+        docker_list_containers,
+        docker_list_images,
+        docker_start_container,
+        docker_stop_container,
+        docker_restart_container,
+        docker_remove_container,
+        docker_remove_image,
+        docker_prune_containers,
+        docker_prune_images,
+        docker_prune_system,
+        // === Docker Desktop commands: build / compose (stream output) ===
+        docker_build,
+        docker_compose_up,
+        docker_compose_down,
+        // === Docker Desktop commands: danh sách project build đã lưu (JSON cục bộ) ===
+        docker_list_projects,
+        docker_add_project,
+        docker_update_project,
+        docker_remove_project,
+        docker_touch_project
     ]
 }

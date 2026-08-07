@@ -27,4 +27,6 @@ mod services {
     pub mod explorer_service;
     /// Service quản lý các phiên terminal nhúng (pseudo-terminal / PTY).
     pub mod terminal_service;
+    /// Service cho màn hình Docker Desktop — gọi `docker` CLI cho mọi thao tác.
+    pub mod docker_service;
 }

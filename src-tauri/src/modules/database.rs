@@ -13,4 +13,6 @@ mod database {
     pub mod menu_permission_store;
     /// Lưu trữ cục bộ (JSON file) danh sách repository của màn hình Git Desktop.
     pub mod git_repo_store;
+    /// Lưu trữ cục bộ (JSON file) danh sách project build của màn hình Docker Desktop.
+    pub mod docker_project_store;
 }

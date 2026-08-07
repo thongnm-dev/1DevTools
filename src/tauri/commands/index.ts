@@ -9,3 +9,4 @@ export * from "./pagination";
 export * from "./git";
 export * from "./explorer";
 export * from "./terminal";
+export * from "./docker";

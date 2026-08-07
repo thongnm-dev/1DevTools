@@ -30,6 +30,12 @@ export const appRoutes: AppRoute[] = [
     subtitle: "Embedded shell with multiple tabs and a working-directory file tree.",
   },
   {
+    key: "docker",
+    path: "/docker",
+    title: "Docker",
+    subtitle: "Manage local Docker containers, images, and saved build/compose projects.",
+  },
+  {
     key: "login",
     path: "/login",
     title: "Login",
@@ -71,6 +77,11 @@ export const vueRoutes: RouteRecordRaw[] = [
     path: "/terminal",
     component: () => import("@/features/terminal/components/TerminalPage.vue"),
     meta: { key: "terminal" as MenuKey },
+  },
+  {
+    path: "/docker",
+    component: () => import("@/features/docker/components/DockerPage.vue"),
+    meta: { key: "docker" as MenuKey },
   },
   {
     path: "/login",

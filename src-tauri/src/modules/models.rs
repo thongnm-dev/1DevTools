@@ -17,4 +17,6 @@ mod models {
     pub mod git;
     /// Model cho explorer nhanh (cây thư mục Terminal, "Show in folder").
     pub mod explorer;
+    /// Model cho màn hình Docker Desktop.
+    pub mod docker;
 }
