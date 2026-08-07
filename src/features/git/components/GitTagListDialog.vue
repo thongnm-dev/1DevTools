@@ -23,7 +23,11 @@ watch(visible, (v) => {
 
 <template>
   <Dialog v-model:visible="visible" modal :header="t('git.dialogs.tagList.title')" :style="{ width: '1000px' }">
+    <div v-if="!git.tags.value.length" class="p-6 text-center text-sm text-muted">
+      {{ t('common.noData') }}
+    </div>
     <DataTable
+      v-else
       :value="git.tags.value"
       paginator
       :rows="paginationCompact.rows"
@@ -32,7 +36,6 @@ watch(visible, (v) => {
       :current-page-report-template="paginationCompact.currentPageReportTemplate"
       scrollable
       scroll-height="550px"
-      :empty-message="t('git.dialogs.tagList.emptyMessage')"
       class="app-data-table"
     >
       <Column :header="t('git.dialogs.tagList.columnTag')" field="name" sortable>

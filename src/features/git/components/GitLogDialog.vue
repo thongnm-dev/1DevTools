@@ -246,7 +246,11 @@ watch(visible, (v) => {
           class="flex shrink-0 flex-col overflow-hidden rounded-md border border-divider"
           :style="{ width: commitListWidth + 'px' }"
         >
+          <div v-if="!loading && !commits.length" class="flex flex-1 items-center justify-center p-6 text-center text-sm text-muted">
+            {{ t('common.noData') }}
+          </div>
           <DataTable
+            v-else
             :value="commits"
             :loading="loading"
             lazy
@@ -265,9 +269,6 @@ watch(visible, (v) => {
             @page="onPage"
             @row-select="(e: any) => selectCommit(e.data)"
           >
-            <template #empty>
-              <div class="p-4 text-center text-sm text-muted">{{ t('git.dialogs.log.noResults') }}</div>
-            </template>
             <Column field="subject" :header="t('git.dialogs.log.columnCommit')">
               <template #body="{ data }">
                 <div class="flex flex-col gap-0.5">

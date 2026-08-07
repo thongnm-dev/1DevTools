@@ -14,6 +14,7 @@ export default {
     cancel: "Cancel",
     save: "Save",
     loading: "Loading...",
+    noData: "No data to display",
   },
   auth: {
     login: {
@@ -487,7 +488,6 @@ export default {
         filePlaceholder: "File path…",
         search: "Search",
         clearFilters: "Clear filters",
-        noResults: "No matching commits found.",
         columnCommit: "Commit",
         collapse: "Collapse",
         expand: "Expand",
@@ -596,7 +596,6 @@ export default {
       },
       tagList: {
         title: "Manage tags",
-        emptyMessage: "No tags yet.",
         columnTag: "Tag",
         columnSha: "SHA",
         columnMessage: "Message",

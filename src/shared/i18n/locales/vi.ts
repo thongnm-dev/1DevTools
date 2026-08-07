@@ -17,6 +17,7 @@ export default {
     cancel: "Hủy",
     save: "Lưu",
     loading: "Đang tải...",
+    noData: "Không có dữ liệu hiển thị",
   },
   auth: {
     login: {
@@ -491,7 +492,6 @@ export default {
         filePlaceholder: "File path…",
         search: "Tìm",
         clearFilters: "Xóa bộ lọc",
-        noResults: "Không tìm thấy commit nào.",
         columnCommit: "Commit",
         collapse: "Thu gọn",
         expand: "Mở rộng",
@@ -600,7 +600,6 @@ export default {
       },
       tagList: {
         title: "Quản lý tags",
-        emptyMessage: "Chưa có tag nào.",
         columnTag: "Tag",
         columnSha: "SHA",
         columnMessage: "Message",
