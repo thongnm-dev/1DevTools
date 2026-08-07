@@ -8,7 +8,7 @@ mod database {
     /// Data access cho module quản lý người dùng.
     pub mod user_store;
     /// Data access cho bảng `menu_configs` (PostgreSQL).
-    pub mod menu_config_store;
+    pub mod menu_store;
     /// Data access cho bảng `role_menu_permissions` (chỉ quyền hiệu lực).
     pub mod menu_permission_store;
 }

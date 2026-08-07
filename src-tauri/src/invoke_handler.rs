@@ -6,7 +6,7 @@
 
 use commands::auth_commands::*;
 use commands::db_config_commands::*;
-use commands::menu_config_commands::*;
+use commands::menu_commands::*;
 use commands::menu_permission_commands::*;
 use commands::pagination_commands::*;
 use commands::system_commands::*;

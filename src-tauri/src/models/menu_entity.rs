@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Một mục menu trong hệ thống.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct MenuConfig {
+pub struct MenuEntity {
     pub key: String,
     pub title: String,
     pub path: String,

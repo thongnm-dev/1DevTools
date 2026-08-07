@@ -4,7 +4,7 @@
 //! tại nơi gọi trong các service tương ứng.
 
 use crate::models::auth::LoginResponse;
-use crate::models::menu_config::MenuConfig;
+use crate::models::menu_entity::MenuEntity;
 use crate::models::menu_permission::EffectiveMenuPermission;
 
 /// Nhóm menu top-level (không thuộc menu_group nào), khớp `UNGROUPED` trong menu store (frontend).
@@ -20,9 +20,9 @@ pub fn mock_login_response(username: &str) -> LoginResponse {
     }
 }
 
-pub fn mock_menu_configs() -> Vec<MenuConfig> {
+pub fn mock_menu_configs() -> Vec<MenuEntity> {
     vec![
-        MenuConfig {
+        MenuEntity {
             key: "overview".into(),
             title: "Overview".into(),
             path: "/overview".into(),
@@ -31,7 +31,7 @@ pub fn mock_menu_configs() -> Vec<MenuConfig> {
             visible: true,
             order: 1,
         },
-        MenuConfig {
+        MenuEntity {
             key: "Git".into(),
             title: "Snippets".into(),
             path: "/git".into(),
@@ -40,7 +40,7 @@ pub fn mock_menu_configs() -> Vec<MenuConfig> {
             visible: true,
             order: 10,
         },
-        MenuConfig {
+        MenuEntity {
             key: "ai-chat".into(),
             title: "Chat Assistant".into(),
             path: "/ai/chat".into(),
@@ -49,7 +49,7 @@ pub fn mock_menu_configs() -> Vec<MenuConfig> {
             visible: true,
             order: 30,
         },
-        MenuConfig {
+        MenuEntity {
             key: "gov-users".into(),
             title: "Users".into(),
             path: "/governance/users".into(),
@@ -58,7 +58,7 @@ pub fn mock_menu_configs() -> Vec<MenuConfig> {
             visible: true,
             order: 40,
         },
-        MenuConfig {
+        MenuEntity {
             key: "gov-roles".into(),
             title: "Roles".into(),
             path: "/governance/roles".into(),
@@ -67,7 +67,7 @@ pub fn mock_menu_configs() -> Vec<MenuConfig> {
             visible: true,
             order: 41,
         },
-        MenuConfig {
+        MenuEntity {
             key: "settings".into(),
             title: "Settings".into(),
             path: "/settings".into(),

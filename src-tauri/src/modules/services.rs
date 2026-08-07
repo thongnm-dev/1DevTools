@@ -12,7 +12,7 @@ mod services {
     /// Service cho module quản lý người dùng.
     pub mod user_service;
     /// Service cho module quản lý menu.
-    pub mod menu_config_service;
+    pub mod menu_service;
     /// Service cho phân quyền menu (chỉ quyền hiệu lực).
     pub mod menu_permission_service;
     /// Service đọc cấu hình phân trang DataTable từ config.ini.

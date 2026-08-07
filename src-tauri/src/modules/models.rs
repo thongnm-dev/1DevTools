@@ -10,7 +10,7 @@ mod models {
     /// Model cho module quản lý người dùng.
     pub mod user;
     /// Model cho module quản lý menu.
-    pub mod menu_config;
+    pub mod menu_entity;
     /// Model cho phân quyền menu (chỉ quyền hiệu lực).
     pub mod menu_permission;
 }

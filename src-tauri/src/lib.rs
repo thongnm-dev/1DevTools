@@ -5,7 +5,7 @@
 
 // Khai báo cấu trúc module tree — mỗi tầng kiến trúc (app/commands/database/models/
 // services/utils) có file khai báo riêng dưới `modules/`, `include!()` vào crate root
-// để tên module giữ nguyên (`crate::services::...`) như thể khai báo trực tiếp tại đây.
+// để tên module giữ nguyên (`cramenu_store`) như thể khai báo trực tiếp tại đây.
 include!("modules/app.rs");
 include!("modules/commands.rs");
 include!("modules/database.rs");

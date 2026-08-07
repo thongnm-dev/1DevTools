@@ -2,10 +2,10 @@
 
 use crate::app::error::AppError;
 use crate::app::result::AppResult;
-use crate::models::menu_config::MenuConfig;
+use crate::models::menu_entity::MenuEntity;
 use crate::utils::pgsql_connect;
 
-pub async fn list_all() -> AppResult<Vec<MenuConfig>> {
+pub async fn list_all() -> AppResult<Vec<MenuEntity>> {
     let client = pgsql_connect::connect().await?;
 
     let rows = client
@@ -15,7 +15,7 @@ pub async fn list_all() -> AppResult<Vec<MenuConfig>> {
 
     let items = rows
         .iter()
-        .map(|row| MenuConfig {
+        .map(|row| MenuEntity {
             key: row.get("key"),
             title: row.get("title"),
             path: row.get("path"),

@@ -10,7 +10,7 @@ mod commands {
     /// Commands cho module quản lý người dùng (danh sách, dùng cho member picker).
     pub mod user_commands;
     /// Commands cho module quản lý menu.
-    pub mod menu_config_commands;
+    pub mod menu_commands;
     /// Commands cho phân quyền menu theo user/role (chỉ quyền hiệu lực, dùng cho sidebar).
     pub mod menu_permission_commands;
     /// Commands cho cấu hình phân trang DataTable (đọc từ config.ini).
