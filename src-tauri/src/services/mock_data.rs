@@ -32,8 +32,8 @@ pub fn mock_menu_configs() -> Vec<MenuEntity> {
             order: 1,
         },
         MenuEntity {
-            key: "Git".into(),
-            title: "Snippets".into(),
+            key: "git".into(),
+            title: "Git".into(),
             path: "/git".into(),
             icon: "pi-github".into(),
             group: UNGROUPED.into(),

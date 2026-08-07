@@ -15,4 +15,8 @@ mod commands {
     pub mod menu_permission_commands;
     /// Commands cho cấu hình phân trang DataTable (đọc từ config.ini).
     pub mod pagination_commands;
+    /// Commands cho màn hình Git Desktop (thao tác git + quản lý danh sách repo).
+    pub mod git_commands;
+    /// Command mở file/folder trong Explorer/Finder.
+    pub mod explorer_commands;
 }

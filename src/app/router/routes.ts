@@ -18,6 +18,12 @@ export const appRoutes: AppRoute[] = [
     subtitle: "Project and phase summary for the selected work data.",
   },
   {
+    key: "git",
+    path: "/git",
+    title: "Git",
+    subtitle: "Browse, commit, and manage local Git repositories.",
+  },
+  {
     key: "login",
     path: "/login",
     title: "Login",
@@ -49,6 +55,11 @@ export const vueRoutes: RouteRecordRaw[] = [
     path: "/overview",
     component: () => import("@/features/overview/components/OverviewPage.vue"),
     meta: { key: "overview" as MenuKey },
+  },
+  {
+    path: "/git",
+    component: () => import("@/features/git/components/GitDesktopPage.vue"),
+    meta: { key: "git" as MenuKey },
   },
   {
     path: "/login",

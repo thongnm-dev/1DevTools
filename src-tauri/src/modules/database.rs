@@ -11,4 +11,6 @@ mod database {
     pub mod menu_store;
     /// Data access cho bảng `role_menu_permissions` (chỉ quyền hiệu lực).
     pub mod menu_permission_store;
+    /// Lưu trữ cục bộ (JSON file) danh sách repository của màn hình Git Desktop.
+    pub mod git_repo_store;
 }

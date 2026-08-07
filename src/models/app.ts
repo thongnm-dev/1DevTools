@@ -1,4 +1,4 @@
-export type MenuKey = "overview";
+export type MenuKey = "overview" | "git";
 
 export type AppRouteKey = MenuKey | "login" | "forgotPassword";
 

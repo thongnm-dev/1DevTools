@@ -53,6 +53,14 @@ export default {
         "code-bg": withOpacity("--color-code-bg"),
         "code-fg": withOpacity("--color-code-fg"),
       },
+      fontSize: {
+        "2xs": ["0.6875rem", { lineHeight: "1rem" }], // 11px
+      },
+      boxShadow: {
+        card: "var(--shadow-card)",
+        "card-panel": "var(--shadow-panel)",
+        float: "var(--shadow-float)",
+      },
     },
   },
   plugins: [],

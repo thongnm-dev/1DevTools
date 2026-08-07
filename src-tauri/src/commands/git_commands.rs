@@ -1,0 +1,606 @@
+//! Tauri command handlers cho màn hình Git Desktop.
+//!
+//! Gồm 2 nhóm:
+//! - Quản lý danh sách repo (lưu cục bộ JSON): list/add/remove/touch.
+//! - Thao tác Git trên một repo: status, diff, stage, commit, log, branch,
+//!   fetch/pull/push, stash, clone.
+//!
+//! Các thao tác chạm mạng / ghi nặng chạy qua `spawn_blocking` để không chặn UI.
+
+use crate::app::error::{log_err, AppError, AppErrorPayload};
+use crate::database::git_repo_store::{self, GitRepoData};
+use crate::models::git::{
+    GitBlame, GitBranch, GitCommit, GitCommitDetail, GitComparison, GitDiff, GitGraphCommit,
+    GitProgress, GitPullRequest, GitRepo, GitRepoInfo, GitStash, GitStatus, GitTag, GitWorktree,
+};
+use crate::services::git_service;
+use crate::services::git_watch_service;
+
+// === Quản lý danh sách repo ===
+
+/// Danh sách repo đã lưu, sắp theo lần mở gần nhất giảm dần.
+#[tauri::command]
+pub fn git_list_repos() -> Result<Vec<GitRepo>, AppErrorPayload> {
+    let data = git_repo_store::load().map_err(log_err)?;
+    let mut repos = data.repos;
+    repos.sort_by(|a, b| b.last_opened.cmp(&a.last_opened));
+    Ok(repos)
+}
+
+/// Thêm một repo vào danh sách. Kiểm tra là git repo hợp lệ và không trùng đường dẫn.
+#[tauri::command]
+pub fn git_add_repo(path: String) -> Result<GitRepo, AppErrorPayload> {
+    if !git_service::is_git_repo(&path) {
+        return Err(log_err(AppError::new(format!(
+            "Thư mục không phải Git repository: {path}"
+        ))));
+    }
+    let mut data = git_repo_store::load().map_err(log_err)?;
+
+    // Chuẩn hóa: lấy top-level của repo để tránh thêm thư mục con.
+    let info = git_service::repo_info(&path).map_err(log_err)?;
+    let canonical = info.path;
+
+    if let Some(existing) = data.repos.iter().find(|r| r.path == canonical) {
+        return Ok(existing.clone());
+    }
+
+    let name = std::path::Path::new(&canonical)
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| canonical.clone());
+
+    if data.next_id < 1 {
+        data.next_id = 1;
+    }
+    let repo = GitRepo {
+        id: data.next_id,
+        name,
+        path: canonical,
+        last_opened: chrono::Local::now().to_rfc3339(),
+    };
+    data.next_id += 1;
+    data.repos.push(repo.clone());
+    git_repo_store::save(&data).map_err(log_err)?;
+    Ok(repo)
+}
+
+/// Xóa một repo khỏi danh sách (không đụng tới file trên đĩa).
+#[tauri::command]
+pub fn git_remove_repo(id: i64) -> Result<(), AppErrorPayload> {
+    let mut data = git_repo_store::load().map_err(log_err)?;
+    data.repos.retain(|r| r.id != id);
+    git_repo_store::save(&data).map_err(log_err)?;
+    Ok(())
+}
+
+/// Cập nhật thời điểm mở gần nhất của repo (dùng để sắp xếp recent).
+#[tauri::command]
+pub fn git_touch_repo(id: i64) -> Result<(), AppErrorPayload> {
+    let mut data: GitRepoData = git_repo_store::load().map_err(log_err)?;
+    if let Some(repo) = data.repos.iter_mut().find(|r| r.id == id) {
+        repo.last_opened = chrono::Local::now().to_rfc3339();
+        git_repo_store::save(&data).map_err(log_err)?;
+    }
+    Ok(())
+}
+
+// === Đọc trạng thái repo (nhanh, chạy đồng bộ) ===
+
+#[tauri::command]
+pub fn git_repo_info(path: String) -> Result<GitRepoInfo, AppErrorPayload> {
+    git_service::repo_info(&path).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_status(path: String) -> Result<GitStatus, AppErrorPayload> {
+    git_service::status(&path).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_file_diff(
+    path: String,
+    file: String,
+    staged: bool,
+    untracked: bool,
+) -> Result<GitDiff, AppErrorPayload> {
+    git_service::file_diff(&path, &file, staged, untracked).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_commit_file_diff(path: String, hash: String, file: String) -> Result<GitDiff, AppErrorPayload> {
+    git_service::commit_file_diff(&path, &hash, &file).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_log(path: String, limit: u32) -> Result<Vec<GitCommit>, AppErrorPayload> {
+    git_service::log(&path, limit).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_log_search(
+    path: String,
+    after: String,
+    before: String,
+    author: String,
+    message: String,
+    file: String,
+    skip: u32,
+    limit: u32,
+) -> Result<Vec<GitCommit>, AppErrorPayload> {
+    git_service::log_search(
+        &path, &after, &before, &author, &message, &file, skip, limit,
+    )
+    .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_graph(path: String, limit: u32) -> Result<Vec<GitGraphCommit>, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::graph(&path, limit))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_commit_detail(path: String, hash: String) -> Result<GitCommitDetail, AppErrorPayload> {
+    git_service::commit_detail(&path, &hash).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_branches(path: String) -> Result<Vec<GitBranch>, AppErrorPayload> {
+    git_service::branches(&path).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_stash_list(path: String) -> Result<Vec<GitStash>, AppErrorPayload> {
+    git_service::stash_list(&path).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_worktree_list(path: String) -> Result<Vec<GitWorktree>, AppErrorPayload> {
+    git_service::worktree_list(&path).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_list_conflicts(path: String) -> Result<Vec<String>, AppErrorPayload> {
+    git_service::list_conflicts(&path).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_tag_list(path: String) -> Result<Vec<GitTag>, AppErrorPayload> {
+    git_service::tag_list(&path).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_blame(path: String, file: String, rev: String) -> Result<GitBlame, AppErrorPayload> {
+    git_service::blame(&path, &file, &rev).map_err(log_err)
+}
+
+#[tauri::command]
+pub fn git_compare_file_diff(
+    path: String,
+    base: String,
+    head: String,
+    file: String,
+) -> Result<GitDiff, AppErrorPayload> {
+    git_service::compare_file_diff(&path, &base, &head, &file).map_err(log_err)
+}
+
+// === Thao tác ghi / mạng (async) ===
+
+#[tauri::command]
+pub async fn git_stage(path: String, files: Vec<String>) -> Result<(), AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::stage(&path, &files))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_unstage(path: String, files: Vec<String>) -> Result<(), AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::unstage(&path, &files))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_discard(path: String, files: Vec<String>) -> Result<(), AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::discard(&path, &files))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_commit(path: String, message: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::commit(&path, &message))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_amend_commit(path: String, message: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::amend_commit(&path, &message))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_checkout_branch(path: String, name: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::checkout_branch(&path, &name))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_create_branch(path: String, name: String, from: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::create_branch(&path, &name, &from))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_delete_branch(path: String, name: String, force: bool) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::delete_branch(&path, &name, force))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_fetch(
+    path: String,
+    on_progress: tauri::ipc::Channel<GitProgress>,
+) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || {
+        git_service::fetch_with_progress(&path, |p| {
+            let _ = on_progress.send(p);
+        })
+    })
+    .await
+    .map_err(|e| log_err(AppError::new(e.to_string())))?
+    .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_pull(
+    path: String,
+    on_progress: tauri::ipc::Channel<GitProgress>,
+) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || {
+        git_service::pull_with_progress(&path, |p| {
+            let _ = on_progress.send(p);
+        })
+    })
+    .await
+    .map_err(|e| log_err(AppError::new(e.to_string())))?
+    .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_push(
+    path: String,
+    on_progress: tauri::ipc::Channel<GitProgress>,
+) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || {
+        git_service::push_with_progress(&path, |p| {
+            let _ = on_progress.send(p);
+        })
+    })
+    .await
+    .map_err(|e| log_err(AppError::new(e.to_string())))?
+    .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_stash_save(path: String, message: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::stash_save(&path, &message))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_stash_apply(path: String, reference: String, pop: bool) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::stash_apply(&path, &reference, pop))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_stash_drop(path: String, reference: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::stash_drop(&path, &reference))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_clone(
+    url: String,
+    dest: String,
+    on_progress: tauri::ipc::Channel<GitProgress>,
+) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || {
+        git_service::clone_with_progress(&url, &dest, |p| {
+            let _ = on_progress.send(p);
+        })
+    })
+    .await
+    .map_err(|e| log_err(AppError::new(e.to_string())))?
+    .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_undo_last_commit(path: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::undo_last_commit(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_reset(path: String, hash: String, mode: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::reset_to(&path, &hash, &mode))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_revert(path: String, hash: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::revert(&path, &hash))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_revert_abort(path: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::revert_abort(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_rebase(path: String, onto: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::rebase(&path, &onto))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_rebase_abort(path: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::rebase_abort(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_rebase_continue(path: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::rebase_continue(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_tag_create(
+    path: String,
+    name: String,
+    hash: String,
+    message: String,
+    annotated: bool,
+    push: bool,
+) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || {
+        git_service::tag_create(&path, &name, &hash, &message, annotated, push)
+    })
+    .await
+    .map_err(|e| log_err(AppError::new(e.to_string())))?
+    .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_tag_delete(path: String, name: String, remote: bool) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::tag_delete(&path, &name, remote))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_merge(
+    path: String,
+    branch: String,
+    squash: bool,
+    message: String,
+) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || {
+        git_service::merge(&path, &branch, squash, &message)
+    })
+    .await
+    .map_err(|e| log_err(AppError::new(e.to_string())))?
+    .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_merge_abort(path: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::merge_abort(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_commit_no_edit(path: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::commit_no_edit(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_resolve_conflict(path: String, file: String, side: String) -> Result<(), AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::resolve_conflict(&path, &file, &side))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_cleanup_scan(path: String) -> Result<Vec<String>, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::cleanup_scan(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_cleanup_delete(
+    path: String,
+    branches: Vec<String>,
+) -> Result<Vec<String>, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::cleanup_delete(&path, &branches))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_compare(
+    path: String,
+    base: String,
+    head: String,
+) -> Result<GitComparison, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::compare(&path, &base, &head))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_create_pull_request(
+    path: String,
+    base: String,
+    head: String,
+) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || {
+        git_service::create_pull_request(&path, &base, &head)
+    })
+    .await
+    .map_err(|e| log_err(AppError::new(e.to_string())))?
+    .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_list_pull_requests(
+    path: String,
+    state: String,
+) -> Result<Vec<GitPullRequest>, AppErrorPayload> {
+    git_service::list_pull_requests(&path, &state)
+        .await
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_open_url(url: String) -> Result<(), AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::open_url(&url))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_open_terminal(path: String) -> Result<(), AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::open_terminal(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_open_vscode(path: String) -> Result<(), AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::open_vscode(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_cherry_pick(path: String, hash: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::cherry_pick(&path, &hash))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_cherry_pick_abort(path: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::cherry_pick_abort(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_cherry_pick_continue(path: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || git_service::cherry_pick_continue(&path))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_worktree_add(
+    path: String,
+    worktree_path: String,
+    branch: String,
+    new_branch: String,
+) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || {
+        git_service::worktree_add(&path, &worktree_path, &branch, &new_branch)
+    })
+    .await
+    .map_err(|e| log_err(AppError::new(e.to_string())))?
+    .map_err(log_err)
+}
+
+#[tauri::command]
+pub async fn git_worktree_remove(
+    path: String,
+    worktree_path: String,
+    force: bool,
+) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || {
+        git_service::worktree_remove(&path, &worktree_path, force)
+    })
+    .await
+    .map_err(|e| log_err(AppError::new(e.to_string())))?
+    .map_err(log_err)
+}
+
+// === Theo dõi thay đổi file (auto-refresh tab Changes, không cần bấm reload) ===
+
+/// Bắt đầu theo dõi thay đổi file trên đĩa của `path` — bắn event
+/// `git-repo-changed` cho frontend khi có thay đổi (đã debounce).
+#[tauri::command]
+pub fn git_watch_start(app: tauri::AppHandle, path: String) {
+    git_watch_service::start(app, path);
+}
+
+/// Dừng theo dõi (gọi khi đóng repo / rời màn hình Git Desktop).
+#[tauri::command]
+pub fn git_watch_stop() {
+    git_watch_service::stop();
+}

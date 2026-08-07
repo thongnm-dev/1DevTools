@@ -13,4 +13,6 @@ mod models {
     pub mod menu_entity;
     /// Model cho phân quyền menu (chỉ quyền hiệu lực).
     pub mod menu_permission;
+    /// Model cho màn hình Git Desktop.
+    pub mod git;
 }

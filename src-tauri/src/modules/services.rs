@@ -19,4 +19,10 @@ mod services {
     pub mod pagination_service;
     /// Dữ liệu mock dùng khi database chưa kết nối được (chỉ debug build).
     pub mod mock_data;
+    /// Service cho màn hình Git Desktop — gọi `git` CLI cho mọi thao tác.
+    pub mod git_service;
+    /// Theo dõi thay đổi file trên đĩa của repo Git đang mở (auto-refresh tab Changes).
+    pub mod git_watch_service;
+    /// Mở file/folder trong Explorer/Finder — dùng bởi màn hình Git Desktop.
+    pub mod explorer_service;
 }

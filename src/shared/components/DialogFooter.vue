@@ -6,6 +6,7 @@ withDefaults(
   defineProps<{
     cancelLabel?: string;
     cancelIcon?: string;
+    cancelSeverity?: "secondary" | "danger" | "success" | "warn" | "info" | "contrast";
     confirmLabel?: string;
     confirmIcon?: string;
     confirmSeverity?: "secondary" | "danger" | "success" | "warn" | "info" | "contrast";
@@ -17,6 +18,7 @@ withDefaults(
   {
     cancelLabel: undefined,
     cancelIcon: undefined,
+    cancelSeverity: "secondary",
     confirmLabel: undefined,
     confirmIcon: undefined,
     confirmSeverity: undefined,
@@ -41,7 +43,7 @@ const { t } = useI18n();
     <Button
       :label="cancelLabel ?? t('common.cancel')"
       :icon="cancelIcon"
-      severity="secondary"
+      :severity="cancelSeverity"
       outlined
       :disabled="cancelDisabled || busy"
       @click="$emit('cancel')"

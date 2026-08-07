@@ -57,6 +57,13 @@ impl From<std::io::Error> for AppError {
     }
 }
 
+/// Chuyển đổi tự động từ `serde_json::Error` (lỗi parse/serialize JSON).
+impl From<serde_json::Error> for AppError {
+    fn from(error: serde_json::Error) -> Self {
+        Self::new(error.to_string())
+    }
+}
+
 /// Payload lỗi gửi qua IPC cho frontend. `code` để dịch, `message` để log/fallback.
 #[derive(Debug, Serialize)]
 pub struct AppErrorPayload {
