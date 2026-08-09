@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Fieldset from "primevue/fieldset";
@@ -14,6 +15,7 @@ import { useGovernanceUsers } from "../composables/useGovernanceUsers";
 import { useDataTablePagination } from "@/shared/composables/useDataTablePagination";
 import { useToast } from "@/shared/composables/useToast";
 
+const { t } = useI18n();
 const ctrl = useGovernanceUsers();
 const toast = useToast();
 const { pagination } = useDataTablePagination();
@@ -48,7 +50,7 @@ function closeDialog() {
 
 async function saveAndClose() {
   if (await ctrl.saveDraft()) {
-    toast.success(ctrl.isCreating.value ? "User created successfully." : "User updated successfully.");
+    toast.success(ctrl.isCreating.value ? t("governance.users.toast.created") : t("governance.users.toast.updated"));
     closeDialog();
   }
 }
@@ -90,27 +92,27 @@ onMounted(() => ctrl.init());
 
     <!-- Action bar -->
     <section class="flex items-center justify-end rounded-lg border border-divider bg-panel p-4 shadow-sm">
-      <Button icon="pi pi-plus" label="Add user" @click="openCreate" />
+      <Button icon="pi pi-plus" :label="t('governance.users.actions.addUser')" size="small" @click="openCreate" />
     </section>
 
     <!-- Search fieldset -->
-    <Fieldset class="rounded-lg border border-divider bg-panel p-4 shadow-md fieldset-nested" legend="Search" toggleable>
+    <Fieldset class="rounded-lg border border-divider bg-panel p-4 shadow-md fieldset-nested" :legend="t('governance.users.search.legend')" toggleable>
       <div class="grid gap-3">
         <div class="grid gap-3 lg:grid-cols-2">
           <label>
-            <span class="text-xs font-bold text-muted">Username</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.username") }}</span>
             <InputText
               class="mt-1 w-full"
-              placeholder="Username"
+              :placeholder="t('governance.users.form.username')"
               :model-value="ctrl.filters.value.username"
               @update:model-value="ctrl.filters.value = { ...ctrl.filters.value, username: $event as string }"
             />
           </label>
           <label>
-            <span class="text-xs font-bold text-muted">Full Name</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.fullName") }}</span>
             <InputText
               class="mt-1 w-full"
-              placeholder="Full name"
+              :placeholder="t('governance.users.form.fullNamePlaceholder')"
               :model-value="ctrl.filters.value.fullName"
               @update:model-value="ctrl.filters.value = { ...ctrl.filters.value, fullName: $event as string }"
             />
@@ -118,19 +120,19 @@ onMounted(() => ctrl.init());
         </div>
         <div class="grid gap-3 lg:grid-cols-2">
           <label>
-            <span class="text-xs font-bold text-muted">Email</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.email") }}</span>
             <InputText
               class="mt-1 w-full"
-              placeholder="Email"
+              :placeholder="t('governance.users.form.email')"
               :model-value="ctrl.filters.value.email"
               @update:model-value="ctrl.filters.value = { ...ctrl.filters.value, email: $event as string }"
             />
           </label>
           <label>
-            <span class="text-xs font-bold text-muted">Phone</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.phone") }}</span>
             <InputText
               class="mt-1 w-full"
-              placeholder="Phone number"
+              :placeholder="t('governance.users.form.phonePlaceholder')"
               :model-value="ctrl.filters.value.phone"
               @update:model-value="ctrl.filters.value = { ...ctrl.filters.value, phone: $event as string }"
             />
@@ -138,7 +140,7 @@ onMounted(() => ctrl.init());
         </div>
         <div class="grid gap-3 lg:grid-cols-2">
           <label>
-            <span class="text-xs font-bold text-muted">Role</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.role") }}</span>
             <select
               class="mt-1 flex h-10 w-full items-center rounded-md border border-divider bg-panel px-3 text-sm"
               :value="ctrl.filters.value.role"
@@ -148,7 +150,7 @@ onMounted(() => ctrl.init());
             </select>
           </label>
           <label>
-            <span class="text-xs font-bold text-muted">Status</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.status") }}</span>
             <select
               class="mt-1 flex h-10 w-full items-center rounded-md border border-divider bg-panel px-3 text-sm"
               :value="ctrl.filters.value.status"
@@ -159,8 +161,8 @@ onMounted(() => ctrl.init());
           </label>
         </div>
         <div class="flex items-center justify-end gap-2">
-          <Button icon="pi pi-refresh" label="Reset" severity="secondary" outlined @click="ctrl.resetFilters()" />
-          <Button icon="pi pi-search" label="Search" @click="ctrl.search()" />
+          <Button icon="pi pi-refresh" :label="t('governance.users.actions.reset')" severity="secondary" outlined size="small" @click="ctrl.resetFilters()" />
+          <Button icon="pi pi-search" :label="t('governance.users.actions.search')" size="small" @click="ctrl.search()" />
         </div>
       </div>
     </Fieldset>
@@ -168,12 +170,12 @@ onMounted(() => ctrl.init());
     <!-- Users table -->
     <section class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm">
       <div class="flex items-center justify-between gap-4 border-b border-divider px-4 py-3">
-        <h3 class="section-title">User list</h3>
-        <span class="text-xs text-muted">{{ ctrl.filteredUsers.value.length.toLocaleString("en-US") }} users</span>
+        <h3 class="section-title">{{ t("governance.users.table.title") }}</h3>
+        <span class="text-xs text-muted">{{ t("governance.users.table.count", { count: ctrl.filteredUsers.value.length.toLocaleString("en-US") }) }}</span>
       </div>
       <DataTable
         class="app-data-table min-h-0"
-        :empty-message="ctrl.loading.value ? 'Loading...' : 'No users match the search conditions.'"
+        :empty-message="ctrl.loading.value ? t('governance.users.table.loading') : t('governance.users.table.empty')"
         :row-class="() => 'cursor-pointer'"
         scrollable
         scroll-height="flex"
@@ -186,8 +188,8 @@ onMounted(() => ctrl.init());
         :current-page-report-template="pagination.currentPageReportTemplate"
         @row-click="(e: any) => openEdit(e.data.id)"
       >
-        <Column field="id" header="ID" body-class="font-mono text-xs text-muted" :style="{ width: '60px' }" />
-        <Column field="full_name" header="User">
+        <Column field="id" :header="t('governance.users.table.id')" body-class="font-mono text-xs text-muted" :style="{ width: '60px' }" />
+        <Column field="full_name" :header="t('governance.users.table.user')">
           <template #body="{ data }">
             <div class="flex items-center gap-2.5">
               <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand/10 text-xs font-bold text-brand">
@@ -200,22 +202,22 @@ onMounted(() => ctrl.init());
             </div>
           </template>
         </Column>
-        <Column field="email" header="Email">
+        <Column field="email" :header="t('governance.users.table.email')">
           <template #body="{ data }">
             <span class="text-xs text-secondary">{{ data.email || "—" }}</span>
           </template>
         </Column>
-        <Column field="phone" header="Phone">
+        <Column field="phone" :header="t('governance.users.table.phone')">
           <template #body="{ data }">
             <span class="text-xs text-secondary">{{ data.phone || "—" }}</span>
           </template>
         </Column>
-        <Column field="position" header="Position">
+        <Column field="position" :header="t('governance.users.table.position')">
           <template #body="{ data }">
             <span class="text-xs text-secondary">{{ data.position || "—" }}</span>
           </template>
         </Column>
-        <Column field="roles" header="Roles">
+        <Column field="roles" :header="t('governance.users.table.roles')">
           <template #body="{ data }">
             <div class="flex flex-wrap gap-1">
               <span
@@ -228,19 +230,19 @@ onMounted(() => ctrl.init());
             </div>
           </template>
         </Column>
-        <Column field="is_active" header="Status" header-class="text-center" body-class="text-center">
+        <Column field="is_active" :header="t('governance.users.table.status')" header-class="text-center" body-class="text-center">
           <template #body="{ data }">
             <span :class="data.is_active ? 'badge-success' : 'badge-neutral'">
               <i :class="['pi text-[10px]', data.is_active ? 'pi-check-circle' : 'pi-minus-circle']" />
-              {{ data.is_active ? "active" : "inactive" }}
+              {{ data.is_active ? t("governance.users.status.active") : t("governance.users.status.inactive") }}
             </span>
           </template>
         </Column>
-        <Column header="Actions" header-class="text-center" body-class="text-center" :style="{ width: '90px' }">
+        <Column :header="t('governance.users.table.actions')" header-class="text-center" body-class="text-center" :style="{ width: '90px' }">
           <template #body="{ data }">
             <div class="flex items-center justify-center gap-1">
-              <IconActionButton icon="pi pi-key" severity="secondary" title="Reset password" @click.stop="openResetPassword(data.id)" />
-              <IconActionButton icon="pi pi-trash" severity="danger" title="Delete user" @click.stop="confirmDelete(data.id)" />
+              <IconActionButton icon="pi pi-key" severity="secondary" :title="t('governance.users.actions.resetPassword')" @click.stop="openResetPassword(data.id)" />
+              <IconActionButton icon="pi pi-trash" severity="danger" :title="t('governance.users.actions.deleteUser')" @click.stop="confirmDelete(data.id)" />
             </div>
           </template>
         </Column>
@@ -257,9 +259,9 @@ onMounted(() => ctrl.init());
     >
       <template #header>
         <div>
-          <h3 class="section-title">{{ ctrl.isCreating.value ? "Add User" : "Edit User" }}</h3>
+          <h3 class="section-title">{{ ctrl.isCreating.value ? t("governance.users.dialog.addTitle") : t("governance.users.dialog.editTitle") }}</h3>
           <p v-if="ctrl.draft.value && !ctrl.isCreating.value" class="mt-1 text-sm text-muted">
-            ID: {{ ctrl.draft.value.id }} &middot; {{ ctrl.draft.value.username }}
+            {{ t("governance.users.dialog.idSubtitle", { id: ctrl.draft.value.id, username: ctrl.draft.value.username }) }}
           </p>
         </div>
       </template>
@@ -267,34 +269,34 @@ onMounted(() => ctrl.init());
       <div v-if="ctrl.draft.value" class="space-y-4">
         <div class="grid gap-4 md:grid-cols-2">
           <label class="block">
-            <span class="text-xs font-bold text-muted">Username <span class="text-red-500">*</span></span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.username") }} <span class="text-red-500">*</span></span>
             <InputText
               class="mt-1 w-full"
               :model-value="ctrl.draft.value.username"
-              placeholder="username"
+              :placeholder="t('governance.users.form.usernamePlaceholder')"
               autofocus
               :disabled="!ctrl.isCreating.value"
               @update:model-value="ctrl.updateDraft('username', $event as string)"
             />
           </label>
           <label class="block">
-            <span class="text-xs font-bold text-muted">Full Name <span class="text-red-500">*</span></span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.fullName") }} <span class="text-red-500">*</span></span>
             <InputText
               class="mt-1 w-full"
               :model-value="ctrl.draft.value.fullName"
-              placeholder="Full name"
+              :placeholder="t('governance.users.form.fullNamePlaceholder')"
               @update:model-value="ctrl.updateDraft('fullName', $event as string)"
             />
           </label>
         </div>
 
         <label v-if="ctrl.isCreating.value" class="block">
-          <span class="text-xs font-bold text-muted">Password <span class="text-red-500">*</span></span>
+          <span class="text-xs font-bold text-muted">{{ t("governance.users.form.password") }} <span class="text-red-500">*</span></span>
           <Password
             class="mt-1 w-full"
             input-class="w-full"
             :model-value="ctrl.draft.value.password"
-            placeholder="Password"
+            :placeholder="t('governance.users.form.password')"
             :feedback="false"
             toggle-mask
             @update:model-value="ctrl.updateDraft('password', $event as string)"
@@ -303,7 +305,7 @@ onMounted(() => ctrl.init());
 
         <div class="grid gap-4 md:grid-cols-2">
           <label class="block">
-            <span class="text-xs font-bold text-muted">Email</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.email") }}</span>
             <InputText
               class="mt-1 w-full"
               :model-value="ctrl.draft.value.email"
@@ -312,28 +314,28 @@ onMounted(() => ctrl.init());
             />
           </label>
           <label class="block">
-            <span class="text-xs font-bold text-muted">Phone</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.phone") }}</span>
             <InputText
               class="mt-1 w-full"
               :model-value="ctrl.draft.value.phone"
-              placeholder="Phone number"
+              :placeholder="t('governance.users.form.phonePlaceholder')"
               @update:model-value="ctrl.updateDraft('phone', $event as string)"
             />
           </label>
         </div>
 
         <label class="block">
-          <span class="text-xs font-bold text-muted">Position</span>
+          <span class="text-xs font-bold text-muted">{{ t("governance.users.form.position") }}</span>
           <InputText
             class="mt-1 w-full"
             :model-value="ctrl.draft.value.position"
-            placeholder="Job title or position"
+            :placeholder="t('governance.users.form.positionPlaceholder')"
             @update:model-value="ctrl.updateDraft('position', $event as string)"
           />
         </label>
 
         <div>
-          <span class="text-xs font-bold text-muted">Roles</span>
+          <span class="text-xs font-bold text-muted">{{ t("governance.users.form.roles") }}</span>
           <div class="mt-1 flex flex-wrap gap-2">
             <Button
               v-for="role in ctrl.availableRoles.value"
@@ -354,20 +356,20 @@ onMounted(() => ctrl.init());
         </div>
 
         <div v-if="!ctrl.isCreating.value">
-          <span class="text-xs font-bold text-muted">Status</span>
+          <span class="text-xs font-bold text-muted">{{ t("governance.users.form.status") }}</span>
           <div class="mt-1 grid grid-cols-2 rounded-md border border-divider bg-canvas p-1">
             <ToggleChip
               variant="segment"
               :active="ctrl.draft.value.isActive"
               icon="pi-check-circle"
-              label="active"
+              :label="t('governance.users.status.active')"
               @click="ctrl.updateDraft('isActive', true)"
             />
             <ToggleChip
               variant="segment"
               :active="!ctrl.draft.value.isActive"
               icon="pi-minus-circle"
-              label="inactive"
+              :label="t('governance.users.status.inactive')"
               @click="ctrl.updateDraft('isActive', false)"
             />
           </div>
@@ -375,7 +377,7 @@ onMounted(() => ctrl.init());
       </div>
 
       <template #footer>
-        <DialogFooter :confirm-label="ctrl.isCreating.value ? 'Create' : 'Save'" @cancel="closeDialog" @confirm="saveAndClose" />
+        <DialogFooter :confirm-label="ctrl.isCreating.value ? t('governance.users.actions.create') : t('governance.users.actions.save')" @cancel="closeDialog" @confirm="saveAndClose" />
       </template>
     </Dialog>
 
@@ -388,11 +390,11 @@ onMounted(() => ctrl.init());
       @update:visible="confirmDeleteId = null"
     >
       <template #header>
-        <h3 class="section-title">Confirm Delete</h3>
+        <h3 class="section-title">{{ t("governance.users.dialog.deleteTitle") }}</h3>
       </template>
-      <p class="text-sm text-secondary">Are you sure you want to delete this user? This action cannot be undone.</p>
+      <p class="text-sm text-secondary">{{ t("governance.users.dialog.deleteMessage") }}</p>
       <template #footer>
-        <DialogFooter confirm-label="Delete" confirm-severity="danger" @cancel="confirmDeleteId = null" @confirm="executeDelete" />
+        <DialogFooter :confirm-label="t('governance.users.actions.delete')" confirm-severity="danger" @cancel="confirmDeleteId = null" @confirm="executeDelete" />
       </template>
     </Dialog>
 
@@ -405,14 +407,14 @@ onMounted(() => ctrl.init());
       @update:visible="resetPwUserId = null"
     >
       <template #header>
-        <h3 class="section-title">Reset Password</h3>
+        <h3 class="section-title">{{ t("governance.users.dialog.resetPasswordTitle") }}</h3>
       </template>
       <label class="block">
-        <span class="text-xs font-bold text-muted">New Password <span class="text-red-500">*</span></span>
+        <span class="text-xs font-bold text-muted">{{ t("governance.users.form.newPassword") }} <span class="text-red-500">*</span></span>
         <Password
           class="mt-1 w-full"
           input-class="w-full"
-          placeholder="Enter new password"
+          :placeholder="t('governance.users.form.newPasswordPlaceholder')"
           :model-value="resetPwValue"
           :feedback="false"
           toggle-mask
@@ -421,7 +423,7 @@ onMounted(() => ctrl.init());
       </label>
       <template #footer>
         <DialogFooter
-          confirm-label="Reset"
+          :confirm-label="t('governance.users.actions.reset')"
           :confirm-disabled="!resetPwValue.trim()"
           @cancel="resetPwUserId = null"
           @confirm="executeResetPassword"

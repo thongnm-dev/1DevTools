@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputNumber from "primevue/inputnumber";
@@ -9,6 +10,7 @@ import IconActionButton from "@/shared/components/IconActionButton.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
 import { useGovernanceMenus } from "../composables/useGovernanceMenus";
 
+const { t } = useI18n();
 const ctrl = useGovernanceMenus();
 const isEditing = ref(false);
 const isCreating = ref(false);
@@ -66,19 +68,19 @@ async function createAndClose() {
     <!-- Top bar -->
     <section class="flex flex-wrap items-end gap-3 rounded-lg border border-divider bg-panel p-4 shadow-sm">
       <label class="block min-w-0 flex-1">
-        <span class="text-xs font-bold text-muted">Search</span>
+        <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.search") }}</span>
         <span class="mt-1 flex h-10 items-center gap-2 rounded-md border border-divider bg-panel px-3 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20">
           <i class="pi pi-search shrink-0 text-muted" />
           <InputText
             class="embedded-input min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-ink outline-none shadow-none"
-            placeholder="Title, key, or path"
+            :placeholder="t('governance.menus.form.searchPlaceholder')"
             :model-value="ctrl.searchQuery.value"
             @update:model-value="ctrl.searchQuery.value = $event as string"
           />
         </span>
       </label>
       <label class="block w-44">
-        <span class="text-xs font-bold text-muted">Group</span>
+        <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.group") }}</span>
         <select
           class="mt-1 flex h-10 w-full items-center rounded-md border border-divider bg-panel px-3 text-sm"
           :value="ctrl.filterGroup.value"
@@ -87,20 +89,20 @@ async function createAndClose() {
           <option v-for="g in ctrl.groups.value" :key="g" :value="g">{{ g }}</option>
         </select>
       </label>
-      <Button icon="pi pi-refresh" label="Reset" severity="secondary" outlined title="Reset to defaults" @click="ctrl.resetToDefault()" />
-      <Button icon="pi pi-plus" label="Add menu" title="Register a new menu" @click="openCreate()" />
+      <Button icon="pi pi-refresh" :label="t('governance.menus.actions.reset')" severity="secondary" outlined size="small" :title="t('governance.menus.actions.resetTitle')" @click="ctrl.resetToDefault()" />
+      <Button icon="pi pi-plus" :label="t('governance.menus.actions.add')" size="small" :title="t('governance.menus.actions.addTitle')" @click="openCreate()" />
     </section>
 
     <!-- Menu table -->
     <section class="min-h-0 flex-1 overflow-auto rounded-lg border border-divider bg-panel shadow-sm">
       <table class="w-full text-sm">
         <thead class="sticky top-0 z-10 bg-panel">
-          <tr class="border-b border-divider text-left text-xs font-bold uppercase text-muted">
-            <th class="px-4 py-3">Menu</th>
-            <th class="px-4 py-3">Path</th>
-            <th class="px-4 py-3">Group</th>
-            <th class="px-4 py-3 text-center">Visible</th>
-            <th class="px-4 py-3 text-center">Actions</th>
+          <tr class="border-b border-divider text-left text-xs font-bold text-ink">
+            <th class="px-3 py-3">{{ t("governance.menus.table.menu") }}</th>
+            <th class="px-3 py-3">{{ t("governance.menus.table.path") }}</th>
+            <th class="px-3 py-3">{{ t("governance.menus.table.group") }}</th>
+            <th class="px-3 py-3 text-center">{{ t("governance.menus.table.visible") }}</th>
+            <th class="px-3 py-3 text-center">{{ t("governance.menus.table.actions") }}</th>
           </tr>
         </thead>
         <tbody>
@@ -110,37 +112,37 @@ async function createAndClose() {
             class="cursor-pointer border-b border-divider transition hover:bg-canvas"
             @click="openEdit(item.key)"
           >
-            <td class="px-4 py-2.5">
+            <td class="px-3 py-2.5">
               <div class="flex items-center gap-2">
                 <i :class="`pi ${item.icon} text-muted`" />
-                <span class="font-semibold text-ink">{{ item.title }}</span>
+                <span class="text-sm font-semibold text-ink">{{ item.title }}</span>
               </div>
               <span class="text-xs text-muted">{{ item.key }}</span>
             </td>
-            <td class="px-4 py-2.5 font-mono text-xs text-secondary">{{ item.path }}</td>
-            <td class="px-4 py-2.5">
+            <td class="px-3 py-2.5 font-mono text-sm text-secondary">{{ item.path }}</td>
+            <td class="px-3 py-2.5">
               <span :class="groupBadgeClass(item.group)">
                 {{ item.group }}
               </span>
             </td>
-            <td class="px-4 py-2.5 text-center">
+            <td class="px-3 py-2.5 text-center">
               <IconActionButton
                 :icon="item.visible ? 'pi pi-eye' : 'pi pi-eye-slash'"
-                :title="item.visible ? 'Hide menu' : 'Show menu'"
+                :title="item.visible ? t('governance.menus.table.hideMenu') : t('governance.menus.table.showMenu')"
                 :class="item.visible ? 'text-brand' : 'text-muted'"
                 @click.stop="ctrl.toggleVisibility(item.key)"
               />
             </td>
-            <td class="px-4 py-2.5 text-center">
+            <td class="px-3 py-2.5 text-center">
               <div class="flex items-center justify-center gap-1">
-                <IconActionButton icon="pi pi-chevron-up" title="Move up" @click.stop="ctrl.moveUp(item.key)" />
-                <IconActionButton icon="pi pi-chevron-down" title="Move down" @click.stop="ctrl.moveDown(item.key)" />
+                <IconActionButton icon="pi pi-chevron-up" :title="t('governance.menus.table.moveUp')" @click.stop="ctrl.moveUp(item.key)" />
+                <IconActionButton icon="pi pi-chevron-down" :title="t('governance.menus.table.moveDown')" @click.stop="ctrl.moveDown(item.key)" />
               </div>
             </td>
           </tr>
         </tbody>
       </table>
-      <p v-if="ctrl.filteredItems.value.length === 0" class="p-6 text-center text-sm text-muted">No menus match the current filter.</p>
+      <p v-if="ctrl.filteredItems.value.length === 0" class="p-6 text-center text-sm text-muted">{{ t("governance.menus.table.empty") }}</p>
     </section>
 
     <!-- Edit dialog -->
@@ -153,36 +155,36 @@ async function createAndClose() {
     >
       <template #header>
         <div>
-          <h3 class="section-title">Edit Menu</h3>
+          <h3 class="section-title">{{ t("governance.menus.dialog.editTitle") }}</h3>
           <p v-if="ctrl.draft.value" class="mt-1 text-sm text-muted">{{ ctrl.draft.value.key }}</p>
         </div>
       </template>
 
       <div v-if="ctrl.draft.value" class="space-y-4">
         <label class="block">
-          <span class="text-xs font-bold text-muted">Title <span class="text-red-500">*</span></span>
+          <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.title") }} <span class="text-red-500">*</span></span>
           <InputText
             class="mt-1 w-full"
             :model-value="ctrl.draft.value.title"
-            placeholder="Menu title"
+            :placeholder="t('governance.menus.form.titlePlaceholder')"
             autofocus
             @update:model-value="ctrl.updateDraft('title', $event as string)"
           />
         </label>
 
         <label class="block">
-          <span class="text-xs font-bold text-muted">Path</span>
+          <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.path") }}</span>
           <InputText
             class="mt-1 w-full"
             :model-value="ctrl.draft.value.path"
-            placeholder="/route-path"
+            :placeholder="t('governance.menus.form.pathPlaceholder')"
             @update:model-value="ctrl.updateDraft('path', $event as string)"
           />
         </label>
 
         <div class="grid gap-4 md:grid-cols-2">
           <label class="block">
-            <span class="text-xs font-bold text-muted">Icon</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.icon") }}</span>
             <div class="mt-1 flex items-center gap-2">
               <div class="flex h-10 flex-1 items-center gap-2 rounded-md border border-divider bg-panel px-3">
                 <i :class="`pi ${ctrl.draft.value.icon} text-muted`" />
@@ -197,24 +199,24 @@ async function createAndClose() {
                 icon="pi pi-th-large"
                 severity="secondary"
                 outlined
-                title="Browse icons"
+                :title="t('governance.menus.form.browseIcons')"
                 @click="iconPickerTarget = 'edit'; showIconPicker = true"
               />
             </div>
           </label>
 
           <label class="block">
-            <span class="text-xs font-bold text-muted">Group</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.group") }}</span>
             <InputText
               class="mt-1 w-full"
               :model-value="ctrl.draft.value.group"
-              placeholder="— (none), Tools, Governance"
+              :placeholder="t('governance.menus.form.groupPlaceholder')"
               @update:model-value="ctrl.updateDraft('group', $event as string)"
             />
           </label>
 
           <label class="block">
-            <span class="text-xs font-bold text-muted">Order</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.order") }}</span>
             <InputNumber
               class="mt-1 w-full"
               :model-value="ctrl.draft.value.order"
@@ -225,10 +227,10 @@ async function createAndClose() {
           </label>
 
           <label class="block">
-            <span class="text-xs font-bold text-muted">Visible</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.visible") }}</span>
             <Button
               :icon="ctrl.draft.value.visible ? 'pi pi-eye' : 'pi pi-eye-slash'"
-              :label="ctrl.draft.value.visible ? 'Shown in sidebar' : 'Hidden from sidebar'"
+              :label="ctrl.draft.value.visible ? t('governance.menus.form.shownInSidebar') : t('governance.menus.form.hiddenFromSidebar')"
               :class="[
                 'mt-1 w-full',
                 ctrl.draft.value.visible
@@ -258,50 +260,50 @@ async function createAndClose() {
     >
       <template #header>
         <div>
-          <h3 class="section-title">Register Menu</h3>
-          <p class="mt-1 text-sm text-muted">Add a new menu entry to the sidebar.</p>
+          <h3 class="section-title">{{ t("governance.menus.dialog.createTitle") }}</h3>
+          <p class="mt-1 text-sm text-muted">{{ t("governance.menus.dialog.createSubtitle") }}</p>
         </div>
       </template>
 
       <div v-if="ctrl.draft.value" class="space-y-4">
         <div class="grid gap-4 md:grid-cols-2">
           <label class="block">
-            <span class="text-xs font-bold text-muted">Key <span class="text-red-500">*</span></span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.key") }} <span class="text-red-500">*</span></span>
             <InputText
               class="mt-1 w-full"
               :class="createKeyInvalid ? 'border-red-500' : ''"
               :model-value="ctrl.draft.value.key"
-              placeholder="unique-menu-key"
+              :placeholder="t('governance.menus.form.keyPlaceholder')"
               autofocus
               @update:model-value="ctrl.updateDraft('key', ($event as string) ?? '')"
             />
-            <span v-if="createKeyInvalid" class="mt-1 block text-xs text-red-500">This key already exists.</span>
+            <span v-if="createKeyInvalid" class="mt-1 block text-xs text-red-500">{{ t("governance.menus.form.keyExists") }}</span>
           </label>
 
           <label class="block">
-            <span class="text-xs font-bold text-muted">Title <span class="text-red-500">*</span></span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.title") }} <span class="text-red-500">*</span></span>
             <InputText
               class="mt-1 w-full"
               :model-value="ctrl.draft.value.title"
-              placeholder="Menu title"
+              :placeholder="t('governance.menus.form.titlePlaceholder')"
               @update:model-value="ctrl.updateDraft('title', ($event as string) ?? '')"
             />
           </label>
         </div>
 
         <label class="block">
-          <span class="text-xs font-bold text-muted">Path</span>
+          <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.path") }}</span>
           <InputText
             class="mt-1 w-full"
             :model-value="ctrl.draft.value.path"
-            placeholder="/route-path"
+            :placeholder="t('governance.menus.form.pathPlaceholder')"
             @update:model-value="ctrl.updateDraft('path', ($event as string) ?? '')"
           />
         </label>
 
         <div class="grid gap-4 md:grid-cols-2">
           <label class="block">
-            <span class="text-xs font-bold text-muted">Icon</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.icon") }}</span>
             <div class="mt-1 flex items-center gap-2">
               <div class="flex h-10 flex-1 items-center gap-2 rounded-md border border-divider bg-panel px-3">
                 <i :class="`pi ${ctrl.draft.value.icon} text-muted`" />
@@ -316,24 +318,24 @@ async function createAndClose() {
                 icon="pi pi-th-large"
                 severity="secondary"
                 outlined
-                title="Browse icons"
+                :title="t('governance.menus.form.browseIcons')"
                 @click="iconPickerTarget = 'create'; showIconPicker = true"
               />
             </div>
           </label>
 
           <label class="block">
-            <span class="text-xs font-bold text-muted">Group</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.group") }}</span>
             <InputText
               class="mt-1 w-full"
               :model-value="ctrl.draft.value.group"
-              placeholder="— (none), Tools, Governance"
+              :placeholder="t('governance.menus.form.groupPlaceholder')"
               @update:model-value="ctrl.updateDraft('group', ($event as string) ?? '')"
             />
           </label>
 
           <label class="block">
-            <span class="text-xs font-bold text-muted">Order</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.order") }}</span>
             <InputNumber
               class="mt-1 w-full"
               :model-value="ctrl.draft.value.order"
@@ -344,10 +346,10 @@ async function createAndClose() {
           </label>
 
           <label class="block">
-            <span class="text-xs font-bold text-muted">Visible</span>
+            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.visible") }}</span>
             <Button
               :icon="ctrl.draft.value.visible ? 'pi pi-eye' : 'pi pi-eye-slash'"
-              :label="ctrl.draft.value.visible ? 'Shown in sidebar' : 'Hidden from sidebar'"
+              :label="ctrl.draft.value.visible ? t('governance.menus.form.shownInSidebar') : t('governance.menus.form.hiddenFromSidebar')"
               :class="[
                 'mt-1 w-full',
                 ctrl.draft.value.visible ? 'border-brand bg-emerald-50 text-brand' : '',
@@ -361,7 +363,7 @@ async function createAndClose() {
       </div>
 
       <template #footer>
-        <DialogFooter confirm-label="Create" :confirm-disabled="!canCreate" @cancel="closeCreate" @confirm="createAndClose" />
+        <DialogFooter :confirm-label="t('governance.menus.actions.create')" :confirm-disabled="!canCreate" @cancel="closeCreate" @confirm="createAndClose" />
       </template>
     </Dialog>
     <!-- Icon Picker Dialog -->

@@ -83,11 +83,11 @@ function doBuild() {
       </div>
       <div class="flex items-center gap-2">
         <Checkbox v-model="noCache" binary input-id="docker-no-cache" />
-        <label for="docker-no-cache" class="text-xs text-secondary">{{ t("docker.buildDialog.cleanBuild") }}</label>
+        <label for="docker-no-cache" class="text-sm text-ink">{{ t("docker.buildDialog.cleanBuild") }}</label>
       </div>
       <div class="flex items-center gap-2">
         <Checkbox v-model="saveAsProject" binary input-id="docker-save-as-project" />
-        <label for="docker-save-as-project" class="text-xs text-secondary">{{ t("docker.buildDialog.saveAsProject") }}</label>
+        <label for="docker-save-as-project" class="text-sm text-ink">{{ t("docker.buildDialog.saveAsProject") }}</label>
       </div>
       <InputText
         v-if="saveAsProject"

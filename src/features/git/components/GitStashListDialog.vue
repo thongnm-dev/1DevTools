@@ -31,7 +31,8 @@ watch(visible, (v) => {
         </div>
         <Button
           size="small"
-          outlined
+          text
+          rounded
           severity="secondary"
           class="shrink-0"
           :title="t('git.dialogs.stashList.applyKeep')"
@@ -41,7 +42,8 @@ watch(visible, (v) => {
         </Button>
         <Button
           size="small"
-          outlined
+          text
+          rounded
           class="shrink-0"
           :title="t('git.dialogs.stashList.applyPop')"
           @click="git.stashApply(s.reference, true)"
@@ -50,7 +52,8 @@ watch(visible, (v) => {
         </Button>
         <Button
           size="small"
-          outlined
+          text
+          rounded
           severity="danger"
           class="shrink-0"
           :title="t('git.dialogs.stashList.drop')"

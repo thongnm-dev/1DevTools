@@ -1,17 +1,19 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Fieldset from "primevue/fieldset";
 import { useAppConfig } from "../composables/useAppConfig";
 import { useToast } from "@/shared/composables/useToast";
 
+const { t } = useI18n();
 const ctrl = useAppConfig();
 const toast = useToast();
 
 async function handleSave() {
   if (await ctrl.save()) {
-    toast.success("Config saved successfully.");
+    toast.success(t("governance.appConfig.toast.saved"));
   }
 }
 
@@ -36,15 +38,17 @@ onMounted(() => ctrl.init());
       <div class="flex items-center gap-2">
         <Button
           icon="pi pi-refresh"
-          label="Discard"
+          :label="t('governance.appConfig.actions.discard')"
           severity="secondary"
           outlined
+          size="small"
           :disabled="!ctrl.isDirty.value"
           @click="ctrl.discard()"
         />
         <Button
           icon="pi pi-save"
-          label="Save"
+          :label="t('governance.appConfig.actions.save')"
+          size="small"
           :disabled="!ctrl.isDirty.value"
           @click="handleSave"
         />
@@ -57,7 +61,7 @@ onMounted(() => ctrl.init());
       class="flex items-center gap-2 rounded-lg border border-divider bg-panel p-4 text-sm text-muted shadow-sm"
     >
       <i class="pi pi-spinner animate-spin" />
-      Loading config...
+      {{ t("governance.appConfig.loading") }}
     </p>
 
     <!-- Config sections -->
@@ -82,24 +86,24 @@ onMounted(() => ctrl.init());
             class="flex items-center gap-2"
           >
             <InputText
-              class="h-9 w-56 shrink-0 font-mono text-sm"
+              class="h-8 w-56 shrink-0 font-mono text-sm"
               :model-value="entry.key"
-              placeholder="KEY"
+              :placeholder="t('governance.appConfig.form.keyPlaceholder')"
               disabled
               @update:model-value="ctrl.updateEntryKey(si, ei, $event as string)"
             />
             <span class="text-muted">=</span>
             <InputText
-              class="h-9 min-w-0 flex-1 font-mono text-sm"
+              class="h-8 min-w-0 flex-1 font-mono text-sm"
               :model-value="entry.value"
-              placeholder="value"
+              :placeholder="t('governance.appConfig.form.valuePlaceholder')"
               @update:model-value="ctrl.updateEntry(si, ei, $event as string)"
             />
           </div>
 
           <Button
             icon="pi pi-plus"
-            label="Add entry"
+            :label="t('governance.appConfig.actions.addEntry')"
             severity="secondary"
             text
             size="small"
@@ -112,9 +116,10 @@ onMounted(() => ctrl.init());
       <div class="flex justify-center">
         <Button
           icon="pi pi-plus"
-          label="Add section"
+          :label="t('governance.appConfig.actions.addSection')"
           severity="secondary"
           outlined
+          size="small"
           @click="ctrl.addSection()"
         />
       </div>

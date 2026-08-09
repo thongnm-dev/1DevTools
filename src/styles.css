@@ -274,7 +274,7 @@
   }
 
   .app-data-table .p-datatable-tbody > tr > td {
-    @apply border-b border-divider px-3 py-2.5 text-left align-middle text-secondary;
+    @apply border-b border-divider px-3 py-2.5 text-left align-middle text-sm text-secondary;
   }
 
   .app-data-table .p-datatable-tbody > tr:hover {
@@ -437,6 +437,18 @@
   background: rgb(var(--color-panel)) !important;
   color: rgb(var(--color-text-muted)) !important;
   border-color: rgb(var(--color-border)) !important;
+}
+
+/* Cỡ chữ input thống nhất — nguồn DUY NHẤT cho mọi ô nhập (text-sm ~13px).
+   Bao trùm InputText, Textarea, Password, InputNumber, Select, DatePicker/Calendar. */
+.p-inputtext,
+.p-textarea,
+.p-password-input,
+.p-inputnumber-input,
+.p-select-label,
+.p-datepicker-input {
+  font-size: 0.875rem !important;
+  line-height: 1.25rem !important;
 }
 
 /* PrimeVue Tabs — align with app theme tokens */

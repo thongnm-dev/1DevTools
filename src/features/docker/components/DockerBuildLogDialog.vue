@@ -2,7 +2,7 @@
 import { nextTick, watch, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Dialog from "primevue/dialog";
-import Button from "primevue/button";
+import DialogFooter from "@/shared/components/DialogFooter.vue";
 
 const props = defineProps<{
   title: string;
@@ -48,7 +48,7 @@ watch(
       >{{ lines.join("\n") }}</pre>
     </div>
     <template #footer>
-      <Button icon="pi pi-times" :label="t('common.close')" severity="danger" outlined @click="visible = false" />
+      <DialogFooter :cancel-label="t('common.close')" cancel-icon="pi pi-times" hide-confirm @cancel="visible = false" />
     </template>
   </Dialog>
 </template>

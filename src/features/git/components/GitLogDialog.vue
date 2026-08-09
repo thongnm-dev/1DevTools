@@ -251,6 +251,7 @@ watch(visible, (v) => {
           </div>
           <DataTable
             v-else
+            class="app-data-table"
             :value="commits"
             :loading="loading"
             lazy

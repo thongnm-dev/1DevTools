@@ -4,6 +4,7 @@ import { useI18n } from "vue-i18n";
 import Dialog from "primevue/dialog";
 import Select from "primevue/select";
 import Button from "primevue/button";
+import DialogFooter from "@/shared/components/DialogFooter.vue";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
@@ -164,7 +165,7 @@ onBeforeUnmount(() => {
       <div ref="containerEl" class="terminal-host w-full overflow-hidden rounded-md p-1" style="background: #0b0f19" />
     </div>
     <template #footer>
-      <Button icon="pi pi-times" :label="t('common.close')" severity="danger" outlined @click="visible = false" />
+      <DialogFooter :cancel-label="t('common.close')" cancel-icon="pi pi-times" hide-confirm @cancel="visible = false" />
     </template>
   </Dialog>
 </template>

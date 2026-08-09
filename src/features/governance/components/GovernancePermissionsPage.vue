@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import { computed, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import { useMenuPermissions } from "../composables/useMenuPermissions";
 import type { MenuGroup } from "../composables/useMenuPermissions";
 import type { UserMenuAccess } from "@/models/menu-permission";
 
+const { t } = useI18n();
 const ctrl = useMenuPermissions();
 
 onMounted(() => ctrl.init());
 
-const accessOptions: { value: UserMenuAccess; label: string; icon: string }[] = [
-  { value: "inherit", label: "Inherit", icon: "pi-link" },
-  { value: "allow", label: "Allow", icon: "pi-check" },
-  { value: "deny", label: "Deny", icon: "pi-ban" },
-];
+const accessOptions = computed<{ value: UserMenuAccess; label: string; icon: string }[]>(() => [
+  { value: "inherit", label: t("governance.permissions.access.inherit"), icon: "pi-link" },
+  { value: "allow", label: t("governance.permissions.access.allow"), icon: "pi-check" },
+  { value: "deny", label: t("governance.permissions.access.deny"), icon: "pi-ban" },
+]);
 
 const subjectLabel = computed(() =>
   ctrl.tab.value === "roles"
@@ -50,19 +52,19 @@ function groupCheckboxIcon(group: MenuGroup) {
     <!-- Tabs + actions -->
     <section class="flex flex-wrap items-center gap-3 rounded-lg border border-divider bg-panel p-4 shadow-sm">
       <div class="flex rounded-md border border-divider p-0.5">
-        <button
-          v-for="t in (['roles', 'users'] as const)"
-          :key="t"
-          type="button"
+        <Button
+          v-for="tabKey in (['roles', 'users'] as const)"
+          :key="tabKey"
           :class="[
             'rounded px-4 py-1.5 text-sm font-bold capitalize transition',
-            ctrl.tab.value === t ? 'bg-brand text-white' : 'text-muted hover:bg-canvas',
+            ctrl.tab.value === tabKey ? 'bg-brand text-white' : 'text-muted hover:bg-canvas',
           ]"
-          @click="ctrl.switchTab(t)"
+          unstyled
+          @click="ctrl.switchTab(tabKey)"
         >
-          <i :class="['pi mr-1.5 text-xs', t === 'roles' ? 'pi-shield' : 'pi-user']" />
-          {{ t }}
-        </button>
+          <i :class="['pi mr-1.5 text-xs', tabKey === 'roles' ? 'pi-shield' : 'pi-user']" />
+          {{ tabKey === "roles" ? t("governance.permissions.tabs.roles") : t("governance.permissions.tabs.users") }}
+        </Button>
       </div>
 
       <label class="block min-w-0 flex-1">
@@ -70,7 +72,7 @@ function groupCheckboxIcon(group: MenuGroup) {
           <i class="pi pi-search shrink-0 text-muted" />
           <InputText
             class="embedded-input min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-ink outline-none shadow-none"
-            placeholder="Filter menus by title, key, or path"
+            :placeholder="t('governance.permissions.form.searchPlaceholder')"
             :model-value="ctrl.searchQuery.value"
             @update:model-value="ctrl.searchQuery.value = ($event as string) ?? ''"
           />
@@ -78,17 +80,19 @@ function groupCheckboxIcon(group: MenuGroup) {
       </label>
 
       <Button
-        label="Revert"
+        :label="t('governance.permissions.actions.revert')"
         icon="pi pi-undo"
         severity="secondary"
         outlined
+        size="small"
         :disabled="!ctrl.dirty.value || ctrl.saving.value"
-        title="Discard unsaved changes"
+        :title="t('governance.permissions.actions.revertTitle')"
         @click="ctrl.revert()"
       />
       <Button
-        label="Save"
+        :label="t('governance.permissions.actions.save')"
         icon="pi pi-save"
+        size="small"
         :loading="ctrl.saving.value"
         :disabled="!ctrl.hasSelection.value || !ctrl.dirty.value"
         @click="ctrl.save()"
@@ -106,51 +110,51 @@ function groupCheckboxIcon(group: MenuGroup) {
     <div class="grid min-h-0 flex-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
       <!-- Subject list -->
       <section class="min-h-0 overflow-auto rounded-lg border border-divider bg-panel shadow-sm">
-        <p class="sticky top-0 z-10 border-b border-divider bg-panel px-4 py-3 text-xs font-bold uppercase text-muted">
-          {{ ctrl.tab.value === "roles" ? "Roles" : "Users" }}
+        <p class="sticky top-0 z-10 border-b border-divider bg-panel px-4 py-3 text-xs font-bold text-ink">
+          {{ ctrl.tab.value === "roles" ? t("governance.permissions.list.rolesHeader") : t("governance.permissions.list.usersHeader") }}
         </p>
 
         <template v-if="ctrl.tab.value === 'roles'">
-          <button
+          <Button
             v-for="role in ctrl.roles.value"
             :key="role.id"
-            type="button"
             :class="[
               'block w-full border-b border-divider px-4 py-2.5 text-left transition',
               ctrl.selectedRoleId.value === role.id
                 ? 'border-l-2 border-l-brand bg-brand/15'
                 : 'hover:bg-canvas',
             ]"
+            unstyled
             @click="ctrl.selectRole(role.id)"
           >
             <span class="block text-sm font-semibold text-ink">{{ role.name }}</span>
-            <span class="block text-xs text-muted">{{ role.user_count }} user(s)</span>
-          </button>
+            <span class="block text-xs text-muted">{{ t("governance.permissions.list.userCount", { count: role.user_count }) }}</span>
+          </Button>
           <p v-if="ctrl.roles.value.length === 0" class="p-6 text-center text-sm text-muted">
-            No roles defined yet.
+            {{ t("governance.permissions.list.noRoles") }}
           </p>
         </template>
 
         <template v-else>
-          <button
+          <Button
             v-for="user in ctrl.users.value"
             :key="user.id"
-            type="button"
             :class="[
               'block w-full border-b border-divider px-4 py-2.5 text-left transition',
               ctrl.selectedUserId.value === user.id
                 ? 'border-l-2 border-l-brand bg-brand/15'
                 : 'hover:bg-canvas',
             ]"
+            unstyled
             @click="ctrl.selectUser(user.id)"
           >
             <span class="block text-sm font-semibold text-ink">{{ user.username }}</span>
             <span class="block truncate text-xs text-muted">
-              {{ user.roles.join(", ") || "no role" }}
+              {{ user.roles.join(", ") || t("governance.permissions.list.noRole") }}
             </span>
-          </button>
+          </Button>
           <p v-if="ctrl.users.value.length === 0" class="p-6 text-center text-sm text-muted">
-            No users found.
+            {{ t("governance.permissions.list.noUsers") }}
           </p>
         </template>
       </section>
@@ -160,18 +164,18 @@ function groupCheckboxIcon(group: MenuGroup) {
         <header class="flex flex-wrap items-center gap-3 border-b border-divider px-4 py-3">
           <div class="min-w-0 flex-1">
             <h3 class="truncate section-title">
-              {{ subjectLabel || "Select a " + (ctrl.tab.value === "roles" ? "role" : "user") }}
+              {{ subjectLabel || (ctrl.tab.value === "roles" ? t("governance.permissions.matrix.selectRole") : t("governance.permissions.matrix.selectUser")) }}
             </h3>
             <p class="text-xs text-muted">
-              {{ ctrl.grantedCount.value }} of {{ ctrl.menus.value.length }} menus allowed
-              <span v-if="ctrl.dirty.value" class="ml-1 font-bold text-amber-600">• unsaved</span>
+              {{ t("governance.permissions.matrix.allowedSummary", { granted: ctrl.grantedCount.value, total: ctrl.menus.value.length }) }}
+              <span v-if="ctrl.dirty.value" class="ml-1 font-bold text-amber-600">{{ t("governance.permissions.matrix.unsaved") }}</span>
             </p>
           </div>
 
           <div v-if="ctrl.hasSelection.value" class="flex items-center gap-1">
-            <Button label="Allow all" size="small" text @click="ctrl.selectAll()" />
+            <Button :label="t('governance.permissions.actions.allowAll')" size="small" text @click="ctrl.selectAll()" />
             <Button
-              :label="ctrl.tab.value === 'roles' ? 'Clear all' : 'Deny all'"
+              :label="ctrl.tab.value === 'roles' ? t('governance.permissions.actions.clearAll') : t('governance.permissions.actions.denyAll')"
               size="small"
               text
               severity="secondary"
@@ -179,7 +183,7 @@ function groupCheckboxIcon(group: MenuGroup) {
             />
             <Button
               v-if="ctrl.tab.value === 'users'"
-              label="Reset to inherit"
+              :label="t('governance.permissions.actions.resetToInherit')"
               size="small"
               text
               severity="secondary"
@@ -189,32 +193,32 @@ function groupCheckboxIcon(group: MenuGroup) {
         </header>
 
         <div v-if="!ctrl.hasSelection.value" class="flex flex-1 items-center justify-center p-6 text-sm text-muted">
-          Select a {{ ctrl.tab.value === "roles" ? "role" : "user" }} to configure its menu access.
+          {{ ctrl.tab.value === "roles" ? t("governance.permissions.matrix.emptyPromptRole") : t("governance.permissions.matrix.emptyPromptUser") }}
         </div>
 
         <div v-else class="min-h-0 flex-1 overflow-auto">
           <div v-for="group in ctrl.menuGroups.value" :key="group.name" class="border-b border-divider last:border-b-0">
             <!-- Group header -->
             <div class="flex items-center gap-2 bg-canvas px-4 py-2">
-              <button
+              <Button
                 v-if="ctrl.tab.value === 'roles'"
-                type="button"
                 class="flex items-center gap-2 text-left"
-                :title="ctrl.groupState(group) === 'all' ? 'Clear this group' : 'Allow this group'"
+                :title="ctrl.groupState(group) === 'all' ? t('governance.permissions.matrix.clearGroup') : t('governance.permissions.matrix.allowGroup')"
+                unstyled
                 @click="ctrl.toggleGroup(group, ctrl.groupState(group) !== 'all')"
               >
                 <i :class="['pi text-sm', groupCheckboxIcon(group), ctrl.groupState(group) === 'none' ? 'text-muted' : 'text-brand']" />
                 <span :class="groupBadgeClass(group.name)">
                   {{ group.name }}
                 </span>
-              </button>
+              </Button>
               <span
                 v-else
                 :class="groupBadgeClass(group.name)"
               >
                 {{ group.name }}
               </span>
-              <span class="text-xs text-muted">{{ group.items.length }} menu(s)</span>
+              <span class="text-xs text-muted">{{ t("governance.permissions.matrix.menuCount", { count: group.items.length }) }}</span>
             </div>
 
             <!-- Menu rows -->
@@ -227,7 +231,7 @@ function groupCheckboxIcon(group: MenuGroup) {
               <div class="min-w-0 flex-1">
                 <p class="truncate text-sm font-semibold text-ink">
                   {{ item.title }}
-                  <span v-if="!item.visible" class="ml-1 text-[11px] font-normal text-muted">(hidden)</span>
+                  <span v-if="!item.visible" class="ml-1 text-[11px] font-normal text-muted">{{ t("governance.permissions.matrix.hidden") }}</span>
                 </p>
                 <p class="truncate font-mono text-xs text-secondary">{{ item.path }}</p>
               </div>
@@ -236,7 +240,7 @@ function groupCheckboxIcon(group: MenuGroup) {
               <Button
                 v-if="ctrl.tab.value === 'roles'"
                 :icon="ctrl.isGranted(item.key) ? 'pi pi-check-square' : 'pi pi-stop'"
-                :label="ctrl.isGranted(item.key) ? 'Allowed' : 'Not allowed'"
+                :label="ctrl.isGranted(item.key) ? t('governance.permissions.matrix.allowed') : t('governance.permissions.matrix.notAllowed')"
                 size="small"
                 :outlined="!ctrl.isGranted(item.key)"
                 :severity="ctrl.isGranted(item.key) ? undefined : 'secondary'"
@@ -247,39 +251,39 @@ function groupCheckboxIcon(group: MenuGroup) {
               <!-- Users tab: inherit / allow / deny -->
               <div v-else class="flex shrink-0 items-center gap-3">
                 <span class="w-28 text-right text-xs text-muted">
-                  from role:
+                  {{ t("governance.permissions.matrix.fromRole") }}
                   <span :class="ctrl.inheritedAllowed(item.key) ? 'font-bold text-brand' : 'font-bold text-muted'">
-                    {{ ctrl.inheritedAllowed(item.key) ? "allowed" : "denied" }}
+                    {{ ctrl.inheritedAllowed(item.key) ? t("governance.permissions.matrix.inheritedAllowed") : t("governance.permissions.matrix.inheritedDenied") }}
                   </span>
                 </span>
                 <div class="flex rounded-md border border-divider p-0.5">
-                  <button
+                  <Button
                     v-for="opt in accessOptions"
                     :key="opt.value"
-                    type="button"
                     :class="[
                       'flex items-center gap-1 rounded border px-2.5 py-1 text-xs font-bold transition',
                       accessButtonClass(item.key, opt.value),
                     ]"
                     :title="
                       opt.value === 'inherit'
-                        ? 'Follow the permission granted by this user\'s roles'
+                        ? t('governance.permissions.access.inheritTitle')
                         : opt.value === 'allow'
-                          ? 'Grant this menu regardless of role'
-                          : 'Revoke this menu regardless of role'
+                          ? t('governance.permissions.access.allowTitle')
+                          : t('governance.permissions.access.denyTitle')
                     "
+                    unstyled
                     @click="ctrl.setUserAccess(item.key, opt.value)"
                   >
                     <i :class="`pi ${opt.icon} text-[10px]`" />
                     {{ opt.label }}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
           </div>
 
           <p v-if="ctrl.menuGroups.value.length === 0" class="p-6 text-center text-sm text-muted">
-            No menus match the current filter.
+            {{ t("governance.permissions.matrix.empty") }}
           </p>
         </div>
       </section>

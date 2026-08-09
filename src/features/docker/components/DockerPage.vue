@@ -467,7 +467,7 @@ function openLogs(c: DockerContainer) {
               <DataTable
                 :value="groupedContainers"
                 :loading="docker.loadingContainers.value"
-                class="text-xs"
+                class="text-sm"
                 data-key="id"
                 :table-style="{ 'min-width': '760px' }"
                 row-group-mode="subheader"

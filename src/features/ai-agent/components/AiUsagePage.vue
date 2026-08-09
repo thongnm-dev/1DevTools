@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import Dialog from "primevue/dialog";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
@@ -16,6 +17,7 @@ import {
 } from "@/models/ai-usage";
 import type { AiAccount, AiProvider } from "@/models/ai-usage";
 
+const { t } = useI18n();
 const ctrl = useAiUsage();
 
 const isDialogOpen = ref(false);
@@ -70,7 +72,7 @@ function selectSubMode(mode: "current" | "dir") {
 
 /** Mở dialog chọn folder → điền vào config dir. */
 async function browseConfigDir() {
-  const selected = await open({ directory: true, title: "Chọn CLAUDE_CONFIG_DIR" });
+  const selected = await open({ directory: true, title: t("aiUsage.dialog.selectConfigDirTitle") });
   if (typeof selected === "string") {
     configDir.value = selected;
     await onConfigDirInput();
@@ -188,7 +190,7 @@ function openTerminalDialog(account: AiAccount) {
 }
 
 async function browseTerminalWorkDir() {
-  const selected = await open({ directory: true, title: "Chọn working directory (thư mục project)" });
+  const selected = await open({ directory: true, title: t("aiUsage.dialog.selectWorkDirTitle") });
   if (typeof selected === "string") terminalWorkDir.value = selected;
 }
 
@@ -213,22 +215,23 @@ function onPriorityChange(account: AiAccount, event: Event) {
       <div class="flex flex-wrap items-center gap-3">
         <i class="pi pi-chart-bar text-2xl text-muted" />
         <div class="min-w-0">
-          <h2 class="page-title">AI Usage</h2>
+          <h2 class="page-title">{{ t("aiUsage.title") }}</h2>
           <p class="text-sm text-muted">
-            Theo dõi usage tài khoản AI và tự động chọn account ưu tiên khi tài khoản đang dùng cạn.
+            {{ t("aiUsage.subtitle") }}
           </p>
         </div>
         <div class="ml-auto flex shrink-0 items-center gap-2">
           <Button
             icon="pi pi-search"
-            label="Detect local"
+            :label="t('aiUsage.actions.detectLocal')"
             severity="secondary"
+            size="small"
             :loading="ctrl.isDetecting.value"
-            title="Dò các login Claude đã đăng nhập trên máy"
+            :title="t('aiUsage.actions.detectLocalTooltip')"
             @click="openDetect"
           />
-          <Button icon="pi pi-cog" label="Settings" severity="secondary" @click="openSettings" />
-          <Button icon="pi pi-plus" label="Add Account" @click="openDialog" />
+          <Button icon="pi pi-cog" :label="t('aiUsage.actions.settings')" severity="secondary" size="small" @click="openSettings" />
+          <Button icon="pi pi-plus" :label="t('aiUsage.actions.addAccount')" size="small" @click="openDialog" />
         </div>
       </div>
     </div>
@@ -254,7 +257,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
                 <div class="flex flex-wrap items-center gap-2">
                   <h3 class="section-title truncate" :title="account.name">{{ account.name }}</h3>
                   <span v-if="account.is_active" class="shrink-0 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-on-brand">
-                    ACTIVE
+                    {{ t("aiUsage.status.active") }}
                   </span>
                   <span
                     v-if="account.account_type !== 'subscription'"
@@ -285,7 +288,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
                 text
                 rounded
                 size="small"
-                title="Delete account"
+                :title="t('aiUsage.actions.deleteAccount')"
                 @click="ctrl.deleteAccount(account.id)"
               />
             </div>
@@ -295,24 +298,24 @@ function onPriorityChange(account: AiAccount, event: Event) {
               <span :class="AI_ACCOUNT_STATUS_META[account.status].badgeClass">
                 {{ AI_ACCOUNT_STATUS_META[account.status].label }}
               </span>
-              <span class="text-muted">source: {{ AI_USAGE_SOURCE_LABEL[account.usage_source] }}</span>
+              <span class="text-muted">{{ t("aiUsage.card.source") }} {{ AI_USAGE_SOURCE_LABEL[account.usage_source] }}</span>
             </div>
 
             <!-- Usage used (API / Codex — số liệu tổng hợp) -->
             <div v-if="account.account_type !== 'subscription'" class="mt-3">
-              <AiUsageMeter label="Usage used" :remaining-percent="account.usage_percent" size="md" />
+              <AiUsageMeter :label="t('aiUsage.meter.usageUsed')" :remaining-percent="account.usage_percent" size="md" />
             </div>
 
             <!-- Subscription: session (5h) + weekly (7 ngày) từ OAuth usage endpoint -->
             <div v-else class="mt-3 space-y-3">
               <AiUsageMeter
-                label="Current session"
+                :label="t('aiUsage.meter.currentSession')"
                 :remaining-percent="account.session_percent"
                 :reset-at="account.session_reset_at"
                 size="md"
               />
               <AiUsageMeter
-                label="Weekly limit"
+                :label="t('aiUsage.meter.weeklyLimit')"
                 :remaining-percent="account.weekly_percent"
                 :reset-at="account.weekly_reset_at"
                 size="md"
@@ -322,22 +325,22 @@ function onPriorityChange(account: AiAccount, event: Event) {
                 v-if="!account.session_reset_at && !account.weekly_reset_at"
                 class="text-xs text-muted"
               >
-                Chưa có số liệu — bấm Refresh để đọc usage (login còn hạn).
+                {{ t("aiUsage.card.noData") }}
               </p>
               <p v-if="account.last_checked_at" class="flex items-center gap-1 text-xs text-muted">
-                <i class="pi pi-sync" />cập nhật {{ account.last_checked_at }}
+                <i class="pi pi-sync" />{{ t("aiUsage.card.updated", { time: account.last_checked_at }) }}
               </p>
             </div>
 
             <!-- Stats -->
             <div class="mt-3 grid grid-cols-2 gap-3 border-t border-divider pt-3 text-xs text-muted">
-              <div class="flex items-center gap-1.5" :title="`Resets at ${account.reset_at || 'unknown'}`">
+              <div class="flex items-center gap-1.5" :title="t('aiUsage.card.resetsAt', { time: account.reset_at || t('aiUsage.card.unknown') })">
                 <i class="pi pi-refresh" />
-                <span class="truncate">Reset {{ account.reset_at || "—" }}</span>
+                <span class="truncate">{{ t("aiUsage.card.reset") }} {{ account.reset_at || "—" }}</span>
               </div>
-              <label class="flex items-center justify-end gap-1.5" title="Priority (số nhỏ = ưu tiên cao)">
+              <label class="flex items-center justify-end gap-1.5" :title="t('aiUsage.card.priorityTooltip')">
                 <i class="pi pi-sort-amount-down" />
-                <span>Priority</span>
+                <span>{{ t("aiUsage.card.priority") }}</span>
                 <input
                   type="number"
                   min="1"
@@ -352,7 +355,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
             <div class="mt-3 flex flex-wrap items-center gap-2">
               <Button
                 icon="pi pi-refresh"
-                label="Refresh"
+                :label="t('aiUsage.actions.refresh')"
                 size="small"
                 severity="secondary"
                 :loading="ctrl.refreshingId.value === account.id"
@@ -360,7 +363,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
               />
               <Button
                 icon="pi pi-check-circle"
-                label="Set active"
+                :label="t('aiUsage.actions.setActive')"
                 size="small"
                 :severity="account.is_active ? 'secondary' : undefined"
                 :disabled="account.is_active"
@@ -369,7 +372,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
               <Button
                 v-if="account.account_type !== 'subscription'"
                 icon="pi pi-copy"
-                label="Copy token"
+                :label="t('aiUsage.actions.copyToken')"
                 size="small"
                 severity="secondary"
                 outlined
@@ -378,7 +381,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
               <Button
                 v-if="account.account_type === 'subscription'"
                 icon="pi pi-terminal"
-                label="Open terminal"
+                :label="t('aiUsage.actions.openTerminal')"
                 size="small"
                 severity="secondary"
                 outlined
@@ -386,11 +389,11 @@ function onPriorityChange(account: AiAccount, event: Event) {
               />
               <Button
                 icon="pi pi-exclamation-triangle"
-                label="Mark exhausted"
+                :label="t('aiUsage.actions.markExhausted')"
                 size="small"
                 severity="warn"
                 text
-                title="Báo account hết usage → auto-switch"
+                :title="t('aiUsage.actions.markExhaustedTooltip')"
                 @click="ctrl.reportExhausted(account.id)"
               />
             </div>
@@ -401,7 +404,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
 
     <div v-else class="flex flex-1 items-center justify-center rounded-lg border border-dashed border-divider bg-panel/50 p-12">
       <p class="text-sm text-muted">
-        {{ ctrl.isLoading.value ? "Loading accounts..." : "No accounts yet. Click \"Add Account\" to register one." }}
+        {{ ctrl.isLoading.value ? t("aiUsage.empty.loading") : t("aiUsage.empty.none") }}
       </p>
     </div>
 
@@ -414,12 +417,12 @@ function onPriorityChange(account: AiAccount, event: Event) {
       @update:visible="isDialogOpen = $event"
     >
       <template #header>
-        <h3 class="section-title">Add Account</h3>
+        <h3 class="section-title">{{ t("aiUsage.addDialog.header") }}</h3>
       </template>
 
       <div class="space-y-4">
         <label class="block">
-          <span class="text-xs font-bold text-muted">Provider</span>
+          <span class="text-xs font-bold text-muted">{{ t("aiUsage.addDialog.provider") }}</span>
           <div class="mt-1 flex gap-2">
             <Button
               label="Claude"
@@ -439,8 +442,8 @@ function onPriorityChange(account: AiAccount, event: Event) {
         </label>
 
         <label class="block">
-          <span class="text-xs font-bold text-muted">Account Name <span class="text-red-500">*</span></span>
-          <InputText v-model="accountName" class="mt-1 w-full" placeholder="e.g. personal-claude" autofocus />
+          <span class="text-xs font-bold text-muted">{{ t("aiUsage.addDialog.accountName") }} <span class="text-red-500">*</span></span>
+          <InputText v-model="accountName" class="mt-1 w-full" :placeholder="t('aiUsage.addDialog.accountNamePlaceholder')" autofocus />
         </label>
 
         <!-- Subscription: tool tự capture token của login Claude đang active -->
@@ -448,14 +451,14 @@ function onPriorityChange(account: AiAccount, event: Event) {
           <!-- Nguồn login: capture hiện tại hay từ config dir khác (thêm acc thứ 2) -->
           <div class="flex gap-2">
             <Button
-              label="Login hiện tại"
+              :label="t('aiUsage.addDialog.currentLogin')"
               size="small"
               :severity="subMode === 'current' ? undefined : 'secondary'"
               :outlined="subMode !== 'current'"
               @click="selectSubMode('current')"
             />
             <Button
-              label="Config dir khác"
+              :label="t('aiUsage.addDialog.otherConfigDir')"
               size="small"
               :severity="subMode === 'dir' ? undefined : 'secondary'"
               :outlined="subMode !== 'dir'"
@@ -476,7 +479,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
                 icon="pi pi-folder-open"
                 severity="secondary"
                 outlined
-                title="Chọn folder"
+                :title="t('aiUsage.addDialog.selectFolder')"
                 @click="browseConfigDir"
               />
               <Button
@@ -484,12 +487,12 @@ function onPriorityChange(account: AiAccount, event: Event) {
                 icon="pi pi-times"
                 severity="danger"
                 text
-                title="Xoá đường dẫn"
+                :title="t('aiUsage.addDialog.clearPath')"
                 @click="clearConfigDir"
               />
             </InputGroup>
             <span class="text-xs text-muted">
-              Login trước 1 lần: <code class="rounded bg-canvas px-1">CLAUDE_CONFIG_DIR=&lt;dir&gt; claude /login</code>
+              {{ t("aiUsage.addDialog.loginOnceHint") }} <code class="rounded bg-canvas px-1">CLAUDE_CONFIG_DIR=&lt;dir&gt; claude /login</code>
             </span>
           </label>
 
@@ -514,20 +517,20 @@ function onPriorityChange(account: AiAccount, event: Event) {
               v-if="(subMode === 'current' ? ctrl.capturePreview.value : ctrl.configDirPreview.value)?.token_expires_at"
               class="mt-1 text-xs text-muted"
             >
-              <i class="pi pi-clock mr-1" />token hết hạn
+              <i class="pi pi-clock mr-1" />{{ t("aiUsage.addDialog.tokenExpires") }}
               {{ (subMode === 'current' ? ctrl.capturePreview.value : ctrl.configDirPreview.value)?.token_expires_at }}
             </p>
             <p class="mt-1.5 text-xs text-muted">
               {{ subMode === 'current'
-                ? 'Tool sẽ lưu token này vào profile riêng trong app data dir.'
-                : 'Token đọc từ Keychain của config dir này (luôn mới).' }}
+                ? t("aiUsage.addDialog.tokenSavedHint")
+                : t("aiUsage.addDialog.tokenKeychainHint") }}
             </p>
             <p
               v-if="subMode === 'dir' && ctrl.configDirPreview.value && !ctrl.configDirPreview.value.has_token"
               class="banner-warning mt-2"
             >
-              <i class="pi pi-exclamation-triangle mr-1" />Chưa có token — account sẽ được thêm nhưng chưa dùng được.
-              Chạy <code class="rounded bg-amber-100 px-1">CLAUDE_CONFIG_DIR=&lt;dir&gt; claude /login</code> để lấy token.
+              <i class="pi pi-exclamation-triangle mr-1" />{{ t("aiUsage.addDialog.noTokenWarning") }}
+              <code class="rounded bg-amber-100 px-1">CLAUDE_CONFIG_DIR=&lt;dir&gt; claude /login</code> {{ t("aiUsage.addDialog.noTokenWarningSuffix") }}
             </p>
           </div>
           <div
@@ -536,20 +539,20 @@ function onPriorityChange(account: AiAccount, event: Event) {
           >
             <p>
               {{ subMode === 'current'
-                ? 'Chưa có login Claude đang hoạt động. Chạy `claude /login` rồi mở lại dialog.'
-                : 'Chưa đọc được login ở config dir này.' }}
+                ? t("aiUsage.addDialog.noCurrentLogin")
+                : t("aiUsage.addDialog.noConfigDirLogin") }}
             </p>
             <div v-if="subMode === 'dir' && configDir.trim()" class="mt-2 flex gap-2">
               <Button
                 icon="pi pi-terminal"
-                label="Mở terminal để login"
+                :label="t('aiUsage.addDialog.openTerminalToLogin')"
                 size="small"
                 severity="warn"
                 @click="openLoginForConfigDir"
               />
               <Button
                 icon="pi pi-refresh"
-                label="Kiểm tra lại"
+                :label="t('aiUsage.addDialog.recheck')"
                 size="small"
                 severity="secondary"
                 @click="recheckConfigDir"
@@ -560,7 +563,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
 
         <!-- API key -->
         <label v-else class="block">
-          <span class="text-xs font-bold text-muted">API Key / Token <span class="text-red-500">*</span></span>
+          <span class="text-xs font-bold text-muted">{{ t("aiUsage.addDialog.apiKey") }} <span class="text-red-500">*</span></span>
           <div class="relative mt-1">
             <InputText
               v-model="apiKey"
@@ -575,17 +578,17 @@ function onPriorityChange(account: AiAccount, event: Event) {
               rounded
               size="small"
               class="absolute right-2 top-1/2 -translate-y-1/2"
-              :title="showApiKey ? 'Hide API key' : 'Show API key'"
+              :title="showApiKey ? t('aiUsage.addDialog.hideApiKey') : t('aiUsage.addDialog.showApiKey')"
               @click="showApiKey = !showApiKey"
             />
           </div>
-          <span class="text-xs text-muted">Loại (API / Admin / OAuth) được tự nhận từ prefix của key.</span>
+          <span class="text-xs text-muted">{{ t("aiUsage.addDialog.apiKeyHint") }}</span>
         </label>
       </div>
 
       <template #footer>
         <DialogFooter
-          :confirm-label="ctrl.isSaving.value || ctrl.isCapturing.value ? 'Đang lưu...' : 'Save'"
+          :confirm-label="ctrl.isSaving.value || ctrl.isCapturing.value ? t('aiUsage.addDialog.saving') : t('aiUsage.addDialog.save')"
           :confirm-disabled="!canSaveAccount || ctrl.isSaving.value || ctrl.isCapturing.value"
           @cancel="isDialogOpen = false"
           @confirm="saveAccount"
@@ -602,12 +605,12 @@ function onPriorityChange(account: AiAccount, event: Event) {
       @update:visible="showSettings = $event"
     >
       <template #header>
-        <h3 class="section-title">Auto-switch settings</h3>
+        <h3 class="section-title">{{ t("aiUsage.settings.header") }}</h3>
       </template>
 
       <div class="space-y-4">
         <label class="block">
-          <span class="text-xs font-bold text-muted">Ngưỡng switch (% còn lại)</span>
+          <span class="text-xs font-bold text-muted">{{ t("aiUsage.settings.threshold") }}</span>
           <input
             v-model="thresholdInput"
             type="number"
@@ -615,10 +618,10 @@ function onPriorityChange(account: AiAccount, event: Event) {
             max="100"
             class="mt-1 w-full rounded border border-divider bg-canvas px-3 py-2 text-ink"
           />
-          <span class="text-xs text-muted">Dưới ngưỡng này account bị coi là "low" và sẽ được thay bằng account ưu tiên kế tiếp.</span>
+          <span class="text-xs text-muted">{{ t("aiUsage.settings.thresholdHint") }}</span>
         </label>
         <label class="block">
-          <span class="text-xs font-bold text-muted">Chu kỳ poll (giây)</span>
+          <span class="text-xs font-bold text-muted">{{ t("aiUsage.settings.interval") }}</span>
           <input
             v-model="intervalInput"
             type="number"
@@ -626,7 +629,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
             class="mt-1 w-full rounded border border-divider bg-canvas px-3 py-2 text-ink"
           />
           <span class="text-xs text-muted">
-            Tối thiểu 60 giây (khuyến nghị 300). Endpoint usage của Claude bị rate-limit nếu gọi quá dày.
+            {{ t("aiUsage.settings.intervalHint") }}
           </span>
         </label>
       </div>
@@ -645,13 +648,12 @@ function onPriorityChange(account: AiAccount, event: Event) {
       @update:visible="showDetect = $event"
     >
       <template #header>
-        <h3 class="section-title">Login Claude trên máy</h3>
+        <h3 class="section-title">{{ t("aiUsage.detectDialog.header") }}</h3>
       </template>
 
       <div class="space-y-3">
         <p class="text-xs text-muted">
-          Dò từ <code class="rounded bg-canvas px-1">.claude.json</code> + Keychain. Usage % không có ở
-          local nên chỉ hiển thị email, loại subscription và hạn token.
+          {{ t("aiUsage.detectDialog.intro1") }} <code class="rounded bg-canvas px-1">.claude.json</code> {{ t("aiUsage.detectDialog.intro2") }}
         </p>
 
         <div
@@ -661,7 +663,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
         >
           <div class="flex items-center gap-2">
             <i class="pi pi-user text-muted" />
-            <span class="truncate font-semibold text-ink" :title="login.email">{{ login.email || "(no email)" }}</span>
+            <span class="truncate font-semibold text-ink" :title="login.email">{{ login.email || t("aiUsage.detectDialog.noEmail") }}</span>
             <span
               v-if="login.subscription_type"
               class="shrink-0 badge-info"
@@ -672,7 +674,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
               class="ml-auto shrink-0"
               :class="login.already_added ? 'badge-success' : 'badge-warning'"
             >
-              {{ login.already_added ? "Đã thêm" : "Mới" }}
+              {{ login.already_added ? t("aiUsage.detectDialog.alreadyAdded") : t("aiUsage.detectDialog.new") }}
             </span>
           </div>
           <div class="mt-1.5 grid gap-0.5 text-xs text-muted">
@@ -681,7 +683,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
               <i class="pi pi-folder mr-1" />{{ login.config_dir }}
             </span>
             <span v-if="login.token_expires_at">
-              <i class="pi pi-clock mr-1" />token hết hạn {{ login.token_expires_at }}
+              <i class="pi pi-clock mr-1" />{{ t("aiUsage.detectDialog.tokenExpires", { time: login.token_expires_at }) }}
             </span>
           </div>
         </div>
@@ -690,15 +692,15 @@ function onPriorityChange(account: AiAccount, event: Event) {
           v-if="!ctrl.detected.value.length"
           class="rounded-lg border border-dashed border-divider p-6 text-center text-sm text-muted"
         >
-          Không tìm thấy login Claude nào trên máy.
+          {{ t("aiUsage.detectDialog.empty") }}
         </p>
       </div>
 
       <template #footer>
         <DialogFooter
-          cancel-label="Đóng"
+          :cancel-label="t('aiUsage.detectDialog.close')"
           confirm-icon="pi pi-download"
-          :confirm-label="ctrl.isDetecting.value ? 'Đang thêm...' : 'Thêm login mới'"
+          :confirm-label="ctrl.isDetecting.value ? t('aiUsage.detectDialog.adding') : t('aiUsage.detectDialog.addNew')"
           :confirm-disabled="ctrl.isDetecting.value || !ctrl.detected.value.some((l) => !l.already_added)"
           @cancel="showDetect = false"
           @confirm="ctrl.importDetected()"
@@ -715,23 +717,23 @@ function onPriorityChange(account: AiAccount, event: Event) {
       @update:visible="showTerminal = $event"
     >
       <template #header>
-        <h3 class="section-title">Open terminal</h3>
+        <h3 class="section-title">{{ t("aiUsage.terminalDialog.header") }}</h3>
       </template>
 
       <div class="space-y-4">
         <label class="block">
-          <span class="text-xs font-bold text-muted">Working directory <span class="text-red-500">*</span></span>
+          <span class="text-xs font-bold text-muted">{{ t("aiUsage.terminalDialog.workingDir") }} <span class="text-red-500">*</span></span>
           <InputGroup class="h-8">
             <InputText
               readonly
-              placeholder="Chọn thư mục project..."
+              :placeholder="t('aiUsage.terminalDialog.workingDirPlaceholder')"
               :model-value="terminalWorkDir"
             />
             <Button
               icon="pi pi-folder-open"
               severity="secondary"
               outlined
-              title="Chọn folder"
+              :title="t('aiUsage.addDialog.selectFolder')"
               @click="browseTerminalWorkDir"
             />
             <Button
@@ -739,17 +741,17 @@ function onPriorityChange(account: AiAccount, event: Event) {
               icon="pi pi-times"
               severity="danger"
               text
-              title="Xoá đường dẫn"
+              :title="t('aiUsage.addDialog.clearPath')"
               @click="terminalWorkDir = ''"
             />
           </InputGroup>
-          <span class="text-xs text-muted">Thư mục project nơi terminal sẽ mở.</span>
+          <span class="text-xs text-muted">{{ t("aiUsage.terminalDialog.workingDirHint") }}</span>
         </label>
       </div>
 
       <template #footer>
         <DialogFooter
-          confirm-label="Continue"
+          :confirm-label="t('aiUsage.terminalDialog.continue')"
           :confirm-disabled="!terminalWorkDir.trim()"
           @cancel="showTerminal = false"
           @confirm="confirmOpenTerminal"

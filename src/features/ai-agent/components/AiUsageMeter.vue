@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+
 withDefaults(
   defineProps<{
     label: string;
@@ -10,6 +12,8 @@ withDefaults(
   }>(),
   { resetAt: undefined, size: "sm" },
 );
+
+const { t } = useI18n();
 
 function usedPercent(remainingPercent: number): number {
   return Math.min(100, Math.max(0, 100 - remainingPercent));
@@ -29,7 +33,7 @@ function resetHint(resetAt: string): string {
   if (Number.isNaN(target.getTime())) return raw;
   const diffMs = target.getTime() - Date.now();
   const clock = raw.slice(11, 16) || "";
-  if (diffMs <= 0) return `sắp reset · ${clock}`;
+  if (diffMs <= 0) return t("aiUsage.meter.resetSoon", { clock });
   const mins = Math.round(diffMs / 60000);
   const days = Math.floor(mins / 1440);
   const hours = Math.floor((mins % 1440) / 60);
@@ -39,7 +43,7 @@ function resetHint(resetAt: string): string {
   if (hours > 0) parts.push(`${hours}h`);
   if (days === 0 && rem > 0) parts.push(`${rem}m`);
   const rel = parts.length ? parts.join(" ") : "<1m";
-  return `còn ${rel} · ${clock}`;
+  return t("aiUsage.meter.resetIn", { rel, clock });
 }
 </script>
 
@@ -56,7 +60,7 @@ function resetHint(resetAt: string): string {
       />
     </div>
     <p v-if="resetAt !== undefined" class="mt-1 flex items-center gap-1 text-[11px] text-muted">
-      <i class="pi pi-clock" />reset {{ resetHint(resetAt) }}
+      <i class="pi pi-clock" />{{ t("aiUsage.meter.resetPrefix") }} {{ resetHint(resetAt) }}
       <slot name="tag" />
     </p>
   </div>

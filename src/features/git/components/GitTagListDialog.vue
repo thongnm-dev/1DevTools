@@ -67,6 +67,7 @@ watch(visible, (v) => {
             <Button
               size="small"
               text
+              rounded
               severity="secondary"
               :title="t('git.dialogs.tagList.copyTagName')"
               @click="git.copyText(data.name, t('git.dialogs.tagList.tagNameLabel'))"
@@ -76,6 +77,7 @@ watch(visible, (v) => {
             <Button
               size="small"
               text
+              rounded
               severity="danger"
               :title="t('git.dialogs.tagList.deleteTagLocal')"
               @click="git.deleteTag(data.name, false)"

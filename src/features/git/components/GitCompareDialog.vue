@@ -73,7 +73,7 @@ async function doCreatePR() {
     <div class="flex flex-col gap-3">
       <div class="flex items-end gap-2">
         <div class="min-w-0 flex-1">
-          <label class="mb-1 block text-xs font-medium text-muted">{{ t('git.dialogs.compare.baseLabel') }}</label>
+          <label class="mb-1 block text-xs font-bold text-muted">{{ t('git.dialogs.compare.baseLabel') }}</label>
           <Select
             v-model="cmpBase"
             :options="allBranchRefs"
@@ -86,7 +86,7 @@ async function doCreatePR() {
         </div>
         <i class="pi pi-arrow-left mb-2 shrink-0 text-muted" />
         <div class="min-w-0 flex-1">
-          <label class="mb-1 block text-xs font-medium text-muted">{{ t('git.dialogs.compare.headLabel') }}</label>
+          <label class="mb-1 block text-xs font-bold text-muted">{{ t('git.dialogs.compare.headLabel') }}</label>
           <Select
             v-model="cmpHead"
             :options="allBranchRefs"

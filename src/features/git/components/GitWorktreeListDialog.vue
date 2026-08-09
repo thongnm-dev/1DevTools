@@ -58,7 +58,8 @@ function requestCreate() {
         <Button
           v-if="!w.is_current"
           size="small"
-          outlined
+          text
+          rounded
           severity="secondary"
           class="shrink-0"
           :title="t('git.dialogs.worktreeList.openThisWorktree')"
@@ -69,7 +70,8 @@ function requestCreate() {
         <Button
           v-if="!w.is_current && !w.is_bare"
           size="small"
-          outlined
+          text
+          rounded
           severity="danger"
           class="shrink-0"
           :title="t('git.dialogs.worktreeList.removeWorktree')"
