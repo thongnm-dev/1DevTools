@@ -1,0 +1,69 @@
+name: Build macOS DMG
+
+# Build file cài đặt .dmg cho macOS.
+# - Chạy tay từ tab Actions (workflow_dispatch) để lấy .dmg bất cứ lúc nào.
+# - Tự chạy khi push tag `v*` và đính kèm .dmg vào GitHub Release (bản draft).
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      # Cài đủ 2 target để build universal binary (chạy trên cả Intel lẫn Apple Silicon).
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Install frontend deps
+        run: npm ci
+
+      # Build cả .app + .dmg và updater artifact (.app.tar.gz + .sig).
+      # `createUpdaterArtifacts: true` trong tauri.conf.json nên bước ký cần khóa
+      # TAURI_SIGNING_PRIVATE_KEY (bắt buộc cấu hình ở Settings → Secrets).
+      # Khi chạy theo tag, tauri-action còn tự sinh `latest.json` và đính kèm Release
+      # để plugin updater kiểm tra bản mới.
+      - name: Build DMG + updater (universal)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          args: --target universal-apple-darwin
+          # Chỉ tạo/đính kèm Release khi được kích hoạt bởi tag; chạy tay thì để trống.
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
+          releaseName: '1DevTools ${{ github.ref_name }}'
+          releaseDraft: true
+          prerelease: false
+
+      # Luôn tải .dmg và updater artifact lên làm artifact của lần chạy (tiện tải khi chạy tay).
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: 1devtools-macos
+          path: |
+            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.app.tar.gz*
+          if-no-files-found: error
