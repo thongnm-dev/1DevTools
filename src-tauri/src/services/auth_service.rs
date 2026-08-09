@@ -2,7 +2,6 @@ use crate::app::error::AppError;
 use crate::app::result::AppResult;
 use crate::database::auth_store;
 use crate::models::auth::{LoginRequest, LoginResponse};
-use crate::services::mock_data;
 use crate::utils::email;
 
 pub async fn login(request: LoginRequest) -> AppResult<LoginResponse> {
@@ -16,16 +15,7 @@ pub async fn login(request: LoginRequest) -> AppResult<LoginResponse> {
         ));
     }
 
-    // Database chưa cấu hình/kết nối được — chỉ ở debug build, trả về dữ liệu
-    // mock để có thể xem layout mà không cần Postgres thật.
-    let found = match auth_store::find_user_by_username(username).await {
-        Ok(found) => found,
-        Err(e) if cfg!(debug_assertions) => {
-            log::warn!("Database unavailable, falling back to mock login: {e}");
-            return Ok(mock_data::mock_login_response(username));
-        }
-        Err(e) => return Err(e),
-    };
+    let found = auth_store::find_user_by_username(username).await?;
 
     let user = found
         .ok_or_else(|| AppError::with_code("AUTH_INVALID_CREDENTIALS", "Invalid username or password."))?;

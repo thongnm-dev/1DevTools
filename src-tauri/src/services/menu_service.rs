@@ -1,19 +1,40 @@
 //! Business logic cho module quản lý menu.
 
+use crate::app::error::AppError;
 use crate::app::result::AppResult;
 use crate::database::menu_store;
-use crate::models::menu_entity::MenuEntity;
-use crate::services::mock_data;
+use crate::models::menu_entity::{MenuEntity, SaveAllMenuConfigsRequest, SaveMenuConfigRequest};
 
 pub async fn list_menu_configs() -> AppResult<Vec<MenuEntity>> {
-    match menu_store::list_all().await {
-        Ok(configs) => Ok(configs),
-        // Database chưa cấu hình/kết nối được — chỉ ở debug build, trả về
-        // dữ liệu mock để có thể xem layout mà không cần Postgres thật.
-        Err(e) if cfg!(debug_assertions) => {
-            log::warn!("Database unavailable, falling back to mock menu configs: {e}");
-            Ok(mock_data::mock_menu_configs())
-        }
-        Err(e) => Err(e),
+    menu_store::list_all().await
+}
+
+pub async fn save_menu_config(request: SaveMenuConfigRequest) -> AppResult<()> {
+    if request.key.trim().is_empty() {
+        return Err(AppError::new("Menu key không được để trống."));
     }
+    if request.title.trim().is_empty() {
+        return Err(AppError::new("Menu title không được để trống."));
+    }
+
+    menu_store::upsert(&request).await
+}
+
+pub async fn save_all_menu_configs(
+    request: SaveAllMenuConfigsRequest,
+) -> AppResult<Vec<MenuEntity>> {
+    for item in &request.items {
+        if item.key.trim().is_empty() {
+            return Err(AppError::new("Menu key không được để trống."));
+        }
+        if item.title.trim().is_empty() {
+            return Err(AppError::new(format!(
+                "Menu title không được để trống (key: {}).",
+                item.key
+            )));
+        }
+    }
+
+    menu_store::save_all(&request.items).await?;
+    menu_store::list_all().await
 }

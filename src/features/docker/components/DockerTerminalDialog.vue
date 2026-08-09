@@ -146,6 +146,7 @@ onBeforeUnmount(() => {
     "
     :style="{ width: '820px' }"
     :dismissable-mask="false"
+    maximizable
   >
     <div class="flex flex-col gap-2">
       <div v-if="mode === 'exec'" class="flex items-center gap-2 text-xs">
@@ -160,10 +161,21 @@ onBeforeUnmount(() => {
           @click="reconnect"
         />
       </div>
-      <div ref="containerEl" class="h-[440px] w-full overflow-hidden rounded-md p-1" style="background: #0b0f19" />
+      <div ref="containerEl" class="terminal-host w-full overflow-hidden rounded-md p-1" style="background: #0b0f19" />
     </div>
     <template #footer>
       <Button icon="pi pi-times" :label="t('common.close')" severity="danger" outlined @click="visible = false" />
     </template>
   </Dialog>
 </template>
+
+<style scoped>
+.terminal-host {
+  height: 440px;
+}
+
+/* Khi dialog ở chế độ full màn hình, cho khung terminal lấp đầy không gian. */
+.p-dialog-maximized .terminal-host {
+  height: calc(100vh - 200px);
+}
+</style>

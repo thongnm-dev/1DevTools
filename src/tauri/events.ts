@@ -11,6 +11,20 @@ export async function registerBackendEventListeners() {
   });
 }
 
+/** Event backend bắn khi số liệu usage / active account thay đổi (AI Usage poll nền). */
+export const AI_USAGE_UPDATED_EVENT = "ai-usage-updated";
+
+/**
+ * Lắng nghe event `ai-usage-updated` từ backend (poll nền).
+ * Trả về hàm huỷ đăng ký; no-op nếu không chạy trong Tauri runtime.
+ */
+export async function onAiUsageUpdated(handler: () => void): Promise<UnlistenFn> {
+  if (!canUseTauriRuntime()) {
+    return () => {};
+  }
+  return listen(AI_USAGE_UPDATED_EVENT, () => handler());
+}
+
 /** Event backend bắn khi file watcher phát hiện thay đổi trong working tree của repo Git đang theo dõi. */
 export const GIT_REPO_CHANGED_EVENT = "git-repo-changed";
 

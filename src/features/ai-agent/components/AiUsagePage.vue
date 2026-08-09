@@ -1,0 +1,760 @@
+<script setup lang="ts">
+import { computed, onMounted, ref } from "vue";
+import Dialog from "primevue/dialog";
+import Button from "primevue/button";
+import InputText from "primevue/inputtext";
+import InputGroup from "primevue/inputgroup";
+import { open } from "@tauri-apps/plugin-dialog";
+import { useAiUsage } from "../composables/useAiUsage";
+import DialogFooter from "@/shared/components/DialogFooter.vue";
+import AiUsageMeter from "./AiUsageMeter.vue";
+import {
+  AI_ACCOUNT_STATUS_META,
+  AI_ACCOUNT_TYPE_META,
+  AI_PROVIDER_LABEL,
+  AI_USAGE_SOURCE_LABEL,
+} from "@/models/ai-usage";
+import type { AiAccount, AiProvider } from "@/models/ai-usage";
+
+const ctrl = useAiUsage();
+
+const isDialogOpen = ref(false);
+const accountName = ref("");
+const apiKey = ref("");
+const provider = ref<AiProvider>("claude");
+const showApiKey = ref(false);
+/** Kiểu account đang thêm: subscription (tool tự capture token) hay API key. */
+const accountKind = ref<"subscription" | "key">("subscription");
+/** Với subscription: capture login hiện tại, hay đăng ký từ một config dir khác. */
+const subMode = ref<"current" | "dir">("current");
+const configDir = ref("");
+
+const showSettings = ref(false);
+const thresholdInput = ref(10);
+const intervalInput = ref(60);
+
+const showTerminal = ref(false);
+const terminalConfigDir = ref("");
+const terminalWorkDir = ref("");
+const terminalIsLogin = ref(false);
+
+const showDetect = ref(false);
+
+/** Mở dialog dò login local (dò trước rồi hiện). */
+async function openDetect() {
+  const ok = await ctrl.detectLocal();
+  if (ok) showDetect.value = true;
+}
+
+/** Đổi provider — Claude luôn là subscription, Codex chỉ API key. */
+function selectProvider(next: AiProvider) {
+  provider.value = next;
+  accountKind.value = next === "claude" ? "subscription" : "key";
+  if (next === "claude" && subMode.value === "current") void loadPreviewAndPrefill();
+}
+
+/** Nạp login hiện tại + prefill tên (chỉ khi tên còn trống). */
+async function loadPreviewAndPrefill() {
+  await ctrl.loadCapturePreview();
+  const preview = ctrl.capturePreview.value;
+  if (preview && !accountName.value.trim()) {
+    accountName.value = preview.display_name || preview.email;
+  }
+}
+
+/** Đổi giữa "capture login hiện tại" và "đăng ký config dir khác". */
+function selectSubMode(mode: "current" | "dir") {
+  subMode.value = mode;
+  if (mode === "current") void loadPreviewAndPrefill();
+}
+
+/** Mở dialog chọn folder → điền vào config dir. */
+async function browseConfigDir() {
+  const selected = await open({ directory: true, title: "Chọn CLAUDE_CONFIG_DIR" });
+  if (typeof selected === "string") {
+    configDir.value = selected;
+    await onConfigDirInput();
+  }
+}
+
+/** Xoá đường dẫn config dir đã chọn + reset preview đọc được. */
+function clearConfigDir() {
+  configDir.value = "";
+  ctrl.configDirPreview.value = null;
+}
+
+/** Preview login tại config dir + prefill tên. */
+async function onConfigDirInput() {
+  const dir = configDir.value.trim();
+  if (!dir) return;
+  await ctrl.previewConfigDir(dir);
+  const preview = ctrl.configDirPreview.value;
+  if (preview && !accountName.value.trim()) {
+    accountName.value = preview.display_name || preview.email;
+  }
+}
+
+/** Mở terminal dialog để login tại config dir hiện tại. */
+function openLoginForConfigDir() {
+  const dir = configDir.value.trim();
+  if (!dir) return;
+  terminalConfigDir.value = dir;
+  terminalWorkDir.value = "";
+  terminalIsLogin.value = true;
+  showTerminal.value = true;
+}
+
+/** Re-check login sau khi đã login xong trong terminal. */
+async function recheckConfigDir() {
+  await onConfigDirInput();
+}
+
+onMounted(() => {
+  void ctrl.start();
+});
+
+/** Nhóm account theo provider để hiển thị. */
+const groups = computed(() => {
+  const map = new Map<AiProvider, AiAccount[]>();
+  for (const account of ctrl.accounts.value) {
+    const list = map.get(account.provider) ?? [];
+    list.push(account);
+    map.set(account.provider, list);
+  }
+  return Array.from(map.entries());
+});
+
+function openDialog() {
+  accountName.value = "";
+  apiKey.value = "";
+  provider.value = "claude";
+  showApiKey.value = false;
+  accountKind.value = "subscription";
+  subMode.value = "current";
+  configDir.value = "";
+  ctrl.capturePreview.value = null;
+  ctrl.configDirPreview.value = null;
+  isDialogOpen.value = true;
+  void loadPreviewAndPrefill();
+}
+
+/** Form hợp lệ: subscription cần đọc được login (hiện tại cần token; config dir chỉ cần identity). */
+const canSaveAccount = computed(() => {
+  if (!accountName.value.trim()) return false;
+  if (accountKind.value !== "subscription") return !!apiKey.value.trim();
+  return subMode.value === "current"
+    ? !!ctrl.capturePreview.value?.has_token
+    : !!ctrl.configDirPreview.value;
+});
+
+async function saveAccount() {
+  if (!canSaveAccount.value) return;
+  if (accountKind.value === "subscription") {
+    // Subscription: capture login hiện tại, hoặc đăng ký từ một config dir khác.
+    const ok =
+      subMode.value === "current"
+        ? await ctrl.captureAdd(accountName.value.trim())
+        : await ctrl.addConfigDir(configDir.value.trim(), accountName.value.trim());
+    if (ok) isDialogOpen.value = false;
+    return;
+  }
+  const ok = await ctrl.addAccount({
+    name: accountName.value.trim(),
+    provider: provider.value,
+    api_key: apiKey.value.trim(),
+  });
+  if (ok) isDialogOpen.value = false;
+}
+
+function openSettings() {
+  thresholdInput.value = ctrl.settings.value.switch_threshold_percent;
+  intervalInput.value = ctrl.settings.value.poll_interval_secs;
+  showSettings.value = true;
+}
+
+async function saveSettings() {
+  const ok = await ctrl.saveSettings({
+    switch_threshold_percent: Number(thresholdInput.value) || 0,
+    poll_interval_secs: Math.max(60, Number(intervalInput.value) || 300),
+  });
+  if (ok) showSettings.value = false;
+}
+
+function openTerminalDialog(account: AiAccount) {
+  terminalConfigDir.value = account.config_dir || "";
+  terminalWorkDir.value = "";
+  terminalIsLogin.value = false;
+  showTerminal.value = true;
+}
+
+async function browseTerminalWorkDir() {
+  const selected = await open({ directory: true, title: "Chọn working directory (thư mục project)" });
+  if (typeof selected === "string") terminalWorkDir.value = selected;
+}
+
+async function confirmOpenTerminal() {
+  const fn = terminalIsLogin.value ? ctrl.openLogin : ctrl.openTerminal;
+  const ok = await fn(terminalConfigDir.value, terminalWorkDir.value);
+  if (ok) showTerminal.value = false;
+}
+
+function onPriorityChange(account: AiAccount, event: Event) {
+  const value = Math.max(1, Number((event.target as HTMLInputElement).value) || 1);
+  if (value !== account.priority) {
+    void ctrl.updateAccount({ id: account.id, priority: value });
+  }
+}
+
+</script>
+
+<template>
+  <div class="flex flex-1 flex-col gap-4 overflow-auto">
+    <div class="rounded-lg border border-divider bg-panel p-6 shadow-sm">
+      <div class="flex flex-wrap items-center gap-3">
+        <i class="pi pi-chart-bar text-2xl text-muted" />
+        <div class="min-w-0">
+          <h2 class="page-title">AI Usage</h2>
+          <p class="text-sm text-muted">
+            Theo dõi usage tài khoản AI và tự động chọn account ưu tiên khi tài khoản đang dùng cạn.
+          </p>
+        </div>
+        <div class="ml-auto flex shrink-0 items-center gap-2">
+          <Button
+            icon="pi pi-search"
+            label="Detect local"
+            severity="secondary"
+            :loading="ctrl.isDetecting.value"
+            title="Dò các login Claude đã đăng nhập trên máy"
+            @click="openDetect"
+          />
+          <Button icon="pi pi-cog" label="Settings" severity="secondary" @click="openSettings" />
+          <Button icon="pi pi-plus" label="Add Account" @click="openDialog" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Account groups by provider -->
+    <template v-if="ctrl.accounts.value.length">
+      <div v-for="[groupProvider, list] in groups" :key="groupProvider" class="space-y-3">
+        <h3 class="section-eyebrow px-1">
+          {{ AI_PROVIDER_LABEL[groupProvider] }}
+        </h3>
+        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div
+            v-for="account in list"
+            :key="account.id"
+            class="flex flex-col rounded-lg border bg-panel p-5 shadow-sm"
+            :class="account.is_active ? 'border-brand ring-1 ring-brand/40' : 'border-divider'"
+          >
+            <div class="flex items-start gap-3">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
+                <i class="pi pi-sparkles" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="section-title truncate" :title="account.name">{{ account.name }}</h3>
+                  <span v-if="account.is_active" class="shrink-0 rounded-full bg-brand px-2 py-0.5 text-[11px] font-bold text-on-brand">
+                    ACTIVE
+                  </span>
+                  <span
+                    v-if="account.account_type !== 'subscription'"
+                    :class="['shrink-0', AI_ACCOUNT_TYPE_META[account.account_type].badgeClass]"
+                  >
+                    {{ AI_ACCOUNT_TYPE_META[account.account_type].label }}
+                  </span>
+                  <span
+                    v-if="account.subscription_type"
+                    class="shrink-0 badge-neutral"
+                  >
+                    {{ account.subscription_type }}
+                  </span>
+                </div>
+                <template v-if="account.account_type === 'subscription'">
+                  <p v-if="account.email" class="mt-0.5 truncate text-xs text-muted" :title="account.email">
+                    <i class="pi pi-envelope mr-1" />{{ account.email }}
+                  </p>
+                  <p class="mt-0.5 truncate font-mono text-xs text-muted" :title="account.config_dir">
+                    <i class="pi pi-folder mr-1" />{{ account.config_dir || "—" }}
+                  </p>
+                </template>
+                <p v-else class="mt-0.5 font-mono text-xs text-muted">{{ account.api_key_masked }}</p>
+              </div>
+              <Button
+                icon="pi pi-trash"
+                severity="danger"
+                text
+                rounded
+                size="small"
+                title="Delete account"
+                @click="ctrl.deleteAccount(account.id)"
+              />
+            </div>
+
+            <!-- Status + usage source -->
+            <div class="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
+              <span :class="AI_ACCOUNT_STATUS_META[account.status].badgeClass">
+                {{ AI_ACCOUNT_STATUS_META[account.status].label }}
+              </span>
+              <span class="text-muted">source: {{ AI_USAGE_SOURCE_LABEL[account.usage_source] }}</span>
+            </div>
+
+            <!-- Usage used (API / Codex — số liệu tổng hợp) -->
+            <div v-if="account.account_type !== 'subscription'" class="mt-3">
+              <AiUsageMeter label="Usage used" :remaining-percent="account.usage_percent" size="md" />
+            </div>
+
+            <!-- Subscription: session (5h) + weekly (7 ngày) từ OAuth usage endpoint -->
+            <div v-else class="mt-3 space-y-3">
+              <AiUsageMeter
+                label="Current session"
+                :remaining-percent="account.session_percent"
+                :reset-at="account.session_reset_at"
+                size="md"
+              />
+              <AiUsageMeter
+                label="Weekly limit"
+                :remaining-percent="account.weekly_percent"
+                :reset-at="account.weekly_reset_at"
+                size="md"
+              />
+
+              <p
+                v-if="!account.session_reset_at && !account.weekly_reset_at"
+                class="text-xs text-muted"
+              >
+                Chưa có số liệu — bấm Refresh để đọc usage (login còn hạn).
+              </p>
+              <p v-if="account.last_checked_at" class="flex items-center gap-1 text-xs text-muted">
+                <i class="pi pi-sync" />cập nhật {{ account.last_checked_at }}
+              </p>
+            </div>
+
+            <!-- Stats -->
+            <div class="mt-3 grid grid-cols-2 gap-3 border-t border-divider pt-3 text-xs text-muted">
+              <div class="flex items-center gap-1.5" :title="`Resets at ${account.reset_at || 'unknown'}`">
+                <i class="pi pi-refresh" />
+                <span class="truncate">Reset {{ account.reset_at || "—" }}</span>
+              </div>
+              <label class="flex items-center justify-end gap-1.5" title="Priority (số nhỏ = ưu tiên cao)">
+                <i class="pi pi-sort-amount-down" />
+                <span>Priority</span>
+                <input
+                  type="number"
+                  min="1"
+                  class="w-14 rounded border border-divider bg-canvas px-1.5 py-0.5 text-right text-ink"
+                  :value="account.priority"
+                  @change="onPriorityChange(account, $event)"
+                />
+              </label>
+            </div>
+
+            <!-- Actions -->
+            <div class="mt-3 flex flex-wrap items-center gap-2">
+              <Button
+                icon="pi pi-refresh"
+                label="Refresh"
+                size="small"
+                severity="secondary"
+                :loading="ctrl.refreshingId.value === account.id"
+                @click="ctrl.refreshAccount(account.id)"
+              />
+              <Button
+                icon="pi pi-check-circle"
+                label="Set active"
+                size="small"
+                :severity="account.is_active ? 'secondary' : undefined"
+                :disabled="account.is_active"
+                @click="ctrl.setActive(account.id)"
+              />
+              <Button
+                v-if="account.account_type !== 'subscription'"
+                icon="pi pi-copy"
+                label="Copy token"
+                size="small"
+                severity="secondary"
+                outlined
+                @click="ctrl.copyToken(account.id)"
+              />
+              <Button
+                v-if="account.account_type === 'subscription'"
+                icon="pi pi-terminal"
+                label="Open terminal"
+                size="small"
+                severity="secondary"
+                outlined
+                @click="openTerminalDialog(account)"
+              />
+              <Button
+                icon="pi pi-exclamation-triangle"
+                label="Mark exhausted"
+                size="small"
+                severity="warn"
+                text
+                title="Báo account hết usage → auto-switch"
+                @click="ctrl.reportExhausted(account.id)"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <div v-else class="flex flex-1 items-center justify-center rounded-lg border border-dashed border-divider bg-panel/50 p-12">
+      <p class="text-sm text-muted">
+        {{ ctrl.isLoading.value ? "Loading accounts..." : "No accounts yet. Click \"Add Account\" to register one." }}
+      </p>
+    </div>
+
+    <!-- Add account dialog -->
+    <Dialog
+      :visible="isDialogOpen"
+      class="w-full max-w-md rounded-lg bg-panel shadow-xl"
+      :closable="true"
+      modal
+      @update:visible="isDialogOpen = $event"
+    >
+      <template #header>
+        <h3 class="section-title">Add Account</h3>
+      </template>
+
+      <div class="space-y-4">
+        <label class="block">
+          <span class="text-xs font-bold text-muted">Provider</span>
+          <div class="mt-1 flex gap-2">
+            <Button
+              label="Claude"
+              size="small"
+              :severity="provider === 'claude' ? undefined : 'secondary'"
+              :outlined="provider !== 'claude'"
+              @click="selectProvider('claude')"
+            />
+            <Button
+              label="Codex"
+              size="small"
+              :severity="provider === 'codex' ? undefined : 'secondary'"
+              :outlined="provider !== 'codex'"
+              @click="selectProvider('codex')"
+            />
+          </div>
+        </label>
+
+        <label class="block">
+          <span class="text-xs font-bold text-muted">Account Name <span class="text-red-500">*</span></span>
+          <InputText v-model="accountName" class="mt-1 w-full" placeholder="e.g. personal-claude" autofocus />
+        </label>
+
+        <!-- Subscription: tool tự capture token của login Claude đang active -->
+        <div v-if="accountKind === 'subscription'" class="block space-y-2">
+          <!-- Nguồn login: capture hiện tại hay từ config dir khác (thêm acc thứ 2) -->
+          <div class="flex gap-2">
+            <Button
+              label="Login hiện tại"
+              size="small"
+              :severity="subMode === 'current' ? undefined : 'secondary'"
+              :outlined="subMode !== 'current'"
+              @click="selectSubMode('current')"
+            />
+            <Button
+              label="Config dir khác"
+              size="small"
+              :severity="subMode === 'dir' ? undefined : 'secondary'"
+              :outlined="subMode !== 'dir'"
+              @click="selectSubMode('dir')"
+            />
+          </div>
+
+          <!-- Config dir input (đăng ký account thứ 2 đã login ở dir riêng) -->
+          <label v-if="subMode === 'dir'" class="block">
+            <span class="text-xs font-bold text-muted">CLAUDE_CONFIG_DIR <span class="text-red-500">*</span></span>
+            <InputGroup class="h-8">
+              <InputText
+                readonly
+                placeholder="~/.claude-work"
+                :model-value="configDir"
+              />
+              <Button
+                icon="pi pi-folder-open"
+                severity="secondary"
+                outlined
+                title="Chọn folder"
+                @click="browseConfigDir"
+              />
+              <Button
+                v-if="configDir"
+                icon="pi pi-times"
+                severity="danger"
+                text
+                title="Xoá đường dẫn"
+                @click="clearConfigDir"
+              />
+            </InputGroup>
+            <span class="text-xs text-muted">
+              Login trước 1 lần: <code class="rounded bg-canvas px-1">CLAUDE_CONFIG_DIR=&lt;dir&gt; claude /login</code>
+            </span>
+          </label>
+
+          <!-- Preview login đọc được (từ login hiện tại hoặc config dir) -->
+          <div
+            v-if="subMode === 'current' ? ctrl.capturePreview.value?.has_token : ctrl.configDirPreview.value"
+            class="rounded-lg border border-divider bg-canvas/50 p-3 text-xs"
+          >
+            <div class="flex items-center gap-2">
+              <i class="pi pi-user text-muted" />
+              <span class="truncate font-semibold text-ink">
+                {{ (subMode === 'current' ? ctrl.capturePreview.value : ctrl.configDirPreview.value)?.email }}
+              </span>
+              <span
+                v-if="(subMode === 'current' ? ctrl.capturePreview.value : ctrl.configDirPreview.value)?.subscription_type"
+                class="shrink-0 badge-info"
+              >
+                {{ (subMode === 'current' ? ctrl.capturePreview.value : ctrl.configDirPreview.value)?.subscription_type }}
+              </span>
+            </div>
+            <p
+              v-if="(subMode === 'current' ? ctrl.capturePreview.value : ctrl.configDirPreview.value)?.token_expires_at"
+              class="mt-1 text-xs text-muted"
+            >
+              <i class="pi pi-clock mr-1" />token hết hạn
+              {{ (subMode === 'current' ? ctrl.capturePreview.value : ctrl.configDirPreview.value)?.token_expires_at }}
+            </p>
+            <p class="mt-1.5 text-xs text-muted">
+              {{ subMode === 'current'
+                ? 'Tool sẽ lưu token này vào profile riêng trong app data dir.'
+                : 'Token đọc từ Keychain của config dir này (luôn mới).' }}
+            </p>
+            <p
+              v-if="subMode === 'dir' && ctrl.configDirPreview.value && !ctrl.configDirPreview.value.has_token"
+              class="banner-warning mt-2"
+            >
+              <i class="pi pi-exclamation-triangle mr-1" />Chưa có token — account sẽ được thêm nhưng chưa dùng được.
+              Chạy <code class="rounded bg-amber-100 px-1">CLAUDE_CONFIG_DIR=&lt;dir&gt; claude /login</code> để lấy token.
+            </p>
+          </div>
+          <div
+            v-else
+            class="banner-warning"
+          >
+            <p>
+              {{ subMode === 'current'
+                ? 'Chưa có login Claude đang hoạt động. Chạy `claude /login` rồi mở lại dialog.'
+                : 'Chưa đọc được login ở config dir này.' }}
+            </p>
+            <div v-if="subMode === 'dir' && configDir.trim()" class="mt-2 flex gap-2">
+              <Button
+                icon="pi pi-terminal"
+                label="Mở terminal để login"
+                size="small"
+                severity="warn"
+                @click="openLoginForConfigDir"
+              />
+              <Button
+                icon="pi pi-refresh"
+                label="Kiểm tra lại"
+                size="small"
+                severity="secondary"
+                @click="recheckConfigDir"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- API key -->
+        <label v-else class="block">
+          <span class="text-xs font-bold text-muted">API Key / Token <span class="text-red-500">*</span></span>
+          <div class="relative mt-1">
+            <InputText
+              v-model="apiKey"
+              :type="showApiKey ? 'text' : 'password'"
+              class="w-full pr-10"
+              placeholder="sk-..."
+              autocomplete="off"
+            />
+            <Button
+              :icon="`pi ${showApiKey ? 'pi-eye-slash' : 'pi-eye'}`"
+              text
+              rounded
+              size="small"
+              class="absolute right-2 top-1/2 -translate-y-1/2"
+              :title="showApiKey ? 'Hide API key' : 'Show API key'"
+              @click="showApiKey = !showApiKey"
+            />
+          </div>
+          <span class="text-xs text-muted">Loại (API / Admin / OAuth) được tự nhận từ prefix của key.</span>
+        </label>
+      </div>
+
+      <template #footer>
+        <DialogFooter
+          :confirm-label="ctrl.isSaving.value || ctrl.isCapturing.value ? 'Đang lưu...' : 'Save'"
+          :confirm-disabled="!canSaveAccount || ctrl.isSaving.value || ctrl.isCapturing.value"
+          @cancel="isDialogOpen = false"
+          @confirm="saveAccount"
+        />
+      </template>
+    </Dialog>
+
+    <!-- Settings dialog -->
+    <Dialog
+      :visible="showSettings"
+      class="w-full max-w-md rounded-lg bg-panel shadow-xl"
+      :closable="true"
+      modal
+      @update:visible="showSettings = $event"
+    >
+      <template #header>
+        <h3 class="section-title">Auto-switch settings</h3>
+      </template>
+
+      <div class="space-y-4">
+        <label class="block">
+          <span class="text-xs font-bold text-muted">Ngưỡng switch (% còn lại)</span>
+          <input
+            v-model="thresholdInput"
+            type="number"
+            min="0"
+            max="100"
+            class="mt-1 w-full rounded border border-divider bg-canvas px-3 py-2 text-ink"
+          />
+          <span class="text-xs text-muted">Dưới ngưỡng này account bị coi là "low" và sẽ được thay bằng account ưu tiên kế tiếp.</span>
+        </label>
+        <label class="block">
+          <span class="text-xs font-bold text-muted">Chu kỳ poll (giây)</span>
+          <input
+            v-model="intervalInput"
+            type="number"
+            min="60"
+            class="mt-1 w-full rounded border border-divider bg-canvas px-3 py-2 text-ink"
+          />
+          <span class="text-xs text-muted">
+            Tối thiểu 60 giây (khuyến nghị 300). Endpoint usage của Claude bị rate-limit nếu gọi quá dày.
+          </span>
+        </label>
+      </div>
+
+      <template #footer>
+        <DialogFooter @cancel="showSettings = false" @confirm="saveSettings" />
+      </template>
+    </Dialog>
+
+    <!-- Detect local logins dialog -->
+    <Dialog
+      :visible="showDetect"
+      class="w-full max-w-lg rounded-lg bg-panel shadow-xl"
+      :closable="true"
+      modal
+      @update:visible="showDetect = $event"
+    >
+      <template #header>
+        <h3 class="section-title">Login Claude trên máy</h3>
+      </template>
+
+      <div class="space-y-3">
+        <p class="text-xs text-muted">
+          Dò từ <code class="rounded bg-canvas px-1">.claude.json</code> + Keychain. Usage % không có ở
+          local nên chỉ hiển thị email, loại subscription và hạn token.
+        </p>
+
+        <div
+          v-for="login in ctrl.detected.value"
+          :key="login.config_dir + login.email"
+          class="rounded-lg border border-divider bg-canvas/50 p-3"
+        >
+          <div class="flex items-center gap-2">
+            <i class="pi pi-user text-muted" />
+            <span class="truncate font-semibold text-ink" :title="login.email">{{ login.email || "(no email)" }}</span>
+            <span
+              v-if="login.subscription_type"
+              class="shrink-0 badge-info"
+            >
+              {{ login.subscription_type }}
+            </span>
+            <span
+              class="ml-auto shrink-0"
+              :class="login.already_added ? 'badge-success' : 'badge-warning'"
+            >
+              {{ login.already_added ? "Đã thêm" : "Mới" }}
+            </span>
+          </div>
+          <div class="mt-1.5 grid gap-0.5 text-xs text-muted">
+            <span v-if="login.display_name">{{ login.display_name }}</span>
+            <span class="truncate font-mono" :title="login.config_dir">
+              <i class="pi pi-folder mr-1" />{{ login.config_dir }}
+            </span>
+            <span v-if="login.token_expires_at">
+              <i class="pi pi-clock mr-1" />token hết hạn {{ login.token_expires_at }}
+            </span>
+          </div>
+        </div>
+
+        <p
+          v-if="!ctrl.detected.value.length"
+          class="rounded-lg border border-dashed border-divider p-6 text-center text-sm text-muted"
+        >
+          Không tìm thấy login Claude nào trên máy.
+        </p>
+      </div>
+
+      <template #footer>
+        <DialogFooter
+          cancel-label="Đóng"
+          confirm-icon="pi pi-download"
+          :confirm-label="ctrl.isDetecting.value ? 'Đang thêm...' : 'Thêm login mới'"
+          :confirm-disabled="ctrl.isDetecting.value || !ctrl.detected.value.some((l) => !l.already_added)"
+          @cancel="showDetect = false"
+          @confirm="ctrl.importDetected()"
+        />
+      </template>
+    </Dialog>
+
+    <!-- Open terminal dialog -->
+    <Dialog
+      :visible="showTerminal"
+      class="w-full max-w-md rounded-lg bg-panel shadow-xl"
+      :closable="true"
+      modal
+      @update:visible="showTerminal = $event"
+    >
+      <template #header>
+        <h3 class="section-title">Open terminal</h3>
+      </template>
+
+      <div class="space-y-4">
+        <label class="block">
+          <span class="text-xs font-bold text-muted">Working directory <span class="text-red-500">*</span></span>
+          <InputGroup class="h-8">
+            <InputText
+              readonly
+              placeholder="Chọn thư mục project..."
+              :model-value="terminalWorkDir"
+            />
+            <Button
+              icon="pi pi-folder-open"
+              severity="secondary"
+              outlined
+              title="Chọn folder"
+              @click="browseTerminalWorkDir"
+            />
+            <Button
+              v-if="terminalWorkDir"
+              icon="pi pi-times"
+              severity="danger"
+              text
+              title="Xoá đường dẫn"
+              @click="terminalWorkDir = ''"
+            />
+          </InputGroup>
+          <span class="text-xs text-muted">Thư mục project nơi terminal sẽ mở.</span>
+        </label>
+      </div>
+
+      <template #footer>
+        <DialogFooter
+          confirm-label="Continue"
+          :confirm-disabled="!terminalWorkDir.trim()"
+          @cancel="showTerminal = false"
+          @confirm="confirmOpenTerminal"
+        />
+      </template>
+    </Dialog>
+  </div>
+</template>

@@ -5,7 +5,7 @@
   "identifier": "com.1devtools",
   "build": {
     "beforeDevCommand": "npm run dev",
-    "devUrl": "http://127.0.0.1:1429",
+    "devUrl": "http://127.0.0.1:1425",
     "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },

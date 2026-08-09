@@ -2,7 +2,7 @@
 
 use crate::app::error::AppError;
 use crate::app::result::AppResult;
-use crate::models::menu_entity::MenuEntity;
+use crate::models::menu_entity::{MenuEntity, SaveMenuConfigRequest};
 use crate::utils::pgsql_connect;
 
 pub async fn list_all() -> AppResult<Vec<MenuEntity>> {
@@ -27,4 +27,60 @@ pub async fn list_all() -> AppResult<Vec<MenuEntity>> {
         .collect();
 
     Ok(items)
+}
+
+pub async fn upsert(item: &SaveMenuConfigRequest) -> AppResult<()> {
+    let client = pgsql_connect::connect().await?;
+
+    client
+        .execute(
+            "SELECT sp_menu_config_upsert($1, $2, $3, $4, $5, $6, $7)",
+            &[
+                &item.key,
+                &item.title,
+                &item.path,
+                &item.icon,
+                &item.group,
+                &item.visible,
+                &item.order,
+            ],
+        )
+        .await
+        .map_err(|e| AppError::new(format!("Failed to upsert menu config: {e}")))?;
+
+    Ok(())
+}
+
+pub async fn save_all(items: &[SaveMenuConfigRequest]) -> AppResult<()> {
+    let client = pgsql_connect::connect().await?;
+
+    pgsql_connect::with_transaction(&client, || async {
+        client
+            .execute("SELECT sp_menu_config_delete_all()", &[])
+            .await
+            .map_err(|e| AppError::new(format!("Failed to clear menu configs: {e}")))?;
+
+        for item in items {
+            client
+                .execute(
+                    "SELECT sp_menu_config_upsert($1, $2, $3, $4, $5, $6, $7)",
+                    &[
+                        &item.key,
+                        &item.title,
+                        &item.path,
+                        &item.icon,
+                        &item.group,
+                        &item.visible,
+                        &item.order,
+                    ],
+                )
+                .await
+                .map_err(|e| {
+                    AppError::new(format!("Failed to upsert menu config '{}': {e}", item.key))
+                })?;
+        }
+
+        Ok(())
+    })
+    .await
 }

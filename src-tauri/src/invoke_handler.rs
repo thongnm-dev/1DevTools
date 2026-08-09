@@ -4,6 +4,8 @@
 // (không thể chia thành nhiều lời gọi macro rồi gộp lại), nên toàn bộ danh sách vẫn
 // nằm trong một khối — nhưng được gom về đây thay vì làm phình `lib.rs`.
 
+use commands::ai_usage_commands::*;
+use commands::app_config_commands::*;
 use commands::auth_commands::*;
 use commands::db_config_commands::*;
 use commands::docker_commands::*;
@@ -12,6 +14,7 @@ use commands::git_commands::*;
 use commands::menu_commands::*;
 use commands::menu_permission_commands::*;
 use commands::pagination_commands::*;
+use commands::role_commands::*;
 use commands::system_commands::*;
 use commands::terminal_commands::*;
 use commands::user_commands::*;
@@ -35,12 +38,52 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         get_database_config,
         test_database_config,
         save_database_config,
-        // === User commands (list only, used by the member picker) ===
+        // === User commands (governance: CRUD + list) ===
         list_users,
-        // === Menu config commands ===
+        get_user_detail,
+        create_user,
+        update_user,
+        delete_user,
+        change_user_password,
+        list_roles,
+        // === Role commands (governance) ===
+        list_role_details,
+        create_role,
+        update_role,
+        delete_role,
+        // === App config commands (config.ini editor) ===
+        get_app_config,
+        save_app_config,
+        // === Menu config commands (governance: list + save) ===
         list_menu_configs,
-        // === Menu permission commands (effective only, drives the sidebar) ===
+        save_menu_config,
+        save_all_menu_configs,
+        // === Menu permission commands (effective drives sidebar; role/user for governance) ===
         list_effective_menu_permissions,
+        list_role_menu_permissions,
+        save_role_menu_permissions,
+        list_user_menu_permissions,
+        save_user_menu_permissions,
+        // === AI Usage commands (account management + usage probing + auto-switch) ===
+        ai_usage_add_account,
+        ai_usage_detect_local,
+        ai_usage_import_detected,
+        ai_usage_capture_preview,
+        ai_usage_capture_add,
+        ai_usage_config_dir_preview,
+        ai_usage_add_config_dir,
+        ai_usage_list_accounts,
+        ai_usage_update_account,
+        ai_usage_delete_account,
+        ai_usage_set_active,
+        ai_usage_get_token,
+        ai_usage_report_signal,
+        ai_usage_refresh_account,
+        ai_usage_refresh,
+        ai_usage_get_settings,
+        ai_usage_save_settings,
+        ai_usage_open_terminal,
+        ai_usage_open_login,
         // === Pagination config command ===
         get_pagination_config,
         // === Explorer commands (dùng bởi Git Desktop "Show in folder" và cây thư mục Terminal) ===

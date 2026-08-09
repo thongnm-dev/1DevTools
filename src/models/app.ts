@@ -1,4 +1,14 @@
-export type MenuKey = "overview" | "git" | "terminal" | "docker";
+export type MenuKey =
+  | "overview"
+  | "git"
+  | "terminal"
+  | "docker"
+  | "gov-users"
+  | "gov-roles"
+  | "gov-menus"
+  | "gov-permissions"
+  | "app-config"
+  | "ai-usage";
 
 export type AppRouteKey = MenuKey | "login" | "forgotPassword";
 

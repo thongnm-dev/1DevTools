@@ -15,10 +15,10 @@ use tokio_postgres::Client;
 pub async fn init() -> AppResult<()> {
     let client = pgsql_connect::connect().await?;
 
-    // client
-    //     .batch_execute(include_str!("../../../docs/database/schema.sql"))
-    //     .await
-    //     .map_err(|e| AppError::new(format!("Failed to create tables: {e}")))?;
+    client
+        .batch_execute(include_str!("../../../docs/database/schema.sql"))
+        .await
+        .map_err(|e| AppError::new(format!("Failed to create tables: {e}")))?;
 
     let mut errors = Vec::new();
 
@@ -39,10 +39,10 @@ pub async fn init() -> AppResult<()> {
 
 /// Seed dữ liệu mặc định: tạo role admin và user admin nếu chưa tồn tại.
 async fn seed_data(client: &Client) -> AppResult<()> {
-    // client
-    //     .batch_execute(include_str!("../../../docs/database/seed_data.sql"))
-    //     .await
-    //     .map_err(|e| AppError::new(format!("Failed to seed data: {e}")))?;
+    client
+        .batch_execute(include_str!("../../../docs/database/seed_data.sql"))
+        .await
+        .map_err(|e| AppError::new(format!("Failed to seed data: {e}")))?;
 
     Ok(())
 }
@@ -56,33 +56,10 @@ async fn seed_data(client: &Client) -> AppResult<()> {
 /// report/notes, role governance, AWS storage, download/upload history, AI
 /// workflow/task...) đã bị loại cùng domain nghiệp vụ cũ tương ứng.
 async fn ensure_stored_procedures(client: &Client) -> AppResult<()> {
-    let procedures: &[(&str, &str)] = &[
-        // // === Auth ===
-        // ("sp_auth_find_user_by_username", include_str!("../../../docs/store-procedure/sp_auth_find_user_by_username.sql")),
-        // ("sp_auth_get_user_roles", include_str!("../../../docs/store-procedure/sp_auth_get_user_roles.sql")),
-        // ("sp_auth_reset_code_save", include_str!("../../../docs/store-procedure/sp_auth_reset_code_save.sql")),
-        // ("sp_auth_reset_code_verify", include_str!("../../../docs/store-procedure/sp_auth_reset_code_verify.sql")),
-        // ("sp_auth_reset_code_has_valid", include_str!("../../../docs/store-procedure/sp_auth_reset_code_has_valid.sql")),
-        // ("sp_auth_reset_password", include_str!("../../../docs/store-procedure/sp_auth_reset_password.sql")),
-        // // === User (list only) ===
-        // ("sp_user_select_list", include_str!("../../../docs/store-procedure/sp_user_select_list.sql")),
-        // // === Menu Config ===
-        // ("sp_menu_config_select_list", include_str!("../../../docs/store-procedure/sp_menu_config_select_list.sql")),
-        // // === Menu Permission (effective only) ===
-        // ("sp_menu_permission_effective_select", include_str!("../../../docs/store-procedure/sp_menu_permission_effective_select.sql")),
-    ];
+    client
+        .batch_execute(include_str!("../../../docs/database/stored_procedures.sql"))
+        .await
+        .map_err(|e| AppError::new(format!("Failed to create stored procedures: {e}")))?;
 
-    let mut errors = Vec::new();
-
-    for (name, sql) in procedures {
-        if let Err(e) = client.batch_execute(sql).await {
-            errors.push(format!("Failed to create {name}: {e}"));
-        }
-    }
-
-    if errors.is_empty() {
-        Ok(())
-    } else {
-        Err(AppError::new(errors.join("\n")))
-    }
+    Ok(())
 }

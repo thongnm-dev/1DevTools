@@ -7,6 +7,8 @@ mod database {
     pub mod startup_store;
     /// Data access cho module quản lý người dùng.
     pub mod user_store;
+    /// Data access cho bảng `roles` (PostgreSQL).
+    pub mod role_store;
     /// Data access cho bảng `menu_configs` (PostgreSQL).
     pub mod menu_store;
     /// Data access cho bảng `role_menu_permissions` (chỉ quyền hiệu lực).
@@ -15,4 +17,8 @@ mod database {
     pub mod git_repo_store;
     /// Lưu trữ cục bộ (JSON file) danh sách project build của màn hình Docker Desktop.
     pub mod docker_project_store;
+    /// Lưu trữ cục bộ (JSON file) danh sách account AI + settings (AI Usage).
+    pub mod ai_account_store;
+    /// Lưu trữ cục bộ (JSON file) token profile đã capture của account AI Usage.
+    pub mod ai_profile_store;
 }

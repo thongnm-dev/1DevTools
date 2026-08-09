@@ -57,6 +57,13 @@ pub fn run() {
                 });
             }
 
+            // Nạp trước dữ liệu AI Usage và chạy poll nền để theo dõi usage + auto-switch.
+            services::ai_acc_service::preload();
+            let ai_usage_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                services::ai_usage_service::run_poll_loop(ai_usage_handle).await;
+            });
+
             Ok(())
         })
         .invoke_handler(build_invoke_handler())

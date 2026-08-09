@@ -25,7 +25,7 @@ watch(
 </script>
 
 <template>
-  <Dialog v-model:visible="visible" modal :header="title" :style="{ width: '760px' }" :dismissable-mask="false">
+  <Dialog v-model:visible="visible" modal :header="title" :style="{ width: '760px' }" :dismissable-mask="false" maximizable>
     <div class="flex flex-col gap-2">
       <div class="flex items-center gap-2 text-xs">
         <i v-if="status === 'running'" class="pi pi-spinner pi-spin text-brand" />
@@ -43,7 +43,7 @@ watch(
       </div>
       <pre
         ref="logEl"
-        class="h-[440px] w-full overflow-auto whitespace-pre-wrap break-all rounded-md p-3 font-mono text-[11px] leading-relaxed text-slate-200"
+        class="log-host w-full overflow-auto whitespace-pre-wrap break-all rounded-md p-3 font-mono text-[11px] leading-relaxed text-slate-200"
         style="background: #0b0f19"
       >{{ lines.join("\n") }}</pre>
     </div>
@@ -52,3 +52,14 @@ watch(
     </template>
   </Dialog>
 </template>
+
+<style scoped>
+.log-host {
+  height: 440px;
+}
+
+/* Khi dialog ở chế độ full màn hình, cho khung log lấp đầy không gian. */
+.p-dialog-maximized .log-host {
+  height: calc(100vh - 190px);
+}
+</style>

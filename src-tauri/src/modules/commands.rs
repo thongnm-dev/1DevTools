@@ -7,11 +7,15 @@ mod commands {
     pub mod db_config_commands;
     /// Commands lấy thông tin hệ thống và kiểm tra mạng.
     pub mod system_commands;
-    /// Commands cho module quản lý người dùng (danh sách, dùng cho member picker).
+    /// Commands cho module quản lý người dùng (governance: CRUD + list).
     pub mod user_commands;
-    /// Commands cho module quản lý menu.
+    /// Commands cho module quản lý role (governance).
+    pub mod role_commands;
+    /// Commands đọc/ghi cấu hình ứng dụng (config.ini).
+    pub mod app_config_commands;
+    /// Commands cho module quản lý menu (governance: list + save).
     pub mod menu_commands;
-    /// Commands cho phân quyền menu theo user/role (chỉ quyền hiệu lực, dùng cho sidebar).
+    /// Commands cho phân quyền menu theo user/role (hiệu lực + override).
     pub mod menu_permission_commands;
     /// Commands cho cấu hình phân trang DataTable (đọc từ config.ini).
     pub mod pagination_commands;
@@ -23,4 +27,6 @@ mod commands {
     pub mod terminal_commands;
     /// Commands cho màn hình Docker Desktop (thao tác docker + quản lý project build).
     pub mod docker_commands;
+    /// Commands cho module AI Usage (quản lý account AI + probe usage + auto-switch).
+    pub mod ai_usage_commands;
 }

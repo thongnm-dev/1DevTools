@@ -9,9 +9,13 @@ mod models {
     pub mod system;
     /// Model cho module quản lý người dùng.
     pub mod user;
+    /// Model cho module quản lý role (governance).
+    pub mod role;
+    /// Model cho cấu hình ứng dụng (config.ini).
+    pub mod app_config;
     /// Model cho module quản lý menu.
     pub mod menu_entity;
-    /// Model cho phân quyền menu (chỉ quyền hiệu lực).
+    /// Model cho phân quyền menu (hiệu lực + override role/user).
     pub mod menu_permission;
     /// Model cho màn hình Git Desktop.
     pub mod git;
@@ -19,4 +23,6 @@ mod models {
     pub mod explorer;
     /// Model cho màn hình Docker Desktop.
     pub mod docker;
+    /// Model cho module AI Usage (account AI + theo dõi usage + auto-switch).
+    pub mod ai_usage;
 }
