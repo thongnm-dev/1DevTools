@@ -8,6 +8,7 @@ use crate::app::error::AppError;
 use crate::app::result::AppResult;
 use crate::services::claude_terminal::TerminalPlatform;
 
+/// Triển khai [`TerminalPlatform`] cho Windows: script `.bat` + `cmd /k`.
 pub(crate) struct WindowsTerminal;
 
 impl TerminalPlatform for WindowsTerminal {

@@ -81,6 +81,8 @@ pub(crate) trait TerminalPlatform {
     }
 }
 
+/// Validate config dir / working dir, mở rộng `~`, xác định có phải config dir mặc
+/// định không, rồi uỷ quyền cho struct terminal theo từng platform (Windows/macOS/Linux).
 fn spawn_terminal(config_dir: &str, work_dir: &str, command: Option<&str>) -> AppResult<()> {
     let dir = config_dir.trim();
     if dir.is_empty() {

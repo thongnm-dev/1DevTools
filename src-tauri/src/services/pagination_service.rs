@@ -1,17 +1,30 @@
+//! Service cung cấp cấu hình phân trang dùng chung cho các bảng ở frontend.
+//!
+//! Đọc section `[pagination]` trong `config.ini`; thiếu file/section/khoá nào thì
+//! rơi về giá trị mặc định tương ứng.
+
 use crate::utils::app_config::config_path;
 use ini::Ini;
 use serde::Serialize;
 
+/// Cấu hình phân trang trả về cho frontend.
 #[derive(Clone, Debug, Serialize)]
 pub struct PaginationConfig {
+    /// Số dòng mặc định mỗi trang (bảng thường).
     pub rows: u32,
+    /// Các lựa chọn "số dòng/trang" (bảng thường).
     pub rows_per_page_options: Vec<u32>,
+    /// Số dòng mặc định mỗi trang (bảng compact).
     pub rows_compact: u32,
+    /// Các lựa chọn "số dòng/trang" (bảng compact).
     pub rows_per_page_options_compact: Vec<u32>,
+    /// Template bố cục các nút của paginator (PrimeVue).
     pub paginator_template: String,
+    /// Template dòng "Showing x to y of z".
     pub current_page_report_template: String,
 }
 
+/// Parse chuỗi "a,b,c" thành danh sách số nguyên dương, bỏ qua phần tử không hợp lệ.
 fn parse_int_list(raw: &str) -> Vec<u32> {
     raw.split(',')
         .filter_map(|s| s.trim().parse::<u32>().ok())
@@ -19,6 +32,7 @@ fn parse_int_list(raw: &str) -> Vec<u32> {
         .collect()
 }
 
+/// Đọc cấu hình phân trang từ `config.ini`, ghép với giá trị mặc định cho từng khoá thiếu.
 pub fn get_pagination_config() -> PaginationConfig {
     let default = PaginationConfig {
         rows: 20,

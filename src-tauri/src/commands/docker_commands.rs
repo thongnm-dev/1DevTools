@@ -15,6 +15,7 @@ use crate::services::docker_service;
 
 // === Trạng thái Docker ===
 
+/// Kiểm tra Docker daemon có đang chạy và `docker` CLI có dùng được không.
 #[tauri::command]
 pub async fn docker_available() -> bool {
     tauri::async_runtime::spawn_blocking(docker_service::is_available)
@@ -33,6 +34,7 @@ pub async fn docker_start_desktop() -> Result<(), AppErrorPayload> {
 
 // === Container / Image ===
 
+/// Liệt kê container. `all = false` chỉ lấy container đang chạy, `true` lấy cả đã dừng.
 #[tauri::command]
 pub async fn docker_list_containers(all: bool) -> Result<Vec<DockerContainer>, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || docker_service::list_containers(all))
@@ -41,6 +43,7 @@ pub async fn docker_list_containers(all: bool) -> Result<Vec<DockerContainer>, A
         .map_err(log_err)
 }
 
+/// Liệt kê toàn bộ image trên máy.
 #[tauri::command]
 pub async fn docker_list_images() -> Result<Vec<DockerImage>, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(docker_service::list_images)
@@ -49,6 +52,7 @@ pub async fn docker_list_images() -> Result<Vec<DockerImage>, AppErrorPayload> {
         .map_err(log_err)
 }
 
+/// Khởi động container theo `id`.
 #[tauri::command]
 pub async fn docker_start_container(id: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || docker_service::start_container(&id))
@@ -57,6 +61,7 @@ pub async fn docker_start_container(id: String) -> Result<String, AppErrorPayloa
         .map_err(log_err)
 }
 
+/// Dừng container theo `id`.
 #[tauri::command]
 pub async fn docker_stop_container(id: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || docker_service::stop_container(&id))
@@ -65,6 +70,7 @@ pub async fn docker_stop_container(id: String) -> Result<String, AppErrorPayload
         .map_err(log_err)
 }
 
+/// Khởi động lại container theo `id`.
 #[tauri::command]
 pub async fn docker_restart_container(id: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || docker_service::restart_container(&id))
@@ -73,6 +79,7 @@ pub async fn docker_restart_container(id: String) -> Result<String, AppErrorPayl
         .map_err(log_err)
 }
 
+/// Xoá container theo `id`. `force = true` xoá cả container đang chạy.
 #[tauri::command]
 pub async fn docker_remove_container(id: String, force: bool) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || docker_service::remove_container(&id, force))
@@ -81,6 +88,7 @@ pub async fn docker_remove_container(id: String, force: bool) -> Result<String, 
         .map_err(log_err)
 }
 
+/// Xoá image theo `id`. `force = true` xoá kể cả khi image đang được tham chiếu.
 #[tauri::command]
 pub async fn docker_remove_image(id: String, force: bool) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || docker_service::remove_image(&id, force))
@@ -89,6 +97,7 @@ pub async fn docker_remove_image(id: String, force: bool) -> Result<String, AppE
         .map_err(log_err)
 }
 
+/// Dọn (prune) các container đã dừng.
 #[tauri::command]
 pub async fn docker_prune_containers() -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(docker_service::prune_containers)
@@ -97,6 +106,7 @@ pub async fn docker_prune_containers() -> Result<String, AppErrorPayload> {
         .map_err(log_err)
 }
 
+/// Dọn image không dùng. `dangling_only = true` chỉ xoá image "dangling" (không tag).
 #[tauri::command]
 pub async fn docker_prune_images(dangling_only: bool) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || docker_service::prune_images(dangling_only))
@@ -105,6 +115,7 @@ pub async fn docker_prune_images(dangling_only: bool) -> Result<String, AppError
         .map_err(log_err)
 }
 
+/// Dọn toàn hệ thống Docker (container/image/network/build cache không dùng).
 #[tauri::command]
 pub async fn docker_prune_system() -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(docker_service::prune_system)
@@ -115,6 +126,8 @@ pub async fn docker_prune_system() -> Result<String, AppErrorPayload> {
 
 // === Build / Compose (stream output qua Channel) ===
 
+/// Build image từ `context_path` + `dockerfile`, gắn `tag`. `no_cache` bỏ qua cache.
+/// Output build được đẩy từng dòng về frontend qua `on_progress` để hiển thị realtime.
 #[tauri::command]
 pub async fn docker_build(
     context_path: String,
@@ -133,6 +146,8 @@ pub async fn docker_build(
     .map_err(log_err)
 }
 
+/// Chạy `docker compose up` cho `compose_file`. `clean = true` build lại từ đầu.
+/// Output được stream về frontend qua `on_progress`.
 #[tauri::command]
 pub async fn docker_compose_up(
     compose_file: String,
@@ -149,6 +164,7 @@ pub async fn docker_compose_up(
     .map_err(log_err)
 }
 
+/// Chạy `docker compose down` để tắt và gỡ các service của `compose_file`.
 #[tauri::command]
 pub async fn docker_compose_down(compose_file: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || docker_service::compose_down(&compose_file))
@@ -159,6 +175,7 @@ pub async fn docker_compose_down(compose_file: String) -> Result<String, AppErro
 
 // === Danh sách project build đã lưu (JSON cục bộ) ===
 
+/// Liệt kê các project build đã lưu (JSON cục bộ), sắp xếp theo tên không phân biệt hoa/thường.
 #[tauri::command]
 pub fn docker_list_projects() -> Result<Vec<DockerProject>, AppErrorPayload> {
     let data = docker_project_store::load().map_err(log_err)?;
@@ -167,6 +184,7 @@ pub fn docker_list_projects() -> Result<Vec<DockerProject>, AppErrorPayload> {
     Ok(projects)
 }
 
+/// Thêm project build mới vào store cục bộ, tự sinh `id` tăng dần và trả về project.
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
 pub fn docker_add_project(
@@ -197,6 +215,7 @@ pub fn docker_add_project(
     Ok(project)
 }
 
+/// Cập nhật thông tin project `id` trong store; báo lỗi nếu không tìm thấy.
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
 pub fn docker_update_project(
@@ -225,6 +244,7 @@ pub fn docker_update_project(
     Ok(updated)
 }
 
+/// Xoá project `id` khỏi store cục bộ (không tác động tới image/container thực tế).
 #[tauri::command]
 pub fn docker_remove_project(id: i64) -> Result<(), AppErrorPayload> {
     let mut data = docker_project_store::load().map_err(log_err)?;

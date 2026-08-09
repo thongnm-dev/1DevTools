@@ -7,6 +7,8 @@ use crate::models::user::{
     ChangePasswordRequest, CreateUserRequest, UpdateUserRequest, UserDetail, UserSummary,
 };
 
+/// Tạo user mới: validate các trường bắt buộc, kiểm tra username chưa tồn tại,
+/// hash mật khẩu bằng bcrypt (cost 12) rồi lưu kèm danh sách role.
 pub async fn create_user(request: CreateUserRequest) -> AppResult<UserDetail> {
     let username = request.username.trim().to_string();
     let password = request.password.trim().to_string();
@@ -48,6 +50,7 @@ pub async fn create_user(request: CreateUserRequest) -> AppResult<UserDetail> {
     .await
 }
 
+/// Cập nhật hồ sơ user (họ tên, liên hệ, trạng thái active, role). Không đổi mật khẩu.
 pub async fn update_user(user_id: i32, request: UpdateUserRequest) -> AppResult<UserDetail> {
     let full_name = request.full_name.trim().to_string();
 
@@ -75,16 +78,19 @@ pub async fn update_user(user_id: i32, request: UpdateUserRequest) -> AppResult<
     .await
 }
 
+/// Lấy chi tiết một user; báo lỗi nếu không tồn tại.
 pub async fn get_user_detail(user_id: i32) -> AppResult<UserDetail> {
     user_store::find_by_id(user_id)
         .await?
         .ok_or_else(|| AppError::new(format!("User '{user_id}' not found.")))
 }
 
+/// Liệt kê toàn bộ user ở dạng tóm tắt.
 pub async fn list_users() -> AppResult<Vec<UserSummary>> {
     user_store::list_all().await
 }
 
+/// Xoá user; báo lỗi nếu id không tồn tại.
 pub async fn delete_user(user_id: i32) -> AppResult<()> {
     if !user_store::delete_by_id(user_id).await? {
         return Err(AppError::new(format!("User '{user_id}' not found.")));
@@ -92,6 +98,7 @@ pub async fn delete_user(user_id: i32) -> AppResult<()> {
     Ok(())
 }
 
+/// Đổi mật khẩu user: validate, kiểm tra user tồn tại, hash mới (bcrypt cost 12) rồi lưu.
 pub async fn change_password(user_id: i32, request: ChangePasswordRequest) -> AppResult<()> {
     let password = request.new_password.trim().to_string();
 
@@ -113,6 +120,7 @@ pub async fn change_password(user_id: i32, request: ChangePasswordRequest) -> Ap
     Ok(())
 }
 
+/// Liệt kê tên các role để đổ vào dropdown chọn quyền khi tạo/sửa user.
 pub async fn list_roles() -> AppResult<Vec<String>> {
     user_store::list_roles().await
 }

@@ -35,6 +35,7 @@ struct Active {
     path: String,
 }
 
+/// Watcher đang hoạt động (toàn cục, tối đa 1). Khởi tạo lười bằng `OnceLock`.
 fn active() -> &'static Mutex<Option<Active>> {
     static ACTIVE: OnceLock<Mutex<Option<Active>>> = OnceLock::new();
     ACTIVE.get_or_init(|| Mutex::new(None))

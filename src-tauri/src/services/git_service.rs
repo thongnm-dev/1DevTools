@@ -622,6 +622,9 @@ pub fn log_range(repo_path: &str, range: &str, limit: u32) -> AppResult<Vec<GitC
     Ok(parse_commits(&raw))
 }
 
+/// Tìm commit theo bộ lọc, có phân trang. Mỗi tham số rỗng thì bỏ qua filter đó:
+/// `after`/`before` (khoảng ngày), `author`, `message` (nội dung), `file` (đường dẫn);
+/// `skip`/`limit` để phân trang.
 pub fn log_search(
     repo_path: &str,
     after: &str,
@@ -703,6 +706,7 @@ fn parse_name_status_z(raw: &str) -> Vec<GitFileChange> {
     files
 }
 
+/// Parse output `git log` đã format bằng `FS`/`RS` thành danh sách `GitCommit`.
 fn parse_commits(raw: &str) -> Vec<GitCommit> {
     raw.split(RS)
         .map(|r| r.trim_matches(['\n', '\r']))
@@ -1273,6 +1277,7 @@ pub fn cleanup_delete(repo_path: &str, branches: &[String]) -> AppResult<Vec<Str
 
 // === Compare / Pull Request ===
 
+/// Đếm số commit trong một range (`git rev-list --count <range>`); 0 nếu lỗi.
 fn count_range(repo_path: &str, range: &str) -> u32 {
     run_opt(repo_path, &["rev-list", "--count", range])
         .parse()
@@ -1570,6 +1575,7 @@ pub fn credential_token(host: &str) -> String {
     String::new()
 }
 
+/// Dựng HTTP client (timeout 30s) để gọi API GitHub/GitLab khi liệt kê Pull Request.
 fn build_http() -> AppResult<Client> {
     Client::builder()
         .timeout(Duration::from_secs(30))
@@ -1590,6 +1596,7 @@ pub async fn list_pull_requests(repo_path: &str, state: &str) -> AppResult<Vec<G
     }
 }
 
+/// Gọi REST API GitHub liệt kê pull request theo `state`, ánh xạ về `GitPullRequest`.
 async fn github_pull_requests(
     src: &PrSource,
     token: &str,
@@ -1659,6 +1666,7 @@ async fn github_pull_requests(
     Ok(out)
 }
 
+/// Gọi REST API GitLab liệt kê merge request theo `state`, ánh xạ về `GitPullRequest`.
 async fn gitlab_merge_requests(
     src: &PrSource,
     token: &str,

@@ -251,7 +251,7 @@ watch(visible, (v) => {
           </div>
           <DataTable
             v-else
-            class="app-data-table"
+            class="app-data-table gitlog-table flex-1"
             :value="commits"
             :loading="loading"
             lazy
@@ -266,7 +266,6 @@ watch(visible, (v) => {
             data-key="hash"
             scrollable
             scroll-height="flex"
-            class="gitlog-table flex-1"
             @page="onPage"
             @row-select="(e: any) => selectCommit(e.data)"
           >

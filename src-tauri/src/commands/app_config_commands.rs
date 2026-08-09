@@ -4,11 +4,13 @@ use crate::app::error::AppErrorPayload;
 use crate::models::app_config::{AppConfigData, SaveAppConfigRequest};
 use crate::services::app_config_service;
 
+/// Đọc cấu hình ứng dụng hiện tại từ `config.ini` để hiển thị/prefill form settings.
 #[tauri::command]
 pub fn get_app_config() -> Result<AppConfigData, AppErrorPayload> {
     app_config_service::get_app_config().map_err(crate::app::error::log_err)
 }
 
+/// Lưu cấu hình ứng dụng xuống `config.ini` và trả về giá trị sau khi lưu.
 #[tauri::command]
 pub fn save_app_config(request: SaveAppConfigRequest) -> Result<AppConfigData, AppErrorPayload> {
     app_config_service::save_app_config(request).map_err(crate::app::error::log_err)

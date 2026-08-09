@@ -10,6 +10,7 @@ use crate::services::ai_usage_service;
 use crate::services::claude_service;
 use crate::services::claude_terminal;
 
+/// Thêm thủ công một account AI bằng token do người dùng nhập (không qua dò/capture).
 #[tauri::command]
 pub async fn ai_usage_add_account(request: AddAiAccountRequest) -> Result<AiAccount, AppErrorPayload> {
     ai_acc_service::add_account(request).map_err(crate::app::error::log_err)
@@ -56,11 +57,13 @@ pub async fn ai_usage_add_config_dir(
     claude_service::add_config_dir(config_dir, name).map_err(crate::app::error::log_err)
 }
 
+/// Liệt kê tất cả account AI đã lưu (kèm thông tin usage gần nhất).
 #[tauri::command]
 pub async fn ai_usage_list_accounts() -> Result<Vec<AiAccount>, AppErrorPayload> {
     ai_acc_service::list_accounts().map_err(crate::app::error::log_err)
 }
 
+/// Cập nhật thông tin account (đổi tên, ghi chú…).
 #[tauri::command]
 pub async fn ai_usage_update_account(
     request: UpdateAiAccountRequest,
@@ -68,21 +71,25 @@ pub async fn ai_usage_update_account(
     ai_acc_service::update_account(request).map_err(crate::app::error::log_err)
 }
 
+/// Xoá account AI theo ID (kèm token/profile liên quan).
 #[tauri::command]
 pub async fn ai_usage_delete_account(id: i64) -> Result<(), AppErrorPayload> {
     ai_acc_service::delete_account(id).map_err(crate::app::error::log_err)
 }
 
+/// Đặt account `id` làm account đang active (dùng cho các thao tác Claude sau đó).
 #[tauri::command]
 pub async fn ai_usage_set_active(id: i64) -> Result<(), AppErrorPayload> {
     ai_acc_service::set_active(id).map_err(crate::app::error::log_err)
 }
 
+/// Lấy access token của account `id` (giải mã từ profile) để gọi API.
 #[tauri::command]
 pub async fn ai_usage_get_token(id: i64) -> Result<String, AppErrorPayload> {
     ai_acc_service::get_token(id).map_err(crate::app::error::log_err)
 }
 
+/// Nhận tín hiệu usage do frontend/CLI báo về để cập nhật số liệu sử dụng.
 #[tauri::command]
 pub async fn ai_usage_report_signal(request: ReportUsageSignalRequest) -> Result<(), AppErrorPayload> {
     ai_acc_service::report_signal(request).map_err(crate::app::error::log_err)
@@ -105,11 +112,13 @@ pub async fn ai_usage_refresh(app: tauri::AppHandle) -> Result<Vec<AiAccount>, A
     ai_acc_service::list_accounts().map_err(crate::app::error::log_err)
 }
 
+/// Đọc cấu hình module AI Usage (chu kỳ tự probe, ngưỡng cảnh báo…).
 #[tauri::command]
 pub async fn ai_usage_get_settings() -> Result<AiUsageSettings, AppErrorPayload> {
     ai_acc_service::get_settings().map_err(crate::app::error::log_err)
 }
 
+/// Lưu cấu hình module AI Usage.
 #[tauri::command]
 pub async fn ai_usage_save_settings(settings: AiUsageSettings) -> Result<(), AppErrorPayload> {
     ai_acc_service::save_settings(settings).map_err(crate::app::error::log_err)

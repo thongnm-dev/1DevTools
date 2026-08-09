@@ -8,10 +8,13 @@ use crate::models::menu_permission::{
     UserMenuPermission,
 };
 
+/// Lấy danh sách key menu được cấp cho một role.
 pub async fn list_role_menu_permissions(role_id: i32) -> AppResult<Vec<String>> {
     menu_permission_store::list_role_menu_keys(role_id).await
 }
 
+/// Ghi đè quyền menu của role: kiểm tra role tồn tại, đồng bộ danh sách key,
+/// rồi trả về danh sách sau khi lưu.
 pub async fn save_role_menu_permissions(
     request: SaveRoleMenuPermissionsRequest,
 ) -> AppResult<Vec<String>> {
@@ -23,10 +26,13 @@ pub async fn save_role_menu_permissions(
     menu_permission_store::list_role_menu_keys(request.role_id).await
 }
 
+/// Lấy các quyền ghi đè cấp user (allow/deny riêng cho từng menu).
 pub async fn list_user_menu_permissions(user_id: i32) -> AppResult<Vec<UserMenuPermission>> {
     menu_permission_store::list_user_overrides(user_id).await
 }
 
+/// Ghi đè quyền menu cấp user: kiểm tra user tồn tại và một menu không thể vừa
+/// được cấp (allow) vừa bị thu hồi (deny), rồi đồng bộ và trả về danh sách sau khi lưu.
 pub async fn save_user_menu_permissions(
     request: SaveUserMenuPermissionsRequest,
 ) -> AppResult<Vec<UserMenuPermission>> {
@@ -54,6 +60,8 @@ pub async fn save_user_menu_permissions(
     menu_permission_store::list_user_overrides(request.user_id).await
 }
 
+/// Tính quyền menu hiệu lực cuối cùng của user = quyền theo role hợp nhất với các
+/// ghi đè cấp user (deny thắng allow). Đây là nguồn UI dùng để ẩn/hiện menu.
 pub async fn list_effective_menu_permissions(
     user_id: i32,
 ) -> AppResult<Vec<EffectiveMenuPermission>> {

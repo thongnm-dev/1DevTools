@@ -5,10 +5,12 @@ use crate::app::result::AppResult;
 use crate::database::menu_store;
 use crate::models::menu_entity::{MenuEntity, SaveAllMenuConfigsRequest, SaveMenuConfigRequest};
 
+/// Lấy toàn bộ cấu hình menu đang lưu.
 pub async fn list_menu_configs() -> AppResult<Vec<MenuEntity>> {
     menu_store::list_all().await
 }
 
+/// Upsert một mục menu; validate `key` và `title` không được rỗng.
 pub async fn save_menu_config(request: SaveMenuConfigRequest) -> AppResult<()> {
     if request.key.trim().is_empty() {
         return Err(AppError::new("Menu key không được để trống."));
@@ -20,6 +22,8 @@ pub async fn save_menu_config(request: SaveMenuConfigRequest) -> AppResult<()> {
     menu_store::upsert(&request).await
 }
 
+/// Lưu toàn bộ danh sách menu trong một lần (khi sắp xếp lại): validate mọi mục
+/// trước, ghi đè cả bảng rồi trả về danh sách sau khi lưu.
 pub async fn save_all_menu_configs(
     request: SaveAllMenuConfigsRequest,
 ) -> AppResult<Vec<MenuEntity>> {

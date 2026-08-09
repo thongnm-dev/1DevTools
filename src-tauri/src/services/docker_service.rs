@@ -222,18 +222,22 @@ pub fn list_images() -> AppResult<Vec<DockerImage>> {
     Ok(result)
 }
 
+/// `docker start <id>` — khởi động container.
 pub fn start_container(id: &str) -> AppResult<String> {
     run(&["start", id])
 }
 
+/// `docker stop <id>` — dừng container.
 pub fn stop_container(id: &str) -> AppResult<String> {
     run(&["stop", id])
 }
 
+/// `docker restart <id>` — khởi động lại container.
 pub fn restart_container(id: &str) -> AppResult<String> {
     run(&["restart", id])
 }
 
+/// `docker rm [-f] <id>` — xoá container. `force = true` xoá cả container đang chạy.
 pub fn remove_container(id: &str, force: bool) -> AppResult<String> {
     if force {
         run(&["rm", "-f", id])
@@ -242,6 +246,7 @@ pub fn remove_container(id: &str, force: bool) -> AppResult<String> {
     }
 }
 
+/// `docker rmi [-f] <id>` — xoá image. `force = true` xoá kể cả khi đang bị tham chiếu.
 pub fn remove_image(id: &str, force: bool) -> AppResult<String> {
     if force {
         run(&["rmi", "-f", id])
@@ -250,10 +255,13 @@ pub fn remove_image(id: &str, force: bool) -> AppResult<String> {
     }
 }
 
+/// `docker container prune -f` — xoá mọi container đã dừng.
 pub fn prune_containers() -> AppResult<String> {
     run(&["container", "prune", "-f"])
 }
 
+/// `docker image prune` — dọn image không dùng. `dangling_only = false` thêm `-a`
+/// để xoá cả image có tag nhưng không container nào dùng.
 pub fn prune_images(dangling_only: bool) -> AppResult<String> {
     if dangling_only {
         run(&["image", "prune", "-f"])
@@ -262,6 +270,7 @@ pub fn prune_images(dangling_only: bool) -> AppResult<String> {
     }
 }
 
+/// `docker system prune -f` — dọn toàn bộ tài nguyên không dùng.
 pub fn prune_system() -> AppResult<String> {
     run(&["system", "prune", "-f"])
 }

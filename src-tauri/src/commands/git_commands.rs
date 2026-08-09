@@ -87,16 +87,19 @@ pub fn git_touch_repo(id: i64) -> Result<(), AppErrorPayload> {
 
 // === Đọc trạng thái repo (nhanh, chạy đồng bộ) ===
 
+/// Thông tin tổng quan repo tại `path`: đường dẫn top-level, branch hiện tại, remote…
 #[tauri::command]
 pub fn git_repo_info(path: String) -> Result<GitRepoInfo, AppErrorPayload> {
     git_service::repo_info(&path).map_err(log_err)
 }
 
+/// Trạng thái working tree: file staged/modified/untracked, ahead/behind so với remote.
 #[tauri::command]
 pub fn git_status(path: String) -> Result<GitStatus, AppErrorPayload> {
     git_service::status(&path).map_err(log_err)
 }
 
+/// Lấy diff của một file. `staged` = diff vùng staged; `untracked` = file chưa được track.
 #[tauri::command]
 pub fn git_file_diff(
     path: String,
@@ -107,16 +110,19 @@ pub fn git_file_diff(
     git_service::file_diff(&path, &file, staged, untracked).map_err(log_err)
 }
 
+/// Diff của một file trong phạm vi một commit cụ thể (`hash`).
 #[tauri::command]
 pub fn git_commit_file_diff(path: String, hash: String, file: String) -> Result<GitDiff, AppErrorPayload> {
     git_service::commit_file_diff(&path, &hash, &file).map_err(log_err)
 }
 
+/// Lịch sử commit gần nhất, tối đa `limit` commit.
 #[tauri::command]
 pub fn git_log(path: String, limit: u32) -> Result<Vec<GitCommit>, AppErrorPayload> {
     git_service::log(&path, limit).map_err(log_err)
 }
 
+/// Tìm commit theo bộ lọc (khoảng thời gian, tác giả, nội dung message, file…) có phân trang.
 #[tauri::command]
 pub fn git_log_search(
     path: String,
@@ -134,6 +140,7 @@ pub fn git_log_search(
     .map_err(log_err)
 }
 
+/// Dữ liệu vẽ đồ thị commit (nhánh/merge) cho tab Graph, tối đa `limit` commit.
 #[tauri::command]
 pub async fn git_graph(path: String, limit: u32) -> Result<Vec<GitGraphCommit>, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::graph(&path, limit))
@@ -142,41 +149,49 @@ pub async fn git_graph(path: String, limit: u32) -> Result<Vec<GitGraphCommit>, 
         .map_err(log_err)
 }
 
+/// Chi tiết một commit: metadata + danh sách file thay đổi.
 #[tauri::command]
 pub fn git_commit_detail(path: String, hash: String) -> Result<GitCommitDetail, AppErrorPayload> {
     git_service::commit_detail(&path, &hash).map_err(log_err)
 }
 
+/// Danh sách branch (local + remote) kèm trạng thái ahead/behind.
 #[tauri::command]
 pub fn git_branches(path: String) -> Result<Vec<GitBranch>, AppErrorPayload> {
     git_service::branches(&path).map_err(log_err)
 }
 
+/// Danh sách các stash đang lưu.
 #[tauri::command]
 pub fn git_stash_list(path: String) -> Result<Vec<GitStash>, AppErrorPayload> {
     git_service::stash_list(&path).map_err(log_err)
 }
 
+/// Danh sách các worktree gắn với repo.
 #[tauri::command]
 pub fn git_worktree_list(path: String) -> Result<Vec<GitWorktree>, AppErrorPayload> {
     git_service::worktree_list(&path).map_err(log_err)
 }
 
+/// Danh sách file đang xung đột (khi merge/rebase/cherry-pick dở dang).
 #[tauri::command]
 pub fn git_list_conflicts(path: String) -> Result<Vec<String>, AppErrorPayload> {
     git_service::list_conflicts(&path).map_err(log_err)
 }
 
+/// Danh sách tag trong repo.
 #[tauri::command]
 pub fn git_tag_list(path: String) -> Result<Vec<GitTag>, AppErrorPayload> {
     git_service::tag_list(&path).map_err(log_err)
 }
 
+/// Blame một file tại revision `rev`: gán mỗi dòng với commit sửa đổi cuối cùng.
 #[tauri::command]
 pub fn git_blame(path: String, file: String, rev: String) -> Result<GitBlame, AppErrorPayload> {
     git_service::blame(&path, &file, &rev).map_err(log_err)
 }
 
+/// Diff một file giữa hai điểm `base`..`head` (branch/commit) khi so sánh.
 #[tauri::command]
 pub fn git_compare_file_diff(
     path: String,
@@ -189,6 +204,7 @@ pub fn git_compare_file_diff(
 
 // === Thao tác ghi / mạng (async) ===
 
+/// Stage (add) các file được chọn.
 #[tauri::command]
 pub async fn git_stage(path: String, files: Vec<String>) -> Result<(), AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::stage(&path, &files))
@@ -197,6 +213,7 @@ pub async fn git_stage(path: String, files: Vec<String>) -> Result<(), AppErrorP
         .map_err(log_err)
 }
 
+/// Bỏ stage (reset) các file được chọn về lại working tree.
 #[tauri::command]
 pub async fn git_unstage(path: String, files: Vec<String>) -> Result<(), AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::unstage(&path, &files))
@@ -205,6 +222,7 @@ pub async fn git_unstage(path: String, files: Vec<String>) -> Result<(), AppErro
         .map_err(log_err)
 }
 
+/// Huỷ thay đổi (checkout/clean) các file — thao tác phá huỷ, không khôi phục được.
 #[tauri::command]
 pub async fn git_discard(path: String, files: Vec<String>) -> Result<(), AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::discard(&path, &files))
@@ -213,6 +231,7 @@ pub async fn git_discard(path: String, files: Vec<String>) -> Result<(), AppErro
         .map_err(log_err)
 }
 
+/// Tạo commit từ vùng staged với `message`, trả về hash commit vừa tạo.
 #[tauri::command]
 pub async fn git_commit(path: String, message: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::commit(&path, &message))
@@ -221,6 +240,7 @@ pub async fn git_commit(path: String, message: String) -> Result<String, AppErro
         .map_err(log_err)
 }
 
+/// Sửa (amend) commit gần nhất với message mới và các thay đổi đang staged.
 #[tauri::command]
 pub async fn git_amend_commit(path: String, message: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::amend_commit(&path, &message))
@@ -229,6 +249,7 @@ pub async fn git_amend_commit(path: String, message: String) -> Result<String, A
         .map_err(log_err)
 }
 
+/// Chuyển sang branch `name` (checkout).
 #[tauri::command]
 pub async fn git_checkout_branch(path: String, name: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::checkout_branch(&path, &name))
@@ -237,6 +258,7 @@ pub async fn git_checkout_branch(path: String, name: String) -> Result<String, A
         .map_err(log_err)
 }
 
+/// Tạo branch `name` từ điểm `from` (branch/commit) rồi checkout sang đó.
 #[tauri::command]
 pub async fn git_create_branch(path: String, name: String, from: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::create_branch(&path, &name, &from))
@@ -245,6 +267,7 @@ pub async fn git_create_branch(path: String, name: String, from: String) -> Resu
         .map_err(log_err)
 }
 
+/// Xoá branch `name`. `force = true` xoá cả khi branch chưa được merge.
 #[tauri::command]
 pub async fn git_delete_branch(path: String, name: String, force: bool) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::delete_branch(&path, &name, force))
@@ -253,6 +276,7 @@ pub async fn git_delete_branch(path: String, name: String, force: bool) -> Resul
         .map_err(log_err)
 }
 
+/// Fetch cập nhật từ remote (không merge). Tiến độ stream về UI qua `on_progress`.
 #[tauri::command]
 pub async fn git_fetch(
     path: String,
@@ -268,6 +292,7 @@ pub async fn git_fetch(
     .map_err(log_err)
 }
 
+/// Pull (fetch + merge/rebase) từ remote về branch hiện tại. Tiến độ qua `on_progress`.
 #[tauri::command]
 pub async fn git_pull(
     path: String,
@@ -283,6 +308,7 @@ pub async fn git_pull(
     .map_err(log_err)
 }
 
+/// Push branch hiện tại lên remote. Tiến độ stream về UI qua `on_progress`.
 #[tauri::command]
 pub async fn git_push(
     path: String,
@@ -298,6 +324,7 @@ pub async fn git_push(
     .map_err(log_err)
 }
 
+/// Cất (stash) các thay đổi hiện tại kèm `message`.
 #[tauri::command]
 pub async fn git_stash_save(path: String, message: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::stash_save(&path, &message))
@@ -306,6 +333,7 @@ pub async fn git_stash_save(path: String, message: String) -> Result<String, App
         .map_err(log_err)
 }
 
+/// Áp dụng lại một stash. `pop = true` áp dụng xong xoá luôn stash đó.
 #[tauri::command]
 pub async fn git_stash_apply(path: String, reference: String, pop: bool) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::stash_apply(&path, &reference, pop))
@@ -314,6 +342,7 @@ pub async fn git_stash_apply(path: String, reference: String, pop: bool) -> Resu
         .map_err(log_err)
 }
 
+/// Xoá một stash theo `reference` mà không áp dụng.
 #[tauri::command]
 pub async fn git_stash_drop(path: String, reference: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::stash_drop(&path, &reference))
@@ -322,6 +351,7 @@ pub async fn git_stash_drop(path: String, reference: String) -> Result<String, A
         .map_err(log_err)
 }
 
+/// Clone repo từ `url` vào thư mục `dest`. Tiến độ stream về UI qua `on_progress`.
 #[tauri::command]
 pub async fn git_clone(
     url: String,
@@ -338,6 +368,7 @@ pub async fn git_clone(
     .map_err(log_err)
 }
 
+/// Hoàn tác commit gần nhất nhưng giữ lại thay đổi trong working tree (soft reset).
 #[tauri::command]
 pub async fn git_undo_last_commit(path: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::undo_last_commit(&path))
@@ -346,6 +377,7 @@ pub async fn git_undo_last_commit(path: String) -> Result<String, AppErrorPayloa
         .map_err(log_err)
 }
 
+/// Reset HEAD về `hash` theo `mode` (soft/mixed/hard).
 #[tauri::command]
 pub async fn git_reset(path: String, hash: String, mode: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::reset_to(&path, &hash, &mode))
@@ -354,6 +386,7 @@ pub async fn git_reset(path: String, hash: String, mode: String) -> Result<Strin
         .map_err(log_err)
 }
 
+/// Revert commit `hash` (tạo commit mới đảo ngược thay đổi).
 #[tauri::command]
 pub async fn git_revert(path: String, hash: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::revert(&path, &hash))
@@ -362,6 +395,7 @@ pub async fn git_revert(path: String, hash: String) -> Result<String, AppErrorPa
         .map_err(log_err)
 }
 
+/// Huỷ quá trình revert đang dang dở (khi bị xung đột).
 #[tauri::command]
 pub async fn git_revert_abort(path: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::revert_abort(&path))
@@ -370,6 +404,7 @@ pub async fn git_revert_abort(path: String) -> Result<String, AppErrorPayload> {
         .map_err(log_err)
 }
 
+/// Rebase branch hiện tại lên `onto`.
 #[tauri::command]
 pub async fn git_rebase(path: String, onto: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::rebase(&path, &onto))
@@ -378,6 +413,7 @@ pub async fn git_rebase(path: String, onto: String) -> Result<String, AppErrorPa
         .map_err(log_err)
 }
 
+/// Huỷ quá trình rebase đang dang dở, trả repo về trạng thái trước rebase.
 #[tauri::command]
 pub async fn git_rebase_abort(path: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::rebase_abort(&path))
@@ -386,6 +422,7 @@ pub async fn git_rebase_abort(path: String) -> Result<String, AppErrorPayload> {
         .map_err(log_err)
 }
 
+/// Tiếp tục rebase sau khi đã giải quyết xung đột.
 #[tauri::command]
 pub async fn git_rebase_continue(path: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::rebase_continue(&path))
@@ -394,6 +431,7 @@ pub async fn git_rebase_continue(path: String) -> Result<String, AppErrorPayload
         .map_err(log_err)
 }
 
+/// Tạo tag `name` tại `hash`. `annotated` = tag có message; `push` = đẩy tag lên remote.
 #[tauri::command]
 pub async fn git_tag_create(
     path: String,
@@ -411,6 +449,7 @@ pub async fn git_tag_create(
     .map_err(log_err)
 }
 
+/// Xoá tag `name`. `remote = true` xoá cả tag trên remote.
 #[tauri::command]
 pub async fn git_tag_delete(path: String, name: String, remote: bool) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::tag_delete(&path, &name, remote))
@@ -419,6 +458,7 @@ pub async fn git_tag_delete(path: String, name: String, remote: bool) -> Result<
         .map_err(log_err)
 }
 
+/// Merge `branch` vào branch hiện tại. `squash = true` gộp thành 1 commit với `message`.
 #[tauri::command]
 pub async fn git_merge(
     path: String,
@@ -434,6 +474,7 @@ pub async fn git_merge(
     .map_err(log_err)
 }
 
+/// Huỷ merge đang dang dở, trả repo về trạng thái trước merge.
 #[tauri::command]
 pub async fn git_merge_abort(path: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::merge_abort(&path))
@@ -442,6 +483,7 @@ pub async fn git_merge_abort(path: String) -> Result<String, AppErrorPayload> {
         .map_err(log_err)
 }
 
+/// Hoàn tất commit merge/cherry-pick với message mặc định (`--no-edit`).
 #[tauri::command]
 pub async fn git_commit_no_edit(path: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::commit_no_edit(&path))
@@ -450,6 +492,7 @@ pub async fn git_commit_no_edit(path: String) -> Result<String, AppErrorPayload>
         .map_err(log_err)
 }
 
+/// Giải quyết xung đột một file bằng cách chọn `side` (ours/theirs).
 #[tauri::command]
 pub async fn git_resolve_conflict(path: String, file: String, side: String) -> Result<(), AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::resolve_conflict(&path, &file, &side))
@@ -458,6 +501,7 @@ pub async fn git_resolve_conflict(path: String, file: String, side: String) -> R
         .map_err(log_err)
 }
 
+/// Quét các branch local đã merge / không còn remote để đề xuất dọn dẹp.
 #[tauri::command]
 pub async fn git_cleanup_scan(path: String) -> Result<Vec<String>, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::cleanup_scan(&path))
@@ -466,6 +510,7 @@ pub async fn git_cleanup_scan(path: String) -> Result<Vec<String>, AppErrorPaylo
         .map_err(log_err)
 }
 
+/// Xoá các branch được chọn từ kết quả scan, trả về danh sách đã xoá thành công.
 #[tauri::command]
 pub async fn git_cleanup_delete(
     path: String,
@@ -477,6 +522,7 @@ pub async fn git_cleanup_delete(
         .map_err(log_err)
 }
 
+/// So sánh hai điểm `base`..`head`: danh sách commit và file khác nhau.
 #[tauri::command]
 pub async fn git_compare(
     path: String,
@@ -489,6 +535,7 @@ pub async fn git_compare(
         .map_err(log_err)
 }
 
+/// Tạo pull request từ `head` vào `base` (qua `gh` CLI), trả về URL PR.
 #[tauri::command]
 pub async fn git_create_pull_request(
     path: String,
@@ -503,6 +550,7 @@ pub async fn git_create_pull_request(
     .map_err(log_err)
 }
 
+/// Liệt kê pull request của repo theo `state` (open/closed/all) qua `gh` CLI.
 #[tauri::command]
 pub async fn git_list_pull_requests(
     path: String,
@@ -513,6 +561,7 @@ pub async fn git_list_pull_requests(
         .map_err(log_err)
 }
 
+/// Mở `url` bằng trình duyệt mặc định (ví dụ mở PR trên GitHub).
 #[tauri::command]
 pub async fn git_open_url(url: String) -> Result<(), AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::open_url(&url))
@@ -521,6 +570,7 @@ pub async fn git_open_url(url: String) -> Result<(), AppErrorPayload> {
         .map_err(log_err)
 }
 
+/// Mở terminal của hệ điều hành tại thư mục repo.
 #[tauri::command]
 pub async fn git_open_terminal(path: String) -> Result<(), AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::open_terminal(&path))
@@ -529,6 +579,7 @@ pub async fn git_open_terminal(path: String) -> Result<(), AppErrorPayload> {
         .map_err(log_err)
 }
 
+/// Mở repo bằng VS Code (`code <path>`).
 #[tauri::command]
 pub async fn git_open_vscode(path: String) -> Result<(), AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::open_vscode(&path))
@@ -537,6 +588,7 @@ pub async fn git_open_vscode(path: String) -> Result<(), AppErrorPayload> {
         .map_err(log_err)
 }
 
+/// Cherry-pick commit `hash` vào branch hiện tại.
 #[tauri::command]
 pub async fn git_cherry_pick(path: String, hash: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::cherry_pick(&path, &hash))
@@ -545,6 +597,7 @@ pub async fn git_cherry_pick(path: String, hash: String) -> Result<String, AppEr
         .map_err(log_err)
 }
 
+/// Huỷ cherry-pick đang dang dở (khi xung đột).
 #[tauri::command]
 pub async fn git_cherry_pick_abort(path: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::cherry_pick_abort(&path))
@@ -553,6 +606,7 @@ pub async fn git_cherry_pick_abort(path: String) -> Result<String, AppErrorPaylo
         .map_err(log_err)
 }
 
+/// Tiếp tục cherry-pick sau khi đã giải quyết xung đột.
 #[tauri::command]
 pub async fn git_cherry_pick_continue(path: String) -> Result<String, AppErrorPayload> {
     tauri::async_runtime::spawn_blocking(move || git_service::cherry_pick_continue(&path))
@@ -561,6 +615,8 @@ pub async fn git_cherry_pick_continue(path: String) -> Result<String, AppErrorPa
         .map_err(log_err)
 }
 
+/// Thêm worktree mới tại `worktree_path`. Dùng `new_branch` để tạo branch mới,
+/// hoặc `branch` để checkout branch có sẵn.
 #[tauri::command]
 pub async fn git_worktree_add(
     path: String,
@@ -576,6 +632,7 @@ pub async fn git_worktree_add(
     .map_err(log_err)
 }
 
+/// Gỡ worktree tại `worktree_path`. `force = true` gỡ cả khi còn thay đổi chưa lưu.
 #[tauri::command]
 pub async fn git_worktree_remove(
     path: String,

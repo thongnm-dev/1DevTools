@@ -5,10 +5,12 @@ use crate::app::result::AppResult;
 use crate::database::role_store;
 use crate::models::role::{CreateRoleRequest, RoleSummary, UpdateRoleRequest};
 
+/// Liệt kê tất cả role kèm số user đang gán.
 pub async fn list_roles() -> AppResult<Vec<RoleSummary>> {
     role_store::list_all().await
 }
 
+/// Tạo role mới: chuẩn hoá tên/mô tả, kiểm tra tên không rỗng và chưa trùng.
 pub async fn create_role(request: CreateRoleRequest) -> AppResult<RoleSummary> {
     let name = request.name.trim().to_string();
     let description = request.description.unwrap_or_default().trim().to_string();
@@ -24,6 +26,7 @@ pub async fn create_role(request: CreateRoleRequest) -> AppResult<RoleSummary> {
     role_store::insert_role(&name, &description).await
 }
 
+/// Cập nhật tên/mô tả role: kiểm tra role tồn tại và tên mới không trùng role khác.
 pub async fn update_role(id: i32, request: UpdateRoleRequest) -> AppResult<RoleSummary> {
     let name = request.name.trim().to_string();
     let description = request.description.unwrap_or_default().trim().to_string();
@@ -43,6 +46,7 @@ pub async fn update_role(id: i32, request: UpdateRoleRequest) -> AppResult<RoleS
     role_store::update_role(id, &name, &description).await
 }
 
+/// Xoá role: từ chối nếu role vẫn đang được gán cho ít nhất một user.
 pub async fn delete_role(id: i32) -> AppResult<()> {
     let role = role_store::find_by_id(id)
         .await?

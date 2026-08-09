@@ -8,6 +8,7 @@ use crate::app::error::AppError;
 use crate::app::result::AppResult;
 use crate::models::explorer::{FileEntry, ReadDirResult};
 
+/// Kiểm tra file ẩn trên Windows: dựa vào cờ thuộc tính `FILE_ATTRIBUTE_HIDDEN`.
 #[cfg(target_os = "windows")]
 fn is_hidden(_path: &Path, meta: &fs::Metadata) -> bool {
     use std::os::windows::fs::MetadataExt;
@@ -15,6 +16,7 @@ fn is_hidden(_path: &Path, meta: &fs::Metadata) -> bool {
     meta.file_attributes() & FILE_ATTRIBUTE_HIDDEN != 0
 }
 
+/// Kiểm tra file ẩn trên Unix: theo quy ước tên bắt đầu bằng dấu chấm.
 #[cfg(not(target_os = "windows"))]
 fn is_hidden(path: &Path, _meta: &fs::Metadata) -> bool {
     path.file_name()
@@ -22,6 +24,8 @@ fn is_hidden(path: &Path, _meta: &fs::Metadata) -> bool {
         .unwrap_or(false)
 }
 
+/// Dựng một `FileEntry` từ metadata: tên, đường dẫn, is_dir, kích thước, thời
+/// điểm sửa (định dạng chuỗi) và phần mở rộng viết thường.
 fn build_file_entry(path: &Path, meta: &fs::Metadata) -> Option<FileEntry> {
     let name = path.file_name()?.to_string_lossy().to_string();
     let modified = meta

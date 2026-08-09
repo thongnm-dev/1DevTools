@@ -8,6 +8,7 @@ use crate::app::error::AppError;
 use crate::app::result::AppResult;
 use crate::services::claude_terminal::TerminalPlatform;
 
+/// Triển khai [`TerminalPlatform`] cho macOS: script `.command` + Terminal.app.
 pub(crate) struct MacosTerminal;
 
 impl TerminalPlatform for MacosTerminal {

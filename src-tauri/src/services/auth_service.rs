@@ -1,9 +1,17 @@
+//! Business logic xác thực: đăng nhập và quy trình đặt lại mật khẩu qua email.
+//!
+//! Các lỗi trả về đều gắn mã (`AppError::with_code`) để frontend hiển thị thông
+//! điệp phù hợp và không lộ chi tiết (ví dụ sai user vs sai mật khẩu đều trả cùng
+//! mã `AUTH_INVALID_CREDENTIALS`).
+
 use crate::app::error::AppError;
 use crate::app::result::AppResult;
 use crate::database::auth_store;
 use crate::models::auth::{LoginRequest, LoginResponse};
 use crate::utils::email;
 
+/// Đăng nhập: kiểm tra trường bắt buộc, tài khoản tồn tại và đang active, xác
+/// minh mật khẩu bằng bcrypt, rồi trả về thông tin phiên kèm danh sách role.
 pub async fn login(request: LoginRequest) -> AppResult<LoginResponse> {
     let username = request.username.trim();
     let password = request.password.trim();
@@ -45,6 +53,8 @@ pub async fn login(request: LoginRequest) -> AppResult<LoginResponse> {
     })
 }
 
+/// Bước 1 quên mật khẩu: kiểm tra tài khoản hợp lệ & có email, sinh mã 6 số,
+/// gửi email và lưu mã (hết hạn sau 30 phút). Trả về email đã che (masked) để UI hiển thị.
 pub async fn request_password_reset(username: &str) -> AppResult<String> {
     let username = username.trim();
     if username.is_empty() {
@@ -79,6 +89,8 @@ pub async fn request_password_reset(username: &str) -> AppResult<String> {
     Ok(mask_email(&user.email))
 }
 
+/// Bước 2 quên mật khẩu: xác minh `code`. Nếu đúng, đặt lại mật khẩu về giá trị
+/// mặc định và trả về mật khẩu đó cho UI. Phân biệt lỗi mã sai vs mã hết hạn.
 pub async fn verify_password_reset(username: &str, code: &str) -> AppResult<String> {
     let username = username.trim();
     let code = code.trim();
@@ -114,6 +126,7 @@ pub async fn verify_password_reset(username: &str, code: &str) -> AppResult<Stri
     Ok(default_password.to_string())
 }
 
+/// Sinh mã xác nhận ngẫu nhiên 6 chữ số (0-padded), ví dụ "004271".
 fn generate_code() -> String {
     use rand::Rng;
     let mut rng = rand::thread_rng();
@@ -121,6 +134,7 @@ fn generate_code() -> String {
     format!("{n:06}")
 }
 
+/// Che bớt phần local của email để hiển thị an toàn, ví dụ `jo***n@gmail.com`.
 fn mask_email(email: &str) -> String {
     let parts: Vec<&str> = email.splitn(2, '@').collect();
     if parts.len() != 2 {

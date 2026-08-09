@@ -50,6 +50,7 @@ fn normalize_provider(provider: Option<String>) -> String {
     }
 }
 
+/// Tìm account theo `id` để sửa tại chỗ; báo lỗi nếu không tồn tại.
 fn find_mut(data: &mut AiAccountData, id: i64) -> AppResult<&mut StoredAccount> {
     data.accounts
         .iter_mut()
