@@ -183,7 +183,7 @@ async function copySelectedFiles() {
       </div>
     </div>
     <template #footer>
-      <DialogFooter :cancel-label="t('git.dialogs.commitBrowser.close')" cancel-icon="pi pi-times" cancel-severity="warn" hide-confirm @cancel="visible = false">
+      <DialogFooter :cancel-label="t('git.dialogs.commitBrowser.close')" cancel-icon="pi pi-times" cancel-severity="danger" hide-confirm @cancel="visible = false">
         <template #extra>
           <span class="mr-auto text-xs text-muted">{{ t('git.dialogs.commitBrowser.hint') }}</span>
           <Button

@@ -357,7 +357,7 @@ function refClass(r: string) {
       </div>
     </div>
     <template #footer>
-      <DialogFooter :cancel-label="t('git.dialogs.graph.close')" cancel-icon="pi pi-times" cancel-severity="warn" hide-confirm @cancel="visible = false" />
+      <DialogFooter :cancel-label="t('git.dialogs.graph.close')" cancel-icon="pi pi-times" cancel-severity="danger" hide-confirm @cancel="visible = false" />
     </template>
   </Dialog>
 </template>

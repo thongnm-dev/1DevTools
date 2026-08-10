@@ -67,7 +67,7 @@ async function doCleanup() {
       <DialogFooter
         :cancel-label="t('git.dialogs.cleanup.close')"
         cancel-icon="pi pi-times"
-        cancel-severity="warn"
+        cancel-severity="danger"
         :confirm-label="t('git.dialogs.cleanup.confirm', { count: cleanupSelected.size })"
         confirm-icon="pi pi-trash"
         confirm-severity="danger"

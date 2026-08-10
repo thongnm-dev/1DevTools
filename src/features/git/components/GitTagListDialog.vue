@@ -92,7 +92,7 @@ watch(visible, (v) => {
       <DialogFooter
         :cancel-label="t('git.dialogs.tagList.close')"
         cancel-icon="pi pi-times"
-        cancel-severity="warn"
+        cancel-severity="danger"
         :confirm-label="t('git.dialogs.tagList.createTag')"
         confirm-icon="pi pi-plus"
         @cancel="visible = false"

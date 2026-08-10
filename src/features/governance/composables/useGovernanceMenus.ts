@@ -191,3 +191,5 @@ export function useGovernanceMenus() {
     resetToDefault,
   };
 }
+
+export type GovernanceMenusApi = ReturnType<typeof useGovernanceMenus>;

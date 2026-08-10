@@ -65,7 +65,7 @@ async function doFinishConflict() {
       <DialogFooter
         :cancel-label="t('git.dialogs.conflict.close')"
         cancel-icon="pi pi-times"
-        cancel-severity="warn"
+        cancel-severity="danger"
         :confirm-label="t('git.dialogs.conflict.confirm')"
         confirm-icon="pi pi-check"
         :confirm-disabled="!!git.conflicts.value.length || !!git.busyMessage.value"

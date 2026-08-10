@@ -4,22 +4,20 @@ import { useI18n } from "vue-i18n";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Fieldset from "primevue/fieldset";
-import Dialog from "primevue/dialog";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
-import Textarea from "primevue/textarea";
 import IconActionButton from "@/shared/components/IconActionButton.vue";
-import DialogFooter from "@/shared/components/DialogFooter.vue";
+import GovernanceRoleFormDialog from "./GovernanceRoleFormDialog.vue";
+import GovernanceRoleDeleteDialog from "./GovernanceRoleDeleteDialog.vue";
 import { useGovernanceRoles } from "../composables/useGovernanceRoles";
 import { useDataTablePagination } from "@/shared/composables/useDataTablePagination";
-import { useToast } from "@/shared/composables/useToast";
 
 const { t } = useI18n();
 const ctrl = useGovernanceRoles();
-const toast = useToast();
 const { pagination } = useDataTablePagination();
 const isDialogOpen = ref(false);
-const confirmDeleteId = ref<number | null>(null);
+const deleteDialogVisible = ref(false);
+const deleteTargetId = ref<number | null>(null);
 
 function openCreate() {
   ctrl.startCreate();
@@ -31,27 +29,9 @@ function openEdit(id: number) {
   isDialogOpen.value = true;
 }
 
-function closeDialog() {
-  isDialogOpen.value = false;
-}
-
-async function saveAndClose() {
-  if (await ctrl.saveDraft()) {
-    toast.success(ctrl.isCreating.value ? t("governance.roles.toast.created") : t("governance.roles.toast.updated"));
-    closeDialog();
-  }
-}
-
 function confirmDelete(id: number) {
-  confirmDeleteId.value = id;
-}
-
-async function executeDelete() {
-  if (confirmDeleteId.value !== null) {
-    const ok = await ctrl.removeRole(confirmDeleteId.value);
-    if (ok) toast.success(t("governance.roles.toast.deleted"));
-    confirmDeleteId.value = null;
-  }
+  deleteTargetId.value = id;
+  deleteDialogVisible.value = true;
 }
 
 onMounted(() => ctrl.init());
@@ -160,67 +140,9 @@ onMounted(() => ctrl.init());
     </section>
 
     <!-- Add / Edit dialog -->
-    <Dialog
-      :visible="isDialogOpen"
-      class="w-full max-w-lg rounded-lg bg-panel shadow-xl"
-      :closable="true"
-      modal
-      @update:visible="isDialogOpen = $event"
-    >
-      <template #header>
-        <div>
-          <h3 class="section-title">{{ ctrl.isCreating.value ? t("governance.roles.dialog.addTitle") : t("governance.roles.dialog.editTitle") }}</h3>
-          <p v-if="ctrl.draft.value && !ctrl.isCreating.value" class="mt-1 text-sm text-muted">
-            {{ t("governance.roles.dialog.idLabel", { id: ctrl.draft.value.id }) }}
-          </p>
-        </div>
-      </template>
-
-      <div v-if="ctrl.draft.value" class="space-y-4">
-        <label class="block">
-          <span class="text-xs font-bold text-muted">{{ t("governance.roles.form.name") }} <span class="text-red-500">*</span></span>
-          <InputText
-            class="mt-1 w-full"
-            :model-value="ctrl.draft.value.name"
-            :placeholder="t('governance.roles.form.namePlaceholder')"
-            autofocus
-            @update:model-value="ctrl.updateDraft('name', $event as string)"
-          />
-        </label>
-
-        <label class="block">
-          <span class="text-xs font-bold text-muted">{{ t("governance.roles.form.description") }}</span>
-          <Textarea
-            class="mt-1 w-full"
-            :model-value="ctrl.draft.value.description"
-            :placeholder="t('governance.roles.form.descriptionPlaceholder')"
-            rows="3"
-            auto-resize
-            @update:model-value="ctrl.updateDraft('description', $event as string)"
-          />
-        </label>
-      </div>
-
-      <template #footer>
-        <DialogFooter :confirm-label="ctrl.isCreating.value ? t('governance.roles.actions.create') : t('governance.roles.actions.save')" @cancel="closeDialog" @confirm="saveAndClose" />
-      </template>
-    </Dialog>
+    <GovernanceRoleFormDialog v-model:visible="isDialogOpen" :ctrl="ctrl" />
 
     <!-- Delete confirmation dialog -->
-    <Dialog
-      :visible="confirmDeleteId !== null"
-      class="w-full max-w-sm rounded-lg bg-panel shadow-xl"
-      :closable="true"
-      modal
-      @update:visible="confirmDeleteId = null"
-    >
-      <template #header>
-        <h3 class="section-title">{{ t("governance.roles.dialog.deleteTitle") }}</h3>
-      </template>
-      <p class="text-sm text-secondary">{{ t("governance.roles.dialog.deleteMessage") }}</p>
-      <template #footer>
-        <DialogFooter :confirm-label="t('governance.roles.actions.delete')" confirm-severity="danger" @cancel="confirmDeleteId = null" @confirm="executeDelete" />
-      </template>
-    </Dialog>
+    <GovernanceRoleDeleteDialog v-model:visible="deleteDialogVisible" :ctrl="ctrl" :role-id="deleteTargetId" />
   </section>
 </template>

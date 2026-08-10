@@ -197,7 +197,7 @@ async function doCreatePR() {
       <DialogFooter
         :cancel-label="t('git.dialogs.compare.close')"
         cancel-icon="pi pi-times"
-        cancel-severity="warn"
+        cancel-severity="danger"
         :confirm-label="t('git.dialogs.compare.createPullRequest')"
         confirm-icon="pi pi-external-link"
         :confirm-disabled="!git.comparison.value?.web_url || !git.comparison.value?.ahead"

@@ -48,7 +48,7 @@ watch(
       >{{ lines.join("\n") }}</pre>
     </div>
     <template #footer>
-      <DialogFooter :cancel-label="t('common.close')" cancel-icon="pi pi-times" hide-confirm @cancel="visible = false" />
+      <DialogFooter :cancel-label="t('common.close')" cancel-icon="pi pi-times" cancel-severity="danger" hide-confirm @cancel="visible = false" />
     </template>
   </Dialog>
 </template>

@@ -135,7 +135,7 @@ function createNewPr() {
       <DialogFooter
         :cancel-label="t('git.dialogs.pullRequests.close')"
         cancel-icon="pi pi-times"
-        cancel-severity="warn"
+        cancel-severity="danger"
         :confirm-label="t('git.dialogs.pullRequests.create')"
         confirm-icon="pi pi-plus"
         @cancel="visible = false"

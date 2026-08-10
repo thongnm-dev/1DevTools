@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
-import Dialog from "primevue/dialog";
-import InputNumber from "primevue/inputnumber";
 import InputText from "primevue/inputtext";
 import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import IconActionButton from "@/shared/components/IconActionButton.vue";
-import DialogFooter from "@/shared/components/DialogFooter.vue";
+import GovernanceMenuEditDialog from "./GovernanceMenuEditDialog.vue";
+import GovernanceMenuCreateDialog from "./GovernanceMenuCreateDialog.vue";
 import { useGovernanceMenus } from "../composables/useGovernanceMenus";
 
 const { t } = useI18n();
@@ -15,17 +14,6 @@ const ctrl = useGovernanceMenus();
 const isEditing = ref(false);
 const isCreating = ref(false);
 const showIconPicker = ref(false);
-const iconPickerTarget = ref<"edit" | "create">("edit");
-
-const createKeyInvalid = computed(() => {
-  const key = ctrl.draft.value?.key.trim() ?? "";
-  return key.length > 0 && ctrl.keyExists(key);
-});
-
-const canCreate = computed(() => {
-  const d = ctrl.draft.value;
-  return !!d && d.key.trim().length > 0 && d.title.trim().length > 0 && !createKeyInvalid.value;
-});
 
 const groupBadgeClass = (group: string) =>
   group === "—"
@@ -39,27 +27,9 @@ function openEdit(key: string) {
   isEditing.value = true;
 }
 
-function closeDialog() {
-  isEditing.value = false;
-}
-
-function saveAndClose() {
-  ctrl.saveDraft();
-  closeDialog();
-}
-
 function openCreate() {
   ctrl.startCreate();
   isCreating.value = true;
-}
-
-function closeCreate() {
-  isCreating.value = false;
-}
-
-async function createAndClose() {
-  const ok = await ctrl.createDraft();
-  if (ok) closeCreate();
 }
 </script>
 
@@ -146,226 +116,11 @@ async function createAndClose() {
     </section>
 
     <!-- Edit dialog -->
-    <Dialog
-      :visible="isEditing"
-      class="w-full max-w-xl rounded-lg bg-panel shadow-xl"
-      :closable="true"
-      modal
-      @update:visible="isEditing = $event"
-    >
-      <template #header>
-        <div>
-          <h3 class="section-title">{{ t("governance.menus.dialog.editTitle") }}</h3>
-          <p v-if="ctrl.draft.value" class="mt-1 text-sm text-muted">{{ ctrl.draft.value.key }}</p>
-        </div>
-      </template>
-
-      <div v-if="ctrl.draft.value" class="space-y-4">
-        <label class="block">
-          <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.title") }} <span class="text-red-500">*</span></span>
-          <InputText
-            class="mt-1 w-full"
-            :model-value="ctrl.draft.value.title"
-            :placeholder="t('governance.menus.form.titlePlaceholder')"
-            autofocus
-            @update:model-value="ctrl.updateDraft('title', $event as string)"
-          />
-        </label>
-
-        <label class="block">
-          <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.path") }}</span>
-          <InputText
-            class="mt-1 w-full"
-            :model-value="ctrl.draft.value.path"
-            :placeholder="t('governance.menus.form.pathPlaceholder')"
-            @update:model-value="ctrl.updateDraft('path', $event as string)"
-          />
-        </label>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.icon") }}</span>
-            <div class="mt-1 flex items-center gap-2">
-              <div class="flex h-10 flex-1 items-center gap-2 rounded-md border border-divider bg-panel px-3">
-                <i :class="`pi ${ctrl.draft.value.icon} text-muted`" />
-                <InputText
-                  class="embedded-input min-w-0 flex-1 border-0 !bg-transparent !p-0 !text-sm"
-                  :model-value="ctrl.draft.value.icon"
-                  placeholder="pi-home"
-                  @update:model-value="ctrl.updateDraft('icon', $event as string)"
-                />
-              </div>
-              <Button
-                icon="pi pi-th-large"
-                severity="secondary"
-                outlined
-                :title="t('governance.menus.form.browseIcons')"
-                @click="iconPickerTarget = 'edit'; showIconPicker = true"
-              />
-            </div>
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.group") }}</span>
-            <InputText
-              class="mt-1 w-full"
-              :model-value="ctrl.draft.value.group"
-              :placeholder="t('governance.menus.form.groupPlaceholder')"
-              @update:model-value="ctrl.updateDraft('group', $event as string)"
-            />
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.order") }}</span>
-            <InputNumber
-              class="mt-1 w-full"
-              :model-value="ctrl.draft.value.order"
-              :min="0"
-              :useGrouping="false"
-              @update:model-value="ctrl.updateDraft('order', $event ?? 0)"
-            />
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.visible") }}</span>
-            <Button
-              :icon="ctrl.draft.value.visible ? 'pi pi-eye' : 'pi pi-eye-slash'"
-              :label="ctrl.draft.value.visible ? t('governance.menus.form.shownInSidebar') : t('governance.menus.form.hiddenFromSidebar')"
-              :class="[
-                'mt-1 w-full',
-                ctrl.draft.value.visible
-                  ? 'border-brand bg-emerald-50 text-brand'
-                  : '',
-              ]"
-              :severity="ctrl.draft.value.visible ? undefined : 'secondary'"
-              :outlined="!ctrl.draft.value.visible"
-              @click="ctrl.updateDraft('visible', !ctrl.draft.value.visible)"
-            />
-          </label>
-        </div>
-      </div>
-
-      <template #footer>
-        <DialogFooter @cancel="closeDialog" @confirm="saveAndClose" />
-      </template>
-    </Dialog>
+    <GovernanceMenuEditDialog v-model:visible="isEditing" :ctrl="ctrl" @browse-icons="showIconPicker = true" />
 
     <!-- Create dialog -->
-    <Dialog
-      :visible="isCreating"
-      class="w-full max-w-xl rounded-lg bg-panel shadow-xl"
-      :closable="true"
-      modal
-      @update:visible="isCreating = $event"
-    >
-      <template #header>
-        <div>
-          <h3 class="section-title">{{ t("governance.menus.dialog.createTitle") }}</h3>
-          <p class="mt-1 text-sm text-muted">{{ t("governance.menus.dialog.createSubtitle") }}</p>
-        </div>
-      </template>
+    <GovernanceMenuCreateDialog v-model:visible="isCreating" :ctrl="ctrl" @browse-icons="showIconPicker = true" />
 
-      <div v-if="ctrl.draft.value" class="space-y-4">
-        <div class="grid gap-4 md:grid-cols-2">
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.key") }} <span class="text-red-500">*</span></span>
-            <InputText
-              class="mt-1 w-full"
-              :class="createKeyInvalid ? 'border-red-500' : ''"
-              :model-value="ctrl.draft.value.key"
-              :placeholder="t('governance.menus.form.keyPlaceholder')"
-              autofocus
-              @update:model-value="ctrl.updateDraft('key', ($event as string) ?? '')"
-            />
-            <span v-if="createKeyInvalid" class="mt-1 block text-xs text-red-500">{{ t("governance.menus.form.keyExists") }}</span>
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.title") }} <span class="text-red-500">*</span></span>
-            <InputText
-              class="mt-1 w-full"
-              :model-value="ctrl.draft.value.title"
-              :placeholder="t('governance.menus.form.titlePlaceholder')"
-              @update:model-value="ctrl.updateDraft('title', ($event as string) ?? '')"
-            />
-          </label>
-        </div>
-
-        <label class="block">
-          <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.path") }}</span>
-          <InputText
-            class="mt-1 w-full"
-            :model-value="ctrl.draft.value.path"
-            :placeholder="t('governance.menus.form.pathPlaceholder')"
-            @update:model-value="ctrl.updateDraft('path', ($event as string) ?? '')"
-          />
-        </label>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.icon") }}</span>
-            <div class="mt-1 flex items-center gap-2">
-              <div class="flex h-10 flex-1 items-center gap-2 rounded-md border border-divider bg-panel px-3">
-                <i :class="`pi ${ctrl.draft.value.icon} text-muted`" />
-                <InputText
-                  class="embedded-input min-w-0 flex-1 border-0 !bg-transparent !p-0 !text-sm"
-                  :model-value="ctrl.draft.value.icon"
-                  placeholder="pi-home"
-                  @update:model-value="ctrl.updateDraft('icon', ($event as string) ?? '')"
-                />
-              </div>
-              <Button
-                icon="pi pi-th-large"
-                severity="secondary"
-                outlined
-                :title="t('governance.menus.form.browseIcons')"
-                @click="iconPickerTarget = 'create'; showIconPicker = true"
-              />
-            </div>
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.group") }}</span>
-            <InputText
-              class="mt-1 w-full"
-              :model-value="ctrl.draft.value.group"
-              :placeholder="t('governance.menus.form.groupPlaceholder')"
-              @update:model-value="ctrl.updateDraft('group', ($event as string) ?? '')"
-            />
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.order") }}</span>
-            <InputNumber
-              class="mt-1 w-full"
-              :model-value="ctrl.draft.value.order"
-              :min="0"
-              :useGrouping="false"
-              @update:model-value="ctrl.updateDraft('order', $event ?? 0)"
-            />
-          </label>
-
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.visible") }}</span>
-            <Button
-              :icon="ctrl.draft.value.visible ? 'pi pi-eye' : 'pi pi-eye-slash'"
-              :label="ctrl.draft.value.visible ? t('governance.menus.form.shownInSidebar') : t('governance.menus.form.hiddenFromSidebar')"
-              :class="[
-                'mt-1 w-full',
-                ctrl.draft.value.visible ? 'border-brand bg-emerald-50 text-brand' : '',
-              ]"
-              :severity="ctrl.draft.value.visible ? undefined : 'secondary'"
-              :outlined="!ctrl.draft.value.visible"
-              @click="ctrl.updateDraft('visible', !ctrl.draft.value.visible)"
-            />
-          </label>
-        </div>
-      </div>
-
-      <template #footer>
-        <DialogFooter :confirm-label="t('governance.menus.actions.create')" :confirm-disabled="!canCreate" @cancel="closeCreate" @confirm="createAndClose" />
-      </template>
-    </Dialog>
     <!-- Icon Picker Dialog -->
     <IconPickerDialog
       :visible="showIconPicker"

@@ -131,7 +131,7 @@ function openInHistory() {
       </div>
     </div>
     <template #footer>
-      <DialogFooter :cancel-label="t('git.dialogs.blame.close')" cancel-icon="pi pi-times" cancel-severity="warn" hide-confirm @cancel="visible = false">
+      <DialogFooter :cancel-label="t('git.dialogs.blame.close')" cancel-icon="pi pi-times" cancel-severity="danger" hide-confirm @cancel="visible = false">
         <template #extra>
           <span class="mr-auto text-xs text-muted">{{ t('git.dialogs.blame.hint') }}</span>
           <Button size="small" outlined :disabled="!git.blameSelectedHash.value" @click="copySha">

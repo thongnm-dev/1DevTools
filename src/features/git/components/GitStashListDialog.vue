@@ -67,7 +67,7 @@ watch(visible, (v) => {
       </div>
     </div>
     <template #footer>
-      <DialogFooter :cancel-label="t('git.dialogs.stashList.close')" cancel-icon="pi pi-times" cancel-severity="warn" hide-confirm @cancel="visible = false" />
+      <DialogFooter :cancel-label="t('git.dialogs.stashList.close')" cancel-icon="pi pi-times" cancel-severity="danger" hide-confirm @cancel="visible = false" />
     </template>
   </Dialog>
 </template>

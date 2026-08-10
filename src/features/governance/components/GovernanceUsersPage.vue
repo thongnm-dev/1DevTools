@@ -4,25 +4,23 @@ import { useI18n } from "vue-i18n";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import Fieldset from "primevue/fieldset";
-import Dialog from "primevue/dialog";
 import Button from "primevue/button";
 import IconActionButton from "@/shared/components/IconActionButton.vue";
-import ToggleChip from "@/shared/components/ToggleChip.vue";
-import DialogFooter from "@/shared/components/DialogFooter.vue";
-import Password from "primevue/password";
 import InputText from "primevue/inputtext";
+import GovernanceUserFormDialog from "./GovernanceUserFormDialog.vue";
+import GovernanceUserDeleteDialog from "./GovernanceUserDeleteDialog.vue";
+import GovernanceUserResetPasswordDialog from "./GovernanceUserResetPasswordDialog.vue";
 import { useGovernanceUsers } from "../composables/useGovernanceUsers";
 import { useDataTablePagination } from "@/shared/composables/useDataTablePagination";
-import { useToast } from "@/shared/composables/useToast";
 
 const { t } = useI18n();
 const ctrl = useGovernanceUsers();
-const toast = useToast();
 const { pagination } = useDataTablePagination();
 const isDialogOpen = ref(false);
-const confirmDeleteId = ref<number | null>(null);
-const resetPwUserId = ref<number | null>(null);
-const resetPwValue = ref("");
+const deleteDialogVisible = ref(false);
+const deleteTargetId = ref<number | null>(null);
+const resetPwDialogVisible = ref(false);
+const resetPwTargetId = ref<number | null>(null);
 
 const roleBadgeClass = (role: string) => {
   const map: Record<string, string> = {
@@ -44,40 +42,14 @@ function openEdit(id: number) {
   isDialogOpen.value = true;
 }
 
-function closeDialog() {
-  isDialogOpen.value = false;
-}
-
-async function saveAndClose() {
-  if (await ctrl.saveDraft()) {
-    toast.success(ctrl.isCreating.value ? t("governance.users.toast.created") : t("governance.users.toast.updated"));
-    closeDialog();
-  }
-}
-
 function confirmDelete(id: number) {
-  confirmDeleteId.value = id;
-}
-
-async function executeDelete() {
-  if (confirmDeleteId.value !== null) {
-    await ctrl.removeUser(confirmDeleteId.value);
-    confirmDeleteId.value = null;
-  }
+  deleteTargetId.value = id;
+  deleteDialogVisible.value = true;
 }
 
 function openResetPassword(id: number) {
-  resetPwUserId.value = id;
-  resetPwValue.value = "";
-}
-
-async function executeResetPassword() {
-  if (resetPwUserId.value !== null && resetPwValue.value.trim()) {
-    if (await ctrl.resetPassword(resetPwUserId.value, resetPwValue.value)) {
-      resetPwUserId.value = null;
-      resetPwValue.value = "";
-    }
-  }
+  resetPwTargetId.value = id;
+  resetPwDialogVisible.value = true;
 }
 
 onMounted(() => ctrl.init());
@@ -250,185 +222,12 @@ onMounted(() => ctrl.init());
     </section>
 
     <!-- Add / Edit dialog -->
-    <Dialog
-      :visible="isDialogOpen"
-      class="w-full max-w-xl rounded-lg bg-panel shadow-xl"
-      :closable="true"
-      modal
-      @update:visible="isDialogOpen = $event"
-    >
-      <template #header>
-        <div>
-          <h3 class="section-title">{{ ctrl.isCreating.value ? t("governance.users.dialog.addTitle") : t("governance.users.dialog.editTitle") }}</h3>
-          <p v-if="ctrl.draft.value && !ctrl.isCreating.value" class="mt-1 text-sm text-muted">
-            {{ t("governance.users.dialog.idSubtitle", { id: ctrl.draft.value.id, username: ctrl.draft.value.username }) }}
-          </p>
-        </div>
-      </template>
-
-      <div v-if="ctrl.draft.value" class="space-y-4">
-        <div class="grid gap-4 md:grid-cols-2">
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.username") }} <span class="text-red-500">*</span></span>
-            <InputText
-              class="mt-1 w-full"
-              :model-value="ctrl.draft.value.username"
-              :placeholder="t('governance.users.form.usernamePlaceholder')"
-              autofocus
-              :disabled="!ctrl.isCreating.value"
-              @update:model-value="ctrl.updateDraft('username', $event as string)"
-            />
-          </label>
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.fullName") }} <span class="text-red-500">*</span></span>
-            <InputText
-              class="mt-1 w-full"
-              :model-value="ctrl.draft.value.fullName"
-              :placeholder="t('governance.users.form.fullNamePlaceholder')"
-              @update:model-value="ctrl.updateDraft('fullName', $event as string)"
-            />
-          </label>
-        </div>
-
-        <label v-if="ctrl.isCreating.value" class="block">
-          <span class="text-xs font-bold text-muted">{{ t("governance.users.form.password") }} <span class="text-red-500">*</span></span>
-          <Password
-            class="mt-1 w-full"
-            input-class="w-full"
-            :model-value="ctrl.draft.value.password"
-            :placeholder="t('governance.users.form.password')"
-            :feedback="false"
-            toggle-mask
-            @update:model-value="ctrl.updateDraft('password', $event as string)"
-          />
-        </label>
-
-        <div class="grid gap-4 md:grid-cols-2">
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.email") }}</span>
-            <InputText
-              class="mt-1 w-full"
-              :model-value="ctrl.draft.value.email"
-              placeholder="mail@example.com"
-              @update:model-value="ctrl.updateDraft('email', $event as string)"
-            />
-          </label>
-          <label class="block">
-            <span class="text-xs font-bold text-muted">{{ t("governance.users.form.phone") }}</span>
-            <InputText
-              class="mt-1 w-full"
-              :model-value="ctrl.draft.value.phone"
-              :placeholder="t('governance.users.form.phonePlaceholder')"
-              @update:model-value="ctrl.updateDraft('phone', $event as string)"
-            />
-          </label>
-        </div>
-
-        <label class="block">
-          <span class="text-xs font-bold text-muted">{{ t("governance.users.form.position") }}</span>
-          <InputText
-            class="mt-1 w-full"
-            :model-value="ctrl.draft.value.position"
-            :placeholder="t('governance.users.form.positionPlaceholder')"
-            @update:model-value="ctrl.updateDraft('position', $event as string)"
-          />
-        </label>
-
-        <div>
-          <span class="text-xs font-bold text-muted">{{ t("governance.users.form.roles") }}</span>
-          <div class="mt-1 flex flex-wrap gap-2">
-            <Button
-              v-for="role in ctrl.availableRoles.value"
-              :key="role"
-              :class="[
-                'flex h-9 items-center gap-1.5 rounded-md border px-3 text-sm font-semibold transition',
-                ctrl.draft.value.roles.includes(role)
-                  ? 'border-brand bg-emerald-50 text-brand dark:bg-emerald-950'
-                  : 'border-divider bg-panel text-secondary hover:border-brand',
-              ]"
-              unstyled
-              @click="ctrl.toggleDraftRole(role)"
-            >
-              <i :class="['pi text-xs', ctrl.draft.value.roles.includes(role) ? 'pi-check-circle' : 'pi-circle']" />
-              {{ role }}
-            </Button>
-          </div>
-        </div>
-
-        <div v-if="!ctrl.isCreating.value">
-          <span class="text-xs font-bold text-muted">{{ t("governance.users.form.status") }}</span>
-          <div class="mt-1 grid grid-cols-2 rounded-md border border-divider bg-canvas p-1">
-            <ToggleChip
-              variant="segment"
-              :active="ctrl.draft.value.isActive"
-              icon="pi-check-circle"
-              :label="t('governance.users.status.active')"
-              @click="ctrl.updateDraft('isActive', true)"
-            />
-            <ToggleChip
-              variant="segment"
-              :active="!ctrl.draft.value.isActive"
-              icon="pi-minus-circle"
-              :label="t('governance.users.status.inactive')"
-              @click="ctrl.updateDraft('isActive', false)"
-            />
-          </div>
-        </div>
-      </div>
-
-      <template #footer>
-        <DialogFooter :confirm-label="ctrl.isCreating.value ? t('governance.users.actions.create') : t('governance.users.actions.save')" @cancel="closeDialog" @confirm="saveAndClose" />
-      </template>
-    </Dialog>
+    <GovernanceUserFormDialog v-model:visible="isDialogOpen" :ctrl="ctrl" />
 
     <!-- Delete confirmation dialog -->
-    <Dialog
-      :visible="confirmDeleteId !== null"
-      class="w-full max-w-sm rounded-lg bg-panel shadow-xl"
-      :closable="true"
-      modal
-      @update:visible="confirmDeleteId = null"
-    >
-      <template #header>
-        <h3 class="section-title">{{ t("governance.users.dialog.deleteTitle") }}</h3>
-      </template>
-      <p class="text-sm text-secondary">{{ t("governance.users.dialog.deleteMessage") }}</p>
-      <template #footer>
-        <DialogFooter :confirm-label="t('governance.users.actions.delete')" confirm-severity="danger" @cancel="confirmDeleteId = null" @confirm="executeDelete" />
-      </template>
-    </Dialog>
+    <GovernanceUserDeleteDialog v-model:visible="deleteDialogVisible" :ctrl="ctrl" :user-id="deleteTargetId" />
 
     <!-- Reset password dialog -->
-    <Dialog
-      :visible="resetPwUserId !== null"
-      class="w-full max-w-sm rounded-lg bg-panel shadow-xl"
-      :closable="true"
-      modal
-      @update:visible="resetPwUserId = null"
-    >
-      <template #header>
-        <h3 class="section-title">{{ t("governance.users.dialog.resetPasswordTitle") }}</h3>
-      </template>
-      <label class="block">
-        <span class="text-xs font-bold text-muted">{{ t("governance.users.form.newPassword") }} <span class="text-red-500">*</span></span>
-        <Password
-          class="mt-1 w-full"
-          input-class="w-full"
-          :placeholder="t('governance.users.form.newPasswordPlaceholder')"
-          :model-value="resetPwValue"
-          :feedback="false"
-          toggle-mask
-          @update:model-value="resetPwValue = $event as string"
-        />
-      </label>
-      <template #footer>
-        <DialogFooter
-          :confirm-label="t('governance.users.actions.reset')"
-          :confirm-disabled="!resetPwValue.trim()"
-          @cancel="resetPwUserId = null"
-          @confirm="executeResetPassword"
-        />
-      </template>
-    </Dialog>
+    <GovernanceUserResetPasswordDialog v-model:visible="resetPwDialogVisible" :ctrl="ctrl" :user-id="resetPwTargetId" />
   </section>
 </template>

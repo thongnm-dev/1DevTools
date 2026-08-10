@@ -588,6 +588,8 @@ function onPriorityChange(account: AiAccount, event: Event) {
 
       <template #footer>
         <DialogFooter
+          cancel-icon="pi pi-times"
+          cancel-severity="danger"
           :confirm-label="ctrl.isSaving.value || ctrl.isCapturing.value ? t('aiUsage.addDialog.saving') : t('aiUsage.addDialog.save')"
           :confirm-disabled="!canSaveAccount || ctrl.isSaving.value || ctrl.isCapturing.value"
           @cancel="isDialogOpen = false"
@@ -635,7 +637,7 @@ function onPriorityChange(account: AiAccount, event: Event) {
       </div>
 
       <template #footer>
-        <DialogFooter @cancel="showSettings = false" @confirm="saveSettings" />
+        <DialogFooter cancel-icon="pi pi-times" cancel-severity="danger" confirm-icon="pi pi-save" @cancel="showSettings = false" @confirm="saveSettings" />
       </template>
     </Dialog>
 
@@ -699,6 +701,8 @@ function onPriorityChange(account: AiAccount, event: Event) {
       <template #footer>
         <DialogFooter
           :cancel-label="t('aiUsage.detectDialog.close')"
+          cancel-icon="pi pi-times"
+          cancel-severity="danger"
           confirm-icon="pi pi-download"
           :confirm-label="ctrl.isDetecting.value ? t('aiUsage.detectDialog.adding') : t('aiUsage.detectDialog.addNew')"
           :confirm-disabled="ctrl.isDetecting.value || !ctrl.detected.value.some((l) => !l.already_added)"
@@ -751,6 +755,8 @@ function onPriorityChange(account: AiAccount, event: Event) {
 
       <template #footer>
         <DialogFooter
+          cancel-icon="pi pi-times"
+          cancel-severity="danger"
           :confirm-label="t('aiUsage.terminalDialog.continue')"
           :confirm-disabled="!terminalWorkDir.trim()"
           @cancel="showTerminal = false"

@@ -272,3 +272,5 @@ export function useGovernanceUsers() {
     init,
   };
 }
+
+export type GovernanceUsersApi = ReturnType<typeof useGovernanceUsers>;

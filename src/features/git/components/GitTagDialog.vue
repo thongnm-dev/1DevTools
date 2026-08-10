@@ -91,7 +91,7 @@ async function doCreateTag() {
       <DialogFooter
         :cancel-label="t('git.dialogs.tag.close')"
         cancel-icon="pi pi-times"
-        cancel-severity="warn"
+        cancel-severity="danger"
         :confirm-label="t('git.dialogs.tag.confirm')"
         confirm-icon="pi pi-tag"
         :confirm-disabled="!tagName.trim() || !!git.busyMessage.value"

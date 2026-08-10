@@ -165,7 +165,7 @@ onBeforeUnmount(() => {
       <div ref="containerEl" class="terminal-host w-full overflow-hidden rounded-md p-1" style="background: #0b0f19" />
     </div>
     <template #footer>
-      <DialogFooter :cancel-label="t('common.close')" cancel-icon="pi pi-times" hide-confirm @cancel="visible = false" />
+      <DialogFooter :cancel-label="t('common.close')" cancel-icon="pi pi-times" cancel-severity="danger" hide-confirm @cancel="visible = false" />
     </template>
   </Dialog>
 </template>

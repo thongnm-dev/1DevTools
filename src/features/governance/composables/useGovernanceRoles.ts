@@ -164,3 +164,5 @@ export function useGovernanceRoles() {
     init,
   };
 }
+
+export type GovernanceRolesApi = ReturnType<typeof useGovernanceRoles>;
