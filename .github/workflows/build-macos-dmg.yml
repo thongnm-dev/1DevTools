@@ -1,4 +1,4 @@
-name: Build macOS DMG
+name: Build and Release MacOS
 
 # Build file cài đặt .dmg cho macOS.
 # - Chạy tay từ tab Actions (workflow_dispatch) để lấy .dmg bất cứ lúc nào.
