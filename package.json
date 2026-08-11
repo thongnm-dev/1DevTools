@@ -8,7 +8,8 @@
     "build": "vue-tsc --noEmit && vite build",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "version:bump": "node scripts/bump-version.mjs"
   },
   "dependencies": {
     "@primevue/themes": "^4.3.3",
