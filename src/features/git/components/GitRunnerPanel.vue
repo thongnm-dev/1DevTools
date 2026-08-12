@@ -2,8 +2,6 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
-import InputText from "primevue/inputtext";
-
 import { canUseTauriRuntime } from "@/tauri/commands/_base";
 import { detectDevCommands, loadCustomCommands, saveCustomCommands } from "@/tauri/commands/dev_runner";
 import { useTerminal } from "@/features/terminal/composables/useTerminal";
@@ -24,7 +22,6 @@ const customCommands = ref<DevCommand[]>([]);
 const loading = ref(false);
 const addDialogVisible = ref(false);
 const editingCommand = ref<DevCommand | null>(null);
-const filterText = ref("");
 
 const CATEGORY_META: Record<CommandCategory, { icon: string; color: string }> = {
   npm: { icon: "pi-box", color: "text-red-500" },
@@ -48,17 +45,9 @@ const repoPath = computed(() => props.git.info.value?.path || props.git.activeRe
 
 const allCommands = computed(() => [...autoCommands.value, ...customCommands.value]);
 
-const filteredCommands = computed(() => {
-  const q = filterText.value.trim().toLowerCase();
-  if (!q) return allCommands.value;
-  return allCommands.value.filter(
-    (c) => c.label.toLowerCase().includes(q) || c.command.toLowerCase().includes(q) || c.category.includes(q),
-  );
-});
-
 const grouped = computed(() => {
   const map = new Map<string, DevCommand[]>();
-  for (const cmd of filteredCommands.value) {
+  for (const cmd of allCommands.value) {
     const key = cmd.source === "custom" ? "custom" : cmd.category;
     if (!map.has(key)) map.set(key, []);
     map.get(key)!.push(cmd);
@@ -130,15 +119,7 @@ async function removeCustomCommand(cmd: DevCommand) {
 <template>
   <div class="flex h-full flex-col bg-sidebar text-sidebar-text">
     <!-- Toolbar -->
-    <div class="flex items-center gap-1 px-2 py-1.5">
-      <div class="relative flex-1">
-        <i class="pi pi-search pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[10px] text-sidebar-text" />
-        <InputText
-          v-model="filterText"
-          class="h-6 w-full !pl-6 text-[11px]"
-          :placeholder="t('git.runner.filterPlaceholder')"
-        />
-      </div>
+    <div class="flex items-center justify-end gap-1 px-2 py-1.5">
       <button
         class="rounded p-1 text-sidebar-text transition-colors hover:bg-sidebar-hover hover:text-sidebar-text-active"
         :title="t('git.tabs.refresh')"

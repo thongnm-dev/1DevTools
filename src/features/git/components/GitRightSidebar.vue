@@ -7,8 +7,8 @@ import type { GitApi } from "../composables/useGit";
 
 const { t } = useI18n();
 
-const EXPLORER_KEY = "git.explorerTreeExpanded";
-const RUNNER_KEY = "git.runnerExpanded";
+type PanelId = "explorer" | "runner";
+const ACTIVE_KEY = "git.rightSidebarPanel";
 
 const props = defineProps<{
   git: GitApi;
@@ -19,80 +19,62 @@ const props = defineProps<{
 
 const emit = defineEmits<{ resize: [e: MouseEvent] }>();
 
-const explorerExpanded = ref(localStorage.getItem(EXPLORER_KEY) !== "false");
-const runnerExpanded = ref(localStorage.getItem(RUNNER_KEY) !== "false");
+const stored = localStorage.getItem(ACTIVE_KEY);
+const activePanel = ref<PanelId | null>(stored === "explorer" || stored === "runner" ? stored : "explorer");
 
-const visible = computed(() => (explorerExpanded.value || runnerExpanded.value) && !!props.root);
+const panelVisible = computed(() => activePanel.value !== null && !!props.root);
 
-function toggleExplorer() {
-  explorerExpanded.value = !explorerExpanded.value;
-  localStorage.setItem(EXPLORER_KEY, String(explorerExpanded.value));
-}
-
-function toggleRunner() {
-  runnerExpanded.value = !runnerExpanded.value;
-  localStorage.setItem(RUNNER_KEY, String(runnerExpanded.value));
+function toggle(panel: PanelId) {
+  activePanel.value = activePanel.value === panel ? null : panel;
+  localStorage.setItem(ACTIVE_KEY, activePanel.value ?? "");
 }
 
 const panelRef = ref<HTMLElement | null>(null);
 
-defineExpose({ visible, panelRef });
+defineExpose({ visible: panelVisible, panelRef });
 </script>
 
 <template>
-  <!-- Expanded sidebar -->
-  <template v-if="visible">
+  <template v-if="root">
+    <!-- Resize handle (only when panel open) -->
     <div
+      v-if="panelVisible"
       class="flex w-2 shrink-0 cursor-col-resize items-center justify-center self-stretch hover:bg-sidebar-hover"
       :class="isResizing ? 'bg-sidebar-hover' : ''"
       @mousedown="emit('resize', $event)"
     >
       <div class="h-8 w-0.5 rounded-full bg-sidebar-border" :class="isResizing ? 'bg-brand' : ''" />
     </div>
+
+    <!-- Panel -->
     <div
+      v-if="panelVisible"
       ref="panelRef"
-      class="flex shrink-0 flex-col self-stretch overflow-hidden rounded-lg border border-sidebar-border bg-sidebar shadow-md"
+      class="flex shrink-0 flex-col self-stretch overflow-hidden rounded-l-lg border border-sidebar-border bg-sidebar shadow-md"
       :style="{ width: width + 'px' }"
     >
-      <!-- Explorer header -->
-      <button
-        class="flex shrink-0 items-center gap-2 border-b border-sidebar-border px-3 py-2 text-left transition-colors hover:bg-sidebar-hover"
-        @click="toggleExplorer"
-      >
-        <i class="pi shrink-0 text-[9px] text-sidebar-text" :class="explorerExpanded ? 'pi-chevron-down' : 'pi-chevron-right'" />
-        <i class="pi pi-folder shrink-0 text-[11px] text-amber-500" />
-        <span class="flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-sidebar-text">Explorer</span>
-      </button>
-      <FileTreePanel v-if="explorerExpanded" :root="root" hide-header class="min-h-0 flex-1 border-b border-sidebar-border" />
+      <FileTreePanel v-if="activePanel === 'explorer'" :root="root" class="min-h-0 flex-1" />
+      <GitRunnerPanel v-else-if="activePanel === 'runner'" :git="git" class="min-h-0 flex-1" />
+    </div>
 
-      <!-- Runner header -->
+    <!-- Activity bar (always visible) -->
+    <div :class="['flex shrink-0 flex-col items-center gap-0.5 self-stretch border border-sidebar-border bg-sidebar shadow-md', panelVisible ? 'rounded-r-lg' : 'ml-0.5 rounded-lg']">
       <button
-        class="flex shrink-0 items-center gap-2 border-b border-sidebar-border px-3 py-2 text-left transition-colors hover:bg-sidebar-hover"
-        @click="toggleRunner"
+        class="flex items-center justify-center rounded-md p-2 transition-colors"
+        :class="activePanel === 'explorer' ? 'bg-sidebar-active text-sidebar-text-active' : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active'"
+        :title="t('git.page.expandExplorer')"
+        @click="toggle('explorer')"
       >
-        <i class="pi shrink-0 text-[9px] text-sidebar-text" :class="runnerExpanded ? 'pi-chevron-down' : 'pi-chevron-right'" />
-        <i class="pi pi-play shrink-0 text-[11px] text-green-500" />
-        <span class="flex-1 truncate text-[11px] font-semibold uppercase tracking-wide text-sidebar-text">Runner</span>
+        <i class="pi pi-folder text-sm" />
       </button>
-      <GitRunnerPanel v-if="runnerExpanded" :git="git" class="min-h-0 flex-1" />
+      <button
+        class="flex items-center justify-center rounded-md p-2 transition-colors"
+        :class="activePanel === 'runner' ? 'bg-sidebar-active text-sidebar-text-active' : 'text-sidebar-text hover:bg-sidebar-hover hover:text-sidebar-text-active'"
+        :title="t('git.runner.title')"
+        @click="toggle('runner')"
+      >
+        <i class="pi pi-play text-sm" />
+      </button>
     </div>
   </template>
-
-  <!-- Collapsed bubbles -->
-  <div v-else-if="root" class="ml-1 flex shrink-0 flex-col gap-1.5 self-stretch rounded-lg border border-sidebar-border bg-sidebar p-1.5 shadow-md">
-    <button
-      class="flex items-center justify-center rounded-full p-1.5 text-sidebar-text transition-colors hover:bg-sidebar-hover hover:text-sidebar-text-active"
-      :title="t('git.page.expandExplorer')"
-      @click="toggleExplorer"
-    >
-      <i class="pi pi-folder text-sm" />
-    </button>
-    <button
-      class="flex items-center justify-center rounded-full p-1.5 text-sidebar-text transition-colors hover:bg-sidebar-hover hover:text-sidebar-text-active"
-      :title="t('git.runner.title')"
-      @click="toggleRunner"
-    >
-      <i class="pi pi-play text-sm" />
-    </button>
-  </div>
 </template>
