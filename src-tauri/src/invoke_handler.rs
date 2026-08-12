@@ -90,6 +90,7 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         // === Explorer commands (dùng bởi Git Desktop "Show in folder" và cây thư mục Terminal) ===
         explorer_open,
         explorer_read_dir,
+        explorer_read_file,
         explorer_open_file,
         // === Git Desktop commands: quản lý danh sách repo (JSON cục bộ) ===
         git_list_repos,

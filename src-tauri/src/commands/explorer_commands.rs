@@ -18,6 +18,12 @@ pub fn explorer_read_dir(path: String) -> Result<ReadDirResult, AppErrorPayload>
     explorer_service::read_dir(&path).map_err(log_err)
 }
 
+/// Đọc nội dung text file và trả về chuỗi UTF-8.
+#[tauri::command]
+pub fn explorer_read_file(path: String) -> Result<String, AppErrorPayload> {
+    explorer_service::read_file(&path).map_err(log_err)
+}
+
 /// Mở file `path` bằng ứng dụng mặc định của hệ điều hành.
 #[tauri::command]
 pub fn explorer_open_file(path: String) -> Result<(), AppErrorPayload> {

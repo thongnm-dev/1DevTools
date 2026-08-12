@@ -1,14 +1,27 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { explorerReadDir, type FileEntry } from "@/tauri/commands/explorer";
+import { provide, ref, watch } from "vue";
+import { explorerReadDir, explorerOpenFile, type FileEntry } from "@/tauri/commands/explorer";
 import { friendlyError } from "@/tauri/commands/_base";
 import FileTreeNode from "./FileTreeNode.vue";
+import MarkdownPreviewDialog from "./MarkdownPreviewDialog.vue";
 
 const props = defineProps<{ root: string; hideHeader?: boolean }>();
 
 const entries = ref<FileEntry[]>([]);
 const loading = ref(false);
 const error = ref("");
+
+const mdPreviewVisible = ref(false);
+const mdPreviewPath = ref("");
+
+provide("onFileClick", (entry: FileEntry) => {
+  if (entry.extension === "md" || entry.extension === "mdx") {
+    mdPreviewPath.value = entry.path;
+    mdPreviewVisible.value = true;
+  } else {
+    void explorerOpenFile(entry.path).catch(() => undefined);
+  }
+});
 
 async function load(path: string) {
   if (!path) {
@@ -44,5 +57,7 @@ watch(() => props.root, load, { immediate: true });
       <div v-else-if="!entries.length" class="px-3 py-2 text-xs text-sidebar-text">Empty folder.</div>
       <FileTreeNode v-for="entry in entries" :key="entry.path" :entry="entry" :depth="0" />
     </div>
+
+    <MarkdownPreviewDialog v-model:visible="mdPreviewVisible" :file-path="mdPreviewPath" />
   </div>
 </template>

@@ -24,6 +24,11 @@ export function explorerReadDir(path: string) {
   return safeInvoke<ReadDirResult>("explorer_read_dir", { path });
 }
 
+/** Đọc nội dung text file và trả về chuỗi UTF-8. */
+export function explorerReadFile(path: string) {
+  return safeInvoke<string>("explorer_read_file", { path });
+}
+
 /** Mở file bằng ứng dụng mặc định của hệ điều hành (khác `explorerOpen`, vốn chỉ chọn file trong Explorer). */
 export function explorerOpenFile(path: string) {
   return safeInvoke<void>("explorer_open_file", { path });

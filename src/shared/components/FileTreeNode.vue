@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, inject, ref } from "vue";
 import { explorerReadDir, explorerOpenFile, type FileEntry } from "@/tauri/commands/explorer";
 import { friendlyError } from "@/tauri/commands/_base";
 
@@ -115,6 +115,8 @@ function fileIcon(entry: FileEntry) {
 
 const props = defineProps<{ entry: FileEntry; depth: number }>();
 
+const onFileClick = inject<((entry: FileEntry) => void) | undefined>("onFileClick", undefined);
+
 const icon = computed(() => fileIcon(props.entry));
 
 const expanded = ref(false);
@@ -125,7 +127,11 @@ const error = ref("");
 
 async function toggle() {
   if (!props.entry.is_dir) {
-    void explorerOpenFile(props.entry.path).catch(() => undefined);
+    if (onFileClick) {
+      onFileClick(props.entry);
+    } else {
+      void explorerOpenFile(props.entry.path).catch(() => undefined);
+    }
     return;
   }
   expanded.value = !expanded.value;

@@ -93,6 +93,19 @@ pub fn read_dir(dir_path: &str) -> AppResult<ReadDirResult> {
     })
 }
 
+/// Đọc nội dung text file và trả về chuỗi UTF-8.
+pub fn read_file(path: &str) -> AppResult<String> {
+    let p = Path::new(path);
+    if !p.exists() {
+        return Err(AppError::new(format!("Path does not exist: {path}")));
+    }
+    if !p.is_file() {
+        return Err(AppError::new(format!("Not a file: {path}")));
+    }
+    fs::read_to_string(p)
+        .map_err(|e| AppError::new(format!("Failed to read file: {e}")))
+}
+
 /// Mở một file bằng ứng dụng mặc định của hệ điều hành (khác `open_in_explorer`,
 /// vốn chỉ chọn/hiển thị file trong Explorer/Finder mà không chạy nó).
 pub fn open_file(path: &str) -> AppResult<()> {

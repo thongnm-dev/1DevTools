@@ -1148,6 +1148,9 @@ export default {
       },
     },
   },
+  markdownPreview: {
+    title: "Xem Markdown",
+  },
   errors: {
     common: {
       internal: "Đã xảy ra lỗi. Vui lòng thử lại.",

@@ -1144,6 +1144,9 @@ export default {
       },
     },
   },
+  markdownPreview: {
+    title: "Markdown Preview",
+  },
   errors: {
     common: {
       internal: "Something went wrong. Please try again.",

@@ -5,22 +5,64 @@ use std::path::Path;
 use crate::models::dev_runner::{CommandCategory, CommandSource, DevCommand};
 
 /// Quét thư mục `repo_path` và trả về danh sách lệnh phát triển phát hiện được.
+/// Tìm ở root và cả subdirectory 1 cấp (deploy/, mobile/, services/, …).
 pub fn detect_commands(repo_path: &str) -> Vec<DevCommand> {
     let root = Path::new(repo_path);
     let mut commands = Vec::new();
 
-    detect_npm(root, &mut commands);
-    detect_flutter(root, &mut commands);
-    detect_maven(root, &mut commands);
-    detect_gradle(root, &mut commands);
-    detect_cargo(root, &mut commands);
-    detect_go(root, &mut commands);
-    detect_python(root, &mut commands);
-    detect_dotnet(root, &mut commands);
-    detect_make(root, &mut commands);
-    detect_docker(root, &mut commands);
+    detect_at(root, None, &mut commands);
+
+    if let Ok(entries) = std::fs::read_dir(root) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if !path.is_dir() {
+                continue;
+            }
+            let dir_name = entry.file_name().to_string_lossy().to_string();
+            if is_skip_dir(&dir_name) {
+                continue;
+            }
+            detect_at(&path, Some(&dir_name), &mut commands);
+        }
+    }
 
     commands
+}
+
+const SKIP_DIRS: &[&str] = &[
+    "node_modules", "target", "build", "dist", "out",
+    "vendor", "__pycache__", ".dart_tool", "coverage",
+    "bin", "obj", "pkg",
+];
+
+fn is_skip_dir(name: &str) -> bool {
+    name.starts_with('.') || SKIP_DIRS.contains(&name)
+}
+
+fn detect_at(root: &Path, subdir: Option<&str>, out: &mut Vec<DevCommand>) {
+    let mut local = Vec::new();
+
+    detect_npm(root, &mut local);
+    detect_flutter(root, &mut local);
+    detect_maven(root, &mut local);
+    detect_gradle(root, &mut local);
+    detect_cargo(root, &mut local);
+    detect_go(root, &mut local);
+    detect_python(root, &mut local);
+    detect_dotnet(root, &mut local);
+    detect_make(root, &mut local);
+    detect_docker(root, &mut local);
+
+    if let Some(dir) = subdir {
+        for cmd in &mut local {
+            cmd.id = format!("{dir}/{}", cmd.id);
+            cmd.label = format!("[{dir}] {}", cmd.label);
+            cmd.source_file = format!("{dir}/{}", cmd.source_file);
+            cmd.command = format!("cd {dir} && {}", cmd.command);
+        }
+    }
+
+    out.extend(local);
 }
 
 fn make_id(category: &CommandCategory, label: &str) -> String {

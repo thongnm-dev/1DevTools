@@ -22,6 +22,14 @@ const customCommands = ref<DevCommand[]>([]);
 const loading = ref(false);
 const addDialogVisible = ref(false);
 const editingCommand = ref<DevCommand | null>(null);
+const collapsedGroups = ref<Set<string>>(new Set());
+
+function toggleGroup(group: string) {
+  const s = new Set(collapsedGroups.value);
+  if (s.has(group)) s.delete(group);
+  else s.add(group);
+  collapsedGroups.value = s;
+}
 
 const CATEGORY_META: Record<CommandCategory, { icon: string; color: string }> = {
   npm: { icon: "pi-box", color: "text-red-500" },
@@ -156,16 +164,23 @@ async function removeCustomCommand(cmd: DevCommand) {
       <template v-else>
         <div v-for="[group, cmds] in grouped" :key="group" class="mb-2 last:mb-0">
           <!-- Group header -->
-          <div class="mb-0.5 flex items-center gap-1.5 px-2 py-0.5">
+          <button
+            class="mb-0.5 flex w-full items-center gap-1.5 rounded px-2 py-0.5 text-left transition-colors hover:bg-sidebar-hover"
+            @click="toggleGroup(group)"
+          >
+            <i
+              class="pi text-[8px] text-sidebar-text transition-transform"
+              :class="collapsedGroups.has(group) ? 'pi-chevron-right' : 'pi-chevron-down'"
+            />
             <i class="pi text-[10px]" :class="[catMeta(group as CommandCategory).icon, catMeta(group as CommandCategory).color]" />
             <span class="text-[10px] font-bold uppercase tracking-wide text-sidebar-text">
               {{ group === "custom" ? t("git.runner.customGroup") : group }}
             </span>
             <span class="text-[9px] text-sidebar-text">({{ cmds.length }})</span>
-          </div>
+          </button>
 
           <!-- Commands -->
-          <div class="flex flex-col gap-0.5">
+          <div v-show="!collapsedGroups.has(group)" class="flex flex-col gap-0.5">
             <div
               v-for="cmd in cmds"
               :key="cmd.id"
