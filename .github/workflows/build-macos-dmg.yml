@@ -22,7 +22,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
 
       # Cài đủ 2 target để build universal binary (chạy trên cả Intel lẫn Apple Silicon).
