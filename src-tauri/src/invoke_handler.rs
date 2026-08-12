@@ -8,6 +8,7 @@ use commands::ai_usage_commands::*;
 use commands::app_config_commands::*;
 use commands::auth_commands::*;
 use commands::db_config_commands::*;
+use commands::dev_runner_commands::*;
 use commands::docker_commands::*;
 use commands::explorer_commands::*;
 use commands::git_commands::*;
@@ -176,10 +177,16 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         docker_prune_system,
         // === Docker Desktop commands: build / compose (stream output) ===
         docker_build,
+        docker_tag,
+        docker_push,
         docker_compose_up,
         docker_compose_down,
         // === Docker Desktop commands: danh sách project build đã lưu (JSON cục bộ) ===
         docker_list_projects,
+        // === Dev Runner commands: phát hiện + chạy lệnh phát triển ===
+        detect_dev_commands,
+        load_custom_commands,
+        save_custom_commands,
         docker_add_project,
         docker_update_project,
         docker_remove_project,

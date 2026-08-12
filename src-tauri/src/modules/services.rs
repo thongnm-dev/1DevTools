@@ -62,4 +62,6 @@ mod services {
     pub mod claude_terminal_macos;
     /// Capture login Claude đang active → lưu token vào profile (app data dir).
     pub mod claude_capture;
+    /// Service phát hiện lệnh phát triển từ project files (npm/flutter/maven/cargo...).
+    pub mod dev_runner_service;
 }

@@ -14,6 +14,7 @@ import {
   dockerPruneContainers,
   dockerPruneImages,
   dockerPruneSystem,
+  dockerPush,
   dockerRemoveContainer,
   dockerRemoveImage,
   dockerRemoveProject,
@@ -21,6 +22,7 @@ import {
   dockerStartContainer,
   dockerStartDesktop,
   dockerStopContainer,
+  dockerTag,
   dockerTouchProject,
   dockerUpdateProject,
 } from "@/tauri/commands/docker";
@@ -299,6 +301,13 @@ export function useDocker() {
     if (projectId) await loadProjects();
   }
 
+  async function pushImage(sourceImage: string, targetImage: string, onLine: (line: string) => void) {
+    if (targetImage !== sourceImage) {
+      await dockerTag(sourceImage, targetImage);
+    }
+    await dockerPush(targetImage, onLine);
+  }
+
   /**
    * `docker compose up -d --build` (rebuild tăng dần) cho một project compose,
    * hoặc `docker compose build --no-cache --pull` rồi `up -d` nếu `clean` = true
@@ -406,6 +415,7 @@ export function useDocker() {
     pruneImages,
     pruneSystem,
     build,
+    pushImage,
     composeUp,
     composeDown,
     addProject,

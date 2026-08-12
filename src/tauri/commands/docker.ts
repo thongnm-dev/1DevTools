@@ -80,6 +80,17 @@ export function dockerBuild(
   });
 }
 
+export function dockerTag(source: string, target: string) {
+  return safeInvoke<string>("docker_tag", { source, target });
+}
+
+export function dockerPush(image: string, onLine?: (line: string) => void) {
+  return safeInvoke<string>("docker_push", {
+    image,
+    onProgress: lineChannel(onLine),
+  });
+}
+
 export function dockerComposeUp(composeFile: string, clean: boolean, onLine?: (line: string) => void) {
   return safeInvoke<string>("docker_compose_up", {
     composeFile,

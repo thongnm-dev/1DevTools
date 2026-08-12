@@ -6,7 +6,7 @@ import type { MenuItem } from "primevue/menuitem";
 import { open } from "@tauri-apps/plugin-dialog";
 import "@xterm/xterm/css/xterm.css";
 import { useTerminal } from "../composables/useTerminal";
-import TerminalFileTree from "./TerminalFileTree.vue";
+import FileTreePanel from "@/shared/components/FileTreePanel.vue";
 import { useToast } from "@/shared/composables/useToast";
 import { canUseTauriRuntime, friendlyError } from "@/tauri/commands/_base";
 
@@ -168,7 +168,7 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Cột cây thư mục: chỉ hiện khi tab đang active đã chọn thư mục làm việc -->
-        <TerminalFileTree
+        <FileTreePanel
           :root="activeTab.startDir"
           :style="{ width: treeWidth + 'px' }"
           class="shrink-0 overflow-hidden border-l border-divider bg-panel"

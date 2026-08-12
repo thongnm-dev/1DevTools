@@ -21,4 +21,6 @@ mod database {
     pub mod ai_account_store;
     /// Lưu trữ cục bộ (JSON file) token profile đã capture của account AI Usage.
     pub mod ai_profile_store;
+    /// Lưu trữ cục bộ (JSON file) custom dev commands per-repo.
+    pub mod dev_runner_store;
 }

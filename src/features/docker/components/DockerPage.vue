@@ -13,6 +13,7 @@ import { friendlyError } from "@/tauri/commands/_base";
 import type { DockerContainer, DockerImage, DockerProject } from "@/models/docker";
 
 import DockerBuildDialog, { type AdHocBuildPayload } from "./DockerBuildDialog.vue";
+import DockerPushDialog, { type PushPayload } from "./DockerPushDialog.vue";
 import DockerProjectDialog from "./DockerProjectDialog.vue";
 import DockerBuildLogDialog from "./DockerBuildLogDialog.vue";
 import DockerTerminalDialog from "./DockerTerminalDialog.vue";
@@ -275,8 +276,21 @@ function askRemoveProject(p: DockerProject) {
 // === Build ad-hoc / project dialogs ===
 
 const buildDialogVisible = ref(false);
+const pushDialogVisible = ref(false);
+const pushSourceImage = ref("");
 const projectDialogVisible = ref(false);
 const editingProject = ref<DockerProject | null>(null);
+
+function openPushDialog(img: DockerImage) {
+  pushSourceImage.value = imageLabel(img);
+  pushDialogVisible.value = true;
+}
+
+async function onPush(payload: PushPayload) {
+  await runBuild(t("docker.buildLog.titlePush", { name: payload.targetImage }), () =>
+    docker.pushImage(payload.sourceImage, payload.targetImage, appendBuildLine),
+  );
+}
 
 function openAddProject() {
   editingProject.value = null;
@@ -596,17 +610,27 @@ function openLogs(c: DockerContainer) {
                       {{ img.id.slice(0, 12) }} · {{ img.size }} · {{ img.created }}
                     </div>
                   </div>
-                  <Button
-                    class="shrink-0"
-                    size="small"
-                    text
-                    rounded
-                    :loading="docker.isBusy(img.id)"
-                    icon="pi pi-trash"
-                    severity="danger"
-                    :title="t('docker.actions.remove')"
-                    @click="askRemoveImage(img)"
-                  />
+                  <div class="flex shrink-0 items-center gap-0.5">
+                    <Button
+                      size="small"
+                      text
+                      rounded
+                      icon="pi pi-cloud-upload"
+                      severity="info"
+                      :title="t('docker.actions.push')"
+                      @click="openPushDialog(img)"
+                    />
+                    <Button
+                      size="small"
+                      text
+                      rounded
+                      :loading="docker.isBusy(img.id)"
+                      icon="pi pi-trash"
+                      severity="danger"
+                      :title="t('docker.actions.remove')"
+                      @click="askRemoveImage(img)"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -702,6 +726,7 @@ function openLogs(c: DockerContainer) {
 
     <!-- Dialogs -->
     <DockerBuildDialog v-model:visible="buildDialogVisible" @build="onAdHocBuild" />
+    <DockerPushDialog v-model:visible="pushDialogVisible" :source-image="pushSourceImage" @push="onPush" />
     <DockerProjectDialog v-model:visible="projectDialogVisible" :docker="docker" :editing="editingProject" />
     <DockerBuildLogDialog v-model:visible="buildLogVisible" :title="buildLogTitle" :lines="buildLogLines" :status="buildLogStatus" />
     <DockerTerminalDialog

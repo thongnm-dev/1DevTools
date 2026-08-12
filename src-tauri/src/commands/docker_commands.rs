@@ -164,6 +164,31 @@ pub async fn docker_compose_up(
     .map_err(log_err)
 }
 
+/// Gắn tag mới cho một image: `docker tag <source> <target>`.
+#[tauri::command]
+pub async fn docker_tag(source: String, target: String) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || docker_service::tag_image(&source, &target))
+        .await
+        .map_err(|e| log_err(AppError::new(e.to_string())))?
+        .map_err(log_err)
+}
+
+/// Push image lên registry (DockerHub), stream output qua `on_progress`.
+#[tauri::command]
+pub async fn docker_push(
+    image: String,
+    on_progress: Channel<String>,
+) -> Result<String, AppErrorPayload> {
+    tauri::async_runtime::spawn_blocking(move || {
+        docker_service::push_with_progress(&image, |line| {
+            let _ = on_progress.send(line);
+        })
+    })
+    .await
+    .map_err(|e| log_err(AppError::new(e.to_string())))?
+    .map_err(log_err)
+}
+
 /// Chạy `docker compose down` để tắt và gỡ các service của `compose_file`.
 #[tauri::command]
 pub async fn docker_compose_down(compose_file: String) -> Result<String, AppErrorPayload> {

@@ -29,4 +29,6 @@ mod commands {
     pub mod docker_commands;
     /// Commands cho module AI Usage (quản lý account AI + probe usage + auto-switch).
     pub mod ai_usage_commands;
+    /// Commands cho chức năng Dev Runner (phát hiện và chạy lệnh phát triển).
+    pub mod dev_runner_commands;
 }

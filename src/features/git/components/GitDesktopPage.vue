@@ -37,6 +37,7 @@ import GitCommitBrowserDialog from "./GitCommitBrowserDialog.vue";
 import GitBlameDialog from "./GitBlameDialog.vue";
 import GitLogDialog from "./GitLogDialog.vue";
 import GitAgentTerminalDialog from "./GitAgentTerminalDialog.vue";
+import GitRightSidebar from "./GitRightSidebar.vue";
 
 const { t } = useI18n();
 const git = useGit();
@@ -131,7 +132,9 @@ const WIDTH_KEYS = {
   changesList: "git.width.changesList",
   commitList: "git.width.commitList",
   commitFiles: "git.width.commitFiles",
+  explorerTree: "git.width.explorerTree",
 } as const;
+
 
 function loadWidth(key: string, def: number, min: number, max: number) {
   const raw = Number(localStorage.getItem(key) ?? "");
@@ -147,10 +150,15 @@ const commitFilesWidth = ref(loadWidth(WIDTH_KEYS.commitFiles, 224, 140, 500)); 
 const commitFilesRef = ref<HTMLElement | null>(null);
 let activeMove: ((e: MouseEvent) => void) | null = null;
 
+const explorerTreeWidth = ref(loadWidth(WIDTH_KEYS.explorerTree, 220, 160, 400));
+const explorerTreeRef = ref<InstanceType<typeof GitRightSidebar> | null>(null);
+const explorerRoot = computed(() => git.info.value?.path || git.activeRepo.value?.path || "");
+
 function persistWidths() {
   localStorage.setItem(WIDTH_KEYS.changesList, String(Math.round(changesListWidth.value)));
   localStorage.setItem(WIDTH_KEYS.commitList, String(Math.round(commitListWidth.value)));
   localStorage.setItem(WIDTH_KEYS.commitFiles, String(Math.round(commitFilesWidth.value)));
+  localStorage.setItem(WIDTH_KEYS.explorerTree, String(Math.round(explorerTreeWidth.value)));
 }
 
 function beginResize(move: (e: MouseEvent) => void, e: MouseEvent) {
@@ -187,6 +195,13 @@ function startResizeCommitFiles(e: MouseEvent) {
   beginResize((ev) => {
     const left = commitFilesRef.value?.getBoundingClientRect().left ?? 0;
     commitFilesWidth.value = Math.max(140, Math.min(500, ev.clientX - left));
+  }, e);
+}
+
+function startResizeExplorerTree(e: MouseEvent) {
+  beginResize((ev) => {
+    const right = explorerTreeRef.value?.panelRef?.getBoundingClientRect().right ?? window.innerWidth;
+    explorerTreeWidth.value = Math.max(160, Math.min(400, right - ev.clientX));
   }, e);
 }
 
@@ -929,7 +944,7 @@ onUnmounted(closeCommitMenu);
                   @click="git.commit()"
                 >
                   <i class="pi pi-check mr-1.5" />
-                  {{ t("git.page.commitTo", { branch: git.info.value?.current_branch || t("git.page.branchFallback") }) }}
+                  {{ t("git.page.commitTo") }}
                 </Button>
                 <Button
                   size="small"
@@ -1024,6 +1039,15 @@ onUnmounted(closeCommitMenu);
               </div>
             </div>
           </div>
+
+          <GitRightSidebar
+            ref="explorerTreeRef"
+            :git="git"
+            :root="explorerRoot"
+            :width="explorerTreeWidth"
+            :is-resizing="isResizing"
+            @resize="startResizeExplorerTree"
+          />
         </div>
 
         <!-- ================= HISTORY TAB ================= -->
@@ -1183,6 +1207,14 @@ onUnmounted(closeCommitMenu);
               </div>
             </div>
           </div>
+
+          <GitRightSidebar
+            :git="git"
+            :root="explorerRoot"
+            :width="explorerTreeWidth"
+            :is-resizing="isResizing"
+            @resize="startResizeExplorerTree"
+          />
         </div>
       </div>
     </template>

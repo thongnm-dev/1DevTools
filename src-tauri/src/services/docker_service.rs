@@ -413,6 +413,38 @@ pub fn compose_up_with_progress<F: FnMut(String)>(
     Ok(combined)
 }
 
+/// `docker tag <source> <target>` — gắn thêm tag mới cho một image hiện có.
+pub fn tag_image(source: &str, target: &str) -> AppResult<String> {
+    run(&["tag", source, target])
+}
+
+/// `docker push <image>`, stream output ra `on_line`.
+pub fn push_with_progress<F: FnMut(String)>(image: &str, on_line: F) -> AppResult<String> {
+    let mut cmd = docker_cmd();
+    cmd.arg("push").arg(image);
+    run_streamed(cmd, on_line)
+}
+
+/// `docker login` — kiểm tra xem đã login DockerHub/registry chưa (best-effort).
+pub fn is_logged_in(registry: &str) -> bool {
+    let config_path = dirs::home_dir()
+        .map(|h| h.join(".docker").join("config.json"))
+        .unwrap_or_default();
+    let Ok(content) = std::fs::read_to_string(&config_path) else {
+        return false;
+    };
+    let Ok(v) = serde_json::from_str::<serde_json::Value>(&content) else {
+        return false;
+    };
+    if let Some(auths) = v.get("auths").and_then(|a| a.as_object()) {
+        if registry.is_empty() {
+            return auths.keys().any(|k| k.contains("docker.io") || k.contains("index.docker.io"));
+        }
+        return auths.contains_key(registry);
+    }
+    false
+}
+
 /// `docker compose -f <file> down`.
 pub fn compose_down(compose_file: &str) -> AppResult<String> {
     run(&["compose", "-f", compose_file, "down"])
