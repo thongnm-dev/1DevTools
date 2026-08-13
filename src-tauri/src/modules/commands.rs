@@ -31,4 +31,6 @@ mod commands {
     pub mod ai_usage_commands;
     /// Commands cho chức năng Dev Runner (phát hiện và chạy lệnh phát triển).
     pub mod dev_runner_commands;
+    /// Commands cho màn hình Workflow (CRUD + layout canvas).
+    pub mod workflow_commands;
 }

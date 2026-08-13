@@ -19,6 +19,7 @@ use commands::role_commands::*;
 use commands::system_commands::*;
 use commands::terminal_commands::*;
 use commands::user_commands::*;
+use commands::workflow_commands::*;
 
 /// Xây dựng handler cho `Builder::invoke_handler`, gộp toàn bộ command đã đăng ký.
 ///
@@ -191,6 +192,13 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         docker_add_project,
         docker_update_project,
         docker_remove_project,
-        docker_touch_project
+        docker_touch_project,
+        // === Workflow commands: CRUD + layout canvas (JSON cục bộ) ===
+        workflow_list,
+        workflow_create,
+        workflow_update,
+        workflow_delete,
+        workflow_duplicate,
+        workflow_save_layout
     ]
 }

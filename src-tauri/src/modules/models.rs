@@ -27,4 +27,6 @@ mod models {
     pub mod ai_usage;
     /// Model cho chức năng Dev Runner (phát hiện và chạy lệnh phát triển).
     pub mod dev_runner;
+    /// Model cho màn hình Workflow (chuỗi step tự động hoá skill/prompt/runner/terminal).
+    pub mod workflow;
 }

@@ -78,6 +78,12 @@ export const appRoutes: AppRoute[] = [
     breadcrumbs: ["AI", "Usage"],
   },
   {
+    key: "workflow",
+    path: "/workflow",
+    title: "Workflow",
+    subtitle: "Build reusable step sequences (skill, prompt, runner, terminal) for your projects.",
+  },
+  {
     key: "login",
     path: "/login",
     title: "Login",
@@ -154,6 +160,11 @@ export const vueRoutes: RouteRecordRaw[] = [
     path: "/ai/usage",
     component: () => import("@/features/ai-agent/components/AiUsagePage.vue"),
     meta: { key: "ai-usage" as MenuKey },
+  },
+  {
+    path: "/workflow",
+    component: () => import("@/features/workspaces/components/WorkflowPage.vue"),
+    meta: { key: "workflow" as MenuKey },
   },
   {
     path: "/login",

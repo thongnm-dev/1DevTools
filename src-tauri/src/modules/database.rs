@@ -23,4 +23,6 @@ mod database {
     pub mod ai_profile_store;
     /// Lưu trữ cục bộ (JSON file) custom dev commands per-repo.
     pub mod dev_runner_store;
+    /// Lưu trữ cục bộ (JSON file) danh sách Workflow (kèm steps + layout canvas).
+    pub mod workflow_store;
 }

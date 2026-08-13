@@ -8,7 +8,8 @@ export type MenuKey =
   | "gov-menus"
   | "gov-permissions"
   | "app-config"
-  | "ai-usage";
+  | "ai-usage"
+  | "workflow";
 
 export type AppRouteKey = MenuKey | "login" | "forgotPassword";
 
