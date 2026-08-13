@@ -106,10 +106,10 @@ export function useTerminal() {
    * ở thư mục home, có thể đổi riêng sau. Truyền `autoCommand` để tự động gõ lệnh (vd. khởi
    * chạy một CLI agent) ngay khi shell của tab sẵn sàng.
    */
-  function addTab(opts?: AddTabOptions) {
+  function addTab(opts?: AddTabOptions): string | null {
     if (!canUseTauriRuntime()) {
       toast.error(t("common.tauriRuntimeNotAvailable"));
-      return;
+      return null;
     }
     const key = nextKey();
     const startDir = opts?.startDir ?? "";
@@ -126,6 +126,7 @@ export function useTerminal() {
     tabs.value.push(tab);
     activeKey.value = key;
     if (startDir) void refreshGitInfo(tab);
+    return key;
   }
 
   function setActive(key: string) {

@@ -1169,6 +1169,15 @@ export default {
       terminal: "Mở Terminal",
       git: "Mở trong Git",
     },
+    sidebar: {
+      terminal: "Terminal",
+      explorer: "Explorer",
+      agents: "Agents",
+      ide: "IDE (chỉ xem)",
+      agentsEmpty: "Chưa thêm AI account nào. Thêm ở màn AI Usage.",
+      ideHint: "Bấm 1 file ở Explorer để xem nội dung tại đây.",
+      ideEmpty: "Chưa chọn file",
+    },
     dialog: {
       newTitle: "Workspace mới",
       editTitle: "Sửa Workspace",

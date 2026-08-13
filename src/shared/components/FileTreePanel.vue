@@ -5,7 +5,8 @@ import { friendlyError } from "@/tauri/commands/_base";
 import FileTreeNode from "./FileTreeNode.vue";
 import MarkdownPreviewDialog from "./MarkdownPreviewDialog.vue";
 
-const props = defineProps<{ root: string; hideHeader?: boolean }>();
+const props = defineProps<{ root: string; hideHeader?: boolean; interceptClicks?: boolean }>();
+const emit = defineEmits<{ "open-file": [entry: FileEntry] }>();
 
 const entries = ref<FileEntry[]>([]);
 const loading = ref(false);
@@ -15,6 +16,10 @@ const mdPreviewVisible = ref(false);
 const mdPreviewPath = ref("");
 
 provide("onFileClick", (entry: FileEntry) => {
+  if (props.interceptClicks) {
+    emit("open-file", entry);
+    return;
+  }
   if (entry.extension === "md" || entry.extension === "mdx") {
     mdPreviewPath.value = entry.path;
     mdPreviewVisible.value = true;

@@ -1165,6 +1165,15 @@ export default {
       terminal: "Open Terminal",
       git: "Open in Git",
     },
+    sidebar: {
+      terminal: "Terminal",
+      explorer: "Explorer",
+      agents: "Agents",
+      ide: "IDE (view only)",
+      agentsEmpty: "No AI account added yet. Add one from AI Usage.",
+      ideHint: "Click a file in Explorer to view it here.",
+      ideEmpty: "No file selected",
+    },
     dialog: {
       newTitle: "New Workspace",
       editTitle: "Edit Workspace",

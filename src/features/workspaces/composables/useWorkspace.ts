@@ -146,3 +146,5 @@ export function useWorkspace() {
     removeWorkspace,
   };
 }
+
+export type WorkspaceApi = ReturnType<typeof useWorkspace>;

@@ -219,3 +219,5 @@ export function useWorkflow() {
     selectStep,
   };
 }
+
+export type WorkflowApi = ReturnType<typeof useWorkflow>;
