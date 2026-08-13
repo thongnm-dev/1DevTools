@@ -6,7 +6,6 @@ const { t } = useI18n();
 defineProps<{
   activeTab: "changes" | "history";
   changesCount: number;
-  historyCount: number;
   refreshing: boolean;
 }>();
 
@@ -38,13 +37,6 @@ defineEmits<{
       @click="$emit('switchTab', 'history')"
     >
       <i class="pi pi-history text-[11px]" /> {{ t("git.tabs.history") }}
-      <span
-        v-if="historyCount"
-        class="rounded-full px-1.5 text-[10px] font-bold"
-        :class="activeTab === 'history' ? 'bg-white/25' : 'bg-canvas text-secondary'"
-      >
-        {{ historyCount }}
-      </span>
     </button>
     <button
       class="rounded p-1 text-muted transition-colors hover:bg-canvas hover:text-brand"

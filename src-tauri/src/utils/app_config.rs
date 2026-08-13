@@ -68,6 +68,16 @@ pub fn config_path() -> PathBuf {
     manifest.join("config").join("config.ini")
 }
 
+/// Thư mục con `data` bên trong [`data_dir`] (AppData), nơi gom các file JSON dữ liệu
+/// cục bộ (`ai_accounts.json`, `docker_projects.json`, `git_repos.json`, ...).
+///
+/// Tự tạo thư mục nếu chưa tồn tại.
+pub fn data_subdir() -> PathBuf {
+    let dir = data_dir().join("data");
+    let _ = std::fs::create_dir_all(&dir);
+    dir
+}
+
 /// Thư mục `data` cùng cấp với thư mục `config` (kế bên .exe ở production, hoặc
 /// `src-tauri/data` ở development khi không lấy được exe path).
 ///

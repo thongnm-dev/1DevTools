@@ -213,6 +213,7 @@ export default {
       noChangesToShow: "No changes to display.",
       diffTruncated: "Diff is too large — output truncated.",
       noCommits: "No commits yet.",
+      loadingMore: "Loading more…",
       collapse: "Collapse",
       expand: "Expand",
       copyLabel: {

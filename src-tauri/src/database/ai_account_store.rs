@@ -1,8 +1,8 @@
 //! Tầng lưu trữ cục bộ cho module AI Usage.
 //!
 //! Danh sách account AI (kèm token gốc) và cấu hình được lưu trong một file JSON
-//! `ai_accounts.json` trong thư mục AppData (`%LOCALAPPDATA%\management-systems`)
-//! — KHÔNG đẩy token lên database dùng chung.
+//! `ai_accounts.json` trong thư mục `data` bên trong AppData
+//! (`%LOCALAPPDATA%\1Devtools\data`) — KHÔNG đẩy token lên database dùng chung.
 
 use std::path::PathBuf;
 
@@ -74,7 +74,14 @@ pub struct AiAccountData {
 }
 
 fn data_path() -> PathBuf {
-    data_dir().join(DATA_FILE)
+    let path = app_config::data_subdir().join(DATA_FILE);
+    if !path.exists() {
+        let legacy = data_dir().join(DATA_FILE);
+        if legacy.exists() {
+            let _ = std::fs::rename(&legacy, &path);
+        }
+    }
+    path
 }
 
 /// Thư mục AppData dùng chung cho dữ liệu cục bộ (account, profile, v.v.).

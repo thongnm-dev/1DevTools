@@ -3,6 +3,7 @@ import { ref, watch, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { marked } from "marked";
 import Dialog from "primevue/dialog";
+import DialogFooter from "@/shared/components/DialogFooter.vue";
 import { explorerReadFile } from "@/tauri/commands/explorer";
 
 const { t } = useI18n();
@@ -76,14 +77,13 @@ watch(visible, async (v) => {
     />
 
     <template #footer>
-      <div class="flex items-center justify-end">
-        <button
-          class="rounded px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:bg-panel hover:text-ink"
-          @click="visible = false"
-        >
-          {{ t("common.close") }}
-        </button>
-      </div>
+      <DialogFooter
+        :cancel-label="t('common.close')"
+        cancel-icon="pi pi-times"
+        cancel-severity="danger"
+        hide-confirm
+        @cancel="visible = false"
+      />
     </template>
   </Dialog>
 </template>

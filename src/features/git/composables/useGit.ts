@@ -43,6 +43,7 @@ import {
   gitFileDiff,
   gitListRepos,
   gitLog,
+  gitLogSearch,
   gitPull,
   gitPush,
   gitRebase,
@@ -87,7 +88,7 @@ import type {
 } from "@/models/git";
 import { useToast } from "@/shared/composables/useToast";
 
-const HISTORY_LIMIT = 80;
+const HISTORY_PAGE_SIZE = 20;
 const ACTIVE_REPO_KEY = "git.activeRepoId";
 
 /** File đang được chọn để xem diff. */
@@ -114,6 +115,8 @@ export function useGit() {
   const worktrees = ref<GitWorktree[]>([]);
   const tags = ref<GitTag[]>([]);
   const commits = ref<GitCommit[]>([]);
+  const historyHasMore = ref(true);
+  const historyLoadingMore = ref(false);
 
   const comparison = ref<GitComparison | null>(null);
   const comparisonDiff = ref<GitDiff | null>(null);
@@ -229,6 +232,8 @@ export function useGit() {
     branches.value = [];
     stashes.value = [];
     commits.value = [];
+    historyHasMore.value = true;
+    historyLoadingMore.value = false;
     selectedFile.value = null;
     diff.value = null;
     selectedCommit.value = null;
@@ -452,7 +457,9 @@ export function useGit() {
     const path = repoPath();
     if (!path) return;
     try {
-      commits.value = await gitLog(path, HISTORY_LIMIT);
+      const page = await gitLogSearch(path, "", "", "", "", "", 0, HISTORY_PAGE_SIZE);
+      commits.value = page;
+      historyHasMore.value = page.length === HISTORY_PAGE_SIZE;
       if (commits.value.length && !selectedCommit.value) {
         await selectCommit(commits.value[0]);
       }
@@ -461,10 +468,27 @@ export function useGit() {
     }
   }
 
+  /** Nạp thêm 20 commit tiếp theo khi cuộn tới cuối danh sách history. */
+  async function loadMoreHistory() {
+    const path = repoPath();
+    if (!path || historyLoadingMore.value || !historyHasMore.value) return;
+    historyLoadingMore.value = true;
+    try {
+      const page = await gitLogSearch(path, "", "", "", "", "", commits.value.length, HISTORY_PAGE_SIZE);
+      commits.value = [...commits.value, ...page];
+      historyHasMore.value = page.length === HISTORY_PAGE_SIZE;
+    } catch (e) {
+      reportError(t("git.toast.historyLoadFailed"), e);
+    } finally {
+      historyLoadingMore.value = false;
+    }
+  }
+
   /** Refresh sau khi lịch sử/HEAD thay đổi (undo, reset, checkout commit…). */
   async function refreshAfterHistoryChange() {
     selectedCommit.value = null;
     commits.value = [];
+    historyHasMore.value = true;
     selectedFile.value = null;
     diff.value = null;
     await Promise.all([refreshStatusAndInfo(), refreshBranches()]);
@@ -1284,6 +1308,8 @@ export function useGit() {
     worktrees,
     tags,
     commits,
+    historyHasMore,
+    historyLoadingMore,
     comparison,
     comparisonDiff,
     pullRequests,
@@ -1337,6 +1363,7 @@ export function useGit() {
     pull,
     push,
     loadHistory,
+    loadMoreHistory,
     selectCommit,
     selectCommitFile,
     switchTab,

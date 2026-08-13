@@ -418,6 +418,14 @@ function isTopCommit(c: GitCommit) {
   return git.commits.value[0]?.hash === c.hash;
 }
 
+// Lazy load thêm commit khi cuộn gần cuối danh sách history.
+function onHistoryListScroll(e: Event) {
+  const el = e.target as HTMLElement;
+  if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) {
+    void git.loadMoreHistory();
+  }
+}
+
 // Reset (hard) — cần xác nhận vì mất dữ liệu.
 const resetHardDialogVisible = ref(false);
 const resetHardCommit = ref<GitCommit | null>(null);
@@ -828,7 +836,6 @@ onUnmounted(closeCommitMenu);
             <GitTabSwitcher
               :active-tab="git.tab.value"
               :changes-count="git.staged.value.length + git.unstaged.value.length"
-              :history-count="git.commits.value.length"
               :refreshing="git.refreshing.value || git.loadingRepo.value"
               @switch-tab="git.switchTab($event)"
               @refresh="git.refreshStatusAndInfo()"
@@ -1066,13 +1073,12 @@ onUnmounted(closeCommitMenu);
             <GitTabSwitcher
               :active-tab="git.tab.value"
               :changes-count="git.staged.value.length + git.unstaged.value.length"
-              :history-count="git.commits.value.length"
               :refreshing="git.refreshing.value || git.loadingRepo.value"
               @switch-tab="git.switchTab($event)"
               @refresh="git.refreshStatusAndInfo()"
             />
 
-            <div class="min-h-0 flex-1 overflow-y-auto">
+            <div class="min-h-0 flex-1 overflow-y-auto" @scroll="onHistoryListScroll">
               <button
                 v-for="c in git.commits.value"
                 :key="c.hash"
@@ -1091,6 +1097,9 @@ onUnmounted(closeCommitMenu);
               </button>
               <div v-if="!git.commits.value.length" class="p-6 text-center text-sm text-muted">
                 {{ t("git.page.noCommits") }}
+              </div>
+              <div v-if="git.historyLoadingMore.value" class="p-3 text-center text-xs text-muted">
+                <i class="pi pi-spinner pi-spin mr-1.5" /> {{ t("git.page.loadingMore") }}
               </div>
             </div>
           </div>

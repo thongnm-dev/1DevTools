@@ -217,6 +217,7 @@ export default {
       noChangesToShow: "Không có thay đổi để hiển thị.",
       diffTruncated: "Diff quá lớn — đã cắt bớt phần hiển thị.",
       noCommits: "Chưa có commit nào.",
+      loadingMore: "Đang tải thêm…",
       collapse: "Thu gọn",
       expand: "Mở rộng",
       copyLabel: {

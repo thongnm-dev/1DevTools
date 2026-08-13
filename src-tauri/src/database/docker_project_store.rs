@@ -1,9 +1,9 @@
 //! Tầng lưu trữ cục bộ cho danh sách "Docker project" (build/rebuild đã lưu) của
 //! màn hình Docker Desktop.
 //!
-//! Danh sách được lưu trong file JSON `docker_projects.json` trong thư mục AppData
-//! (`%LOCALAPPDATA%\1Devtools`) — mỗi máy có danh sách riêng, không đẩy lên database
-//! dùng chung. Cùng cách tiếp cận với `git_repo_store`.
+//! Danh sách được lưu trong file JSON `docker_projects.json` trong thư mục `data`
+//! bên trong AppData (`%LOCALAPPDATA%\1Devtools\data`) — mỗi máy có danh sách riêng,
+//! không đẩy lên database dùng chung. Cùng cách tiếp cận với `git_repo_store`.
 
 use std::path::PathBuf;
 
@@ -27,7 +27,14 @@ pub struct DockerProjectData {
 }
 
 fn data_path() -> PathBuf {
-    app_config::data_dir().join(DATA_FILE)
+    let path = app_config::data_subdir().join(DATA_FILE);
+    if !path.exists() {
+        let legacy = app_config::data_dir().join(DATA_FILE);
+        if legacy.exists() {
+            let _ = std::fs::rename(&legacy, &path);
+        }
+    }
+    path
 }
 
 /// Đọc dữ liệu từ file. File chưa tồn tại → trả về mặc định (rỗng).

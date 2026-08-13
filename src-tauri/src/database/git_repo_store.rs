@@ -1,8 +1,8 @@
 //! Tầng lưu trữ cục bộ cho danh sách repository của màn hình Git Desktop.
 //!
-//! Danh sách repo được lưu trong file JSON `git_repos.json` trong thư mục AppData
-//! (`%LOCALAPPDATA%\management-systems`) — mỗi máy có danh sách riêng, không đẩy
-//! lên database dùng chung.
+//! Danh sách repo được lưu trong file JSON `git_repos.json` trong thư mục `data`
+//! bên trong AppData (`%LOCALAPPDATA%\1Devtools\data`) — mỗi máy có danh sách riêng,
+//! không đẩy lên database dùng chung.
 
 use std::path::PathBuf;
 
@@ -26,7 +26,14 @@ pub struct GitRepoData {
 }
 
 fn data_path() -> PathBuf {
-    app_config::data_dir().join(DATA_FILE)
+    let path = app_config::data_subdir().join(DATA_FILE);
+    if !path.exists() {
+        let legacy = app_config::data_dir().join(DATA_FILE);
+        if legacy.exists() {
+            let _ = std::fs::rename(&legacy, &path);
+        }
+    }
+    path
 }
 
 /// Đọc dữ liệu từ file. File chưa tồn tại → trả về mặc định (rỗng).
