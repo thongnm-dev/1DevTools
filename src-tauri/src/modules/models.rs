@@ -31,4 +31,8 @@ mod models {
     pub mod workflow;
     /// Model cho registry Workspace (mở nhiều project cùng lúc, đồng thời là tab bar).
     pub mod workspace;
+    /// Model cho thư viện Skill (chỉ dẫn tái sử dụng cho agent).
+    pub mod skill;
+    /// Model cho thư viện Prompt (snippet tái sử dụng, hỗ trợ placeholder).
+    pub mod prompt;
 }

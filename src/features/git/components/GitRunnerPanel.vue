@@ -5,7 +5,8 @@ import { useRouter } from "vue-router";
 import { canUseTauriRuntime } from "@/tauri/commands/_base";
 import { detectDevCommands, loadCustomCommands, saveCustomCommands } from "@/tauri/commands/dev_runner";
 import { useTerminal } from "@/features/terminal/composables/useTerminal";
-import type { DevCommand, CommandCategory } from "@/models/dev_runner";
+import type { DevCommand, CommandCategory, CommandKind } from "@/models/dev_runner";
+import { COMMAND_KIND_META } from "@/models/dev_runner";
 import type { GitApi } from "../composables/useGit";
 
 import GitRunnerAddDialog from "./GitRunnerAddDialog.vue";
@@ -47,6 +48,20 @@ const CATEGORY_META: Record<CommandCategory, { icon: string; color: string }> = 
 
 function catMeta(cat: CommandCategory) {
   return CATEGORY_META[cat] ?? CATEGORY_META.custom;
+}
+
+const KIND_ICON_COLOR: Record<CommandKind, string> = {
+  run: "text-emerald-500",
+  test: "text-sky-500",
+  build: "text-amber-500",
+};
+
+function kindMeta(kind: CommandKind) {
+  return COMMAND_KIND_META[kind] ?? COMMAND_KIND_META.run;
+}
+
+function kindIconColor(kind: CommandKind) {
+  return KIND_ICON_COLOR[kind] ?? KIND_ICON_COLOR.run;
 }
 
 const repoPath = computed(() => props.git.info.value?.path || props.git.activeRepo.value?.path || "");
@@ -186,6 +201,11 @@ async function removeCustomCommand(cmd: DevCommand) {
               :key="cmd.id"
               class="group flex items-center gap-1.5 rounded-md px-2 py-1.5 transition-colors hover:bg-sidebar-hover"
             >
+              <i
+                class="pi shrink-0 text-[9px]"
+                :class="[kindMeta(cmd.kind).icon, kindIconColor(cmd.kind)]"
+                :title="t(`git.runner.kind.${cmd.kind}`)"
+              />
               <div class="min-w-0 flex-1">
                 <div class="truncate text-[11px] font-medium text-sidebar-text-active">{{ cmd.label }}</div>
                 <div class="truncate font-mono text-[10px] text-sidebar-text">{{ cmd.command }}</div>

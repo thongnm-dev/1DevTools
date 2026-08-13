@@ -27,4 +27,8 @@ mod database {
     pub mod workflow_store;
     /// Lưu trữ cục bộ (JSON file) registry Workspace (đồng thời là tab bar).
     pub mod workspace_store;
+    /// Lưu trữ cục bộ (JSON file) thư viện Skill.
+    pub mod skill_store;
+    /// Lưu trữ cục bộ (JSON file) thư viện Prompt.
+    pub mod prompt_store;
 }

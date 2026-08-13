@@ -35,4 +35,8 @@ mod commands {
     pub mod workflow_commands;
     /// Commands cho registry Workspace (CRUD, đồng thời là tab bar).
     pub mod workspace_commands;
+    /// Commands cho thư viện Skill (CRUD).
+    pub mod skill_commands;
+    /// Commands cho thư viện Prompt (CRUD + đếm lượt dùng).
+    pub mod prompt_commands;
 }

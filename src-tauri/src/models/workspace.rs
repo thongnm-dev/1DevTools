@@ -21,6 +21,10 @@ pub struct Workspace {
     /// Thời điểm mở gần nhất (ISO string) — dùng để sắp xếp tab theo MRU.
     #[serde(default)]
     pub last_opened_at: String,
+    /// Workflow tự động chạy khi file trong workspace này thay đổi (git-watch
+    /// event) — `None` = không tự động chạy gì, chỉ chạy tay từ màn Workflow.
+    #[serde(default)]
+    pub auto_workflow_id: Option<i64>,
 }
 
 /// Request tạo workspace mới (hoặc mở lại nếu đã có workspace trỏ tới path này).
@@ -32,9 +36,11 @@ pub struct CreateWorkspaceRequest {
     pub icon: String,
 }
 
-/// Request đổi tên/icon workspace.
+/// Request đổi tên/icon/auto-trigger workspace.
 #[derive(Debug, Deserialize)]
 pub struct UpdateWorkspaceRequest {
     pub name: String,
     pub icon: String,
+    #[serde(default)]
+    pub auto_workflow_id: Option<i64>,
 }

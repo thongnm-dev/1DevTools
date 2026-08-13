@@ -45,6 +45,8 @@ INSERT INTO menu_configs (key, title, path, icon, menu_group, is_visible, displa
     ('docker',          'Docker',      '/docker',                 'pi-server',     '—',          TRUE, 12),
     ('ai-usage',        'AI Usage',    '/ai/usage',               'pi-chart-bar',  '—',          TRUE, 31),
     ('workflow',        'Workflow',    '/workflow',               'pi-sitemap',    '—',          TRUE, 32),
+    ('skill',           'Skill',       '/skill',                  'pi-book',       '—',          TRUE, 33),
+    ('prompt',          'Prompt',      '/prompt',                 'pi-comment',    '—',          TRUE, 34),
     ('gov-users',       'Users',       '/governance/users',       'pi-users',      'Governance', TRUE, 40),
     ('gov-roles',       'Roles',       '/governance/roles',       'pi-shield',     'Governance', TRUE, 41),
     ('gov-menus',       'Menus',       '/governance/menus',       'pi-list',       'Governance', TRUE, 42),

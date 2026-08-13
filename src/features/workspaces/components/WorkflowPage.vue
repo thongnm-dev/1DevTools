@@ -9,12 +9,23 @@ import Listbox from "primevue/listbox";
 import Select from "primevue/select";
 import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
+import Popover from "primevue/popover";
 import { useWorkflow } from "../composables/useWorkflow";
+import { useSkill } from "../composables/useSkill";
+import { usePrompt } from "../composables/usePrompt";
+import { useWorkspace } from "../composables/useWorkspace";
+import { useWorkflowRunner } from "../composables/useWorkflowRunner";
 import type { NodePos, Workflow, WorkflowStepType } from "@/models/workflow";
 import { DEFAULT_WORKFLOW_ICON, STEP_TYPE_META } from "@/models/workflow";
+import { useToast } from "@/shared/composables/useToast";
 
 const { t } = useI18n();
+const toast = useToast();
 const ctrl = useWorkflow();
+const skillCtrl = useSkill();
+const workspaceCtrl = useWorkspace();
+const runner = useWorkflowRunner();
+const promptCtrl = usePrompt();
 
 // --- Sidebar resize (pattern from AiWorkflowPage.vue) ---
 const SIDEBAR_MIN = 200;
@@ -85,6 +96,38 @@ async function saveWorkflow() {
   showWorkflowDialog.value = false;
 }
 
+// --- Run workflow (chọn workspace đích tại thời điểm chạy — xem useWorkflowRunner.ts) ---
+const runPopover = ref<InstanceType<typeof Popover> | null>(null);
+const runTargetWorkspaceId = ref<number | null>(null);
+
+const runWorkspaceOptions = computed(() =>
+  workspaceCtrl.workspaces.value.map((w) => ({ label: w.name, value: w.id })),
+);
+
+async function onRunClick(e: Event) {
+  const wf = ctrl.activeWorkflow.value;
+  if (!wf) return;
+  const workspaces = workspaceCtrl.workspaces.value;
+  if (workspaces.length === 0) {
+    toast.error(t("workflow.run.noWorkspacesOpen"));
+    return;
+  }
+  if (workspaces.length === 1) {
+    await runner.runWorkflow(wf, workspaces[0]);
+    return;
+  }
+  runTargetWorkspaceId.value = workspaces[0].id;
+  runPopover.value?.toggle(e);
+}
+
+async function confirmRunInWorkspace() {
+  const wf = ctrl.activeWorkflow.value;
+  const ws = workspaceCtrl.workspaces.value.find((w) => w.id === runTargetWorkspaceId.value);
+  runPopover.value?.hide();
+  if (!wf || !ws) return;
+  await runner.runWorkflow(wf, ws);
+}
+
 // --- Step dialog ---
 const showStepDialog = ref(false);
 const editingStepId = ref<string | null>(null);
@@ -99,9 +142,8 @@ const stepSkillId = ref<number | null>(null);
 const stepPromptId = ref<number | null>(null);
 const stepRunnerCommand = ref("");
 
-/** Chưa có thư viện Skill/Prompt (bổ sung ở phase sau) — options rỗng, chỉ giữ chỗ binding. */
-const skillOptions: { label: string; value: number }[] = [];
-const promptOptions: { label: string; value: number }[] = [];
+const skillOptions = computed(() => skillCtrl.skills.value.map((s) => ({ label: s.name, value: s.id })));
+const promptOptions = computed(() => promptCtrl.prompts.value.map((p) => ({ label: p.title, value: p.id })));
 
 const agentOptions = computed(() =>
   ctrl.aiAccounts.value.map((a) => ({ label: `${a.name} (${a.provider})`, value: a.id })),
@@ -544,12 +586,35 @@ const listboxPt = {
               <p class="text-sm text-muted">{{ ctrl.activeWorkflow.value.description || t("workflow.noDescription") }}</p>
             </div>
             <div class="ml-auto flex shrink-0 items-center gap-2">
+              <Button icon="pi pi-play" :label="t('workflow.run.run')" size="small" @click="onRunClick($event)" />
               <Button icon="pi pi-objects-column" :label="t('workflow.autoLayout')" severity="secondary" size="small" @click="autoLayout" />
               <Button icon="pi pi-pencil" :label="t('workflow.edit')" severity="secondary" size="small" @click="openEditWorkflowDialog" />
               <Button icon="pi pi-copy" :label="t('workflow.duplicate')" severity="secondary" size="small" @click="ctrl.duplicateWorkflow(ctrl.activeId.value!)" />
               <Button icon="pi pi-trash" :label="t('workflow.delete')" severity="danger" text size="small" @click="confirmDeleteWorkflow()" />
             </div>
           </div>
+
+          <Popover ref="runPopover">
+            <div class="w-64 p-1">
+              <p class="mb-2 text-xs text-muted">{{ t("workflow.run.pickWorkspaceHint") }}</p>
+              <Select
+                v-model="runTargetWorkspaceId"
+                :options="runWorkspaceOptions"
+                optionLabel="label"
+                optionValue="value"
+                class="w-full"
+                :pt="selectPt"
+              />
+              <Button
+                class="mt-2 w-full"
+                icon="pi pi-play"
+                size="small"
+                :label="t('workflow.run.run')"
+                :disabled="runTargetWorkspaceId === null"
+                @click="confirmRunInWorkspace"
+              />
+            </div>
+          </Popover>
         </div>
 
         <!-- Diagram area -->
@@ -783,7 +848,7 @@ const listboxPt = {
             class="mt-1 w-full"
             :pt="selectPt"
           />
-          <span class="text-xs text-muted">{{ t("workflow.step.skillHint") }}</span>
+          <span v-if="skillOptions.length === 0" class="text-xs text-muted">{{ t("workflow.step.skillHint") }}</span>
         </label>
         <label v-if="stepType === 'prompt'" class="block">
           <span class="text-xs font-bold text-muted">{{ t("workflow.step.prompt") }}</span>
@@ -797,7 +862,7 @@ const listboxPt = {
             class="mt-1 w-full"
             :pt="selectPt"
           />
-          <span class="text-xs text-muted">{{ t("workflow.step.promptHint") }}</span>
+          <span v-if="promptOptions.length === 0" class="text-xs text-muted">{{ t("workflow.step.promptHint") }}</span>
         </label>
         <label v-if="stepType === 'runner' || stepType === 'terminal'" class="block">
           <span class="text-xs font-bold text-muted">{{ t("workflow.step.command") }}</span>

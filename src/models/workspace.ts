@@ -6,6 +6,8 @@ export interface Workspace {
   project_path: string;
   icon: string;
   last_opened_at: string;
+  /** Workflow tự động chạy khi file trong workspace này thay đổi — `null` = không. */
+  auto_workflow_id: number | null;
 }
 
 export const DEFAULT_WORKSPACE_ICON = "pi pi-folder";
@@ -19,4 +21,5 @@ export interface CreateWorkspaceRequest {
 export interface UpdateWorkspaceRequest {
   name: string;
   icon: string;
+  auto_workflow_id: number | null;
 }

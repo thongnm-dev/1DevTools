@@ -323,3 +323,5 @@ export function useAiUsage() {
     saveSettings,
   };
 }
+
+export type AiUsageApi = ReturnType<typeof useAiUsage>;

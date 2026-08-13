@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import { useRouter } from "vue-router";
 import Button from "primevue/button";
@@ -13,11 +13,17 @@ import Tabs from "primevue/tabs";
 import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
 import WorkspaceGitPanel from "./WorkspaceGitPanel.vue";
+import WorkflowDiagramPreview from "./WorkflowDiagramPreview.vue";
 import { useWorkspace } from "../composables/useWorkspace";
+import { useWorkflow } from "../composables/useWorkflow";
+import { useWorkflowRunner } from "../composables/useWorkflowRunner";
 import { useTerminal } from "@/features/terminal/composables/useTerminal";
+import { onGitRepoChanged } from "@/tauri/events";
+import type { UnlistenFn } from "@tauri-apps/api/event";
 import type { GitRepo } from "@/models/git";
 import type { Workspace } from "@/models/workspace";
 import { DEFAULT_WORKSPACE_ICON } from "@/models/workspace";
+import type { Workflow } from "@/models/workflow";
 
 const ACTIVE_REPO_KEY = "git.activeRepoId";
 
@@ -25,6 +31,8 @@ const { t } = useI18n();
 const router = useRouter();
 const term = useTerminal();
 const ctrl = useWorkspace();
+const workflowCtrl = useWorkflow();
+const runner = useWorkflowRunner();
 
 // --- New/Edit workspace dialog (shared fields, only one open at a time) ---
 const showWorkspaceDialog = ref(false);
@@ -32,15 +40,21 @@ const editingWorkspaceId = ref<number | null>(null);
 const selectedRepoId = ref<number | null>(null);
 const wsName = ref("");
 const wsIcon = ref(DEFAULT_WORKSPACE_ICON);
+const wsAutoWorkflowId = ref<number | null>(null);
 const showWorkspaceIconPicker = ref(false);
 
 const repoOptions = computed(() => ctrl.gitRepos.value.map((r) => ({ label: r.name, value: r.id })));
+const autoWorkflowOptions = computed(() => [
+  { label: t("workspaces.dialog.autoWorkflowNone"), value: null },
+  ...workflowCtrl.workflows.value.map((w) => ({ label: w.name, value: w.id })),
+]);
 
 function openNewWorkspaceDialog() {
   editingWorkspaceId.value = null;
   selectedRepoId.value = null;
   wsName.value = "";
   wsIcon.value = DEFAULT_WORKSPACE_ICON;
+  wsAutoWorkflowId.value = null;
   showWorkspaceDialog.value = true;
 }
 
@@ -49,6 +63,7 @@ function openEditWorkspaceDialog(ws: Workspace) {
   selectedRepoId.value = null;
   wsName.value = ws.name;
   wsIcon.value = ws.icon;
+  wsAutoWorkflowId.value = ws.auto_workflow_id;
   showWorkspaceDialog.value = true;
 }
 
@@ -72,7 +87,7 @@ async function saveWorkspace() {
   const name = wsName.value.trim();
   if (!name) return;
   if (editingWorkspaceId.value !== null) {
-    await ctrl.updateWorkspace(editingWorkspaceId.value, { name, icon: wsIcon.value });
+    await ctrl.updateWorkspace(editingWorkspaceId.value, { name, icon: wsIcon.value, auto_workflow_id: wsAutoWorkflowId.value });
   } else {
     const repo = ctrl.gitRepos.value.find((r: GitRepo) => r.id === selectedRepoId.value);
     if (!repo) return;
@@ -80,6 +95,71 @@ async function saveWorkspace() {
   }
   showWorkspaceDialog.value = false;
 }
+
+// --- Auto-trigger: chạy workflow tự động khi file trong workspace thay đổi ---
+let unlistenGitRepoChanged: UnlistenFn | null = null;
+
+onMounted(async () => {
+  unlistenGitRepoChanged = await onGitRepoChanged((path) => {
+    for (const ws of ctrl.workspaces.value) {
+      if (ws.project_path !== path || ws.auto_workflow_id === null) continue;
+      const workflow = workflowCtrl.workflows.value.find((w) => w.id === ws.auto_workflow_id);
+      if (!workflow) continue;
+      void runner.runWorkflow(workflow, ws);
+    }
+  });
+});
+
+onUnmounted(() => {
+  unlistenGitRepoChanged?.();
+});
+
+// --- Xem nhanh workflow tự động (diagram read-only, giống canvas ở WorkflowPage.vue) ---
+const showWorkflowPreview = ref(false);
+const previewWorkflow = ref<Workflow | null>(null);
+
+function autoWorkflowFor(ws: Workspace): Workflow | null {
+  if (ws.auto_workflow_id === null) return null;
+  return workflowCtrl.workflows.value.find((w) => w.id === ws.auto_workflow_id) ?? null;
+}
+
+function openAutoWorkflowPreview(ws: Workspace) {
+  const wf = autoWorkflowFor(ws);
+  if (!wf) return;
+  previewWorkflow.value = wf;
+  showWorkflowPreview.value = true;
+}
+
+// --- Resize dialog xem-trước bằng cách kéo góc dưới-phải ---
+const previewWidth = ref(768);
+const previewHeight = ref(480);
+const PREVIEW_MIN_WIDTH = 480;
+const PREVIEW_MIN_HEIGHT = 300;
+let cleanupPreviewResize: (() => void) | null = null;
+
+function startPreviewResize(event: MouseEvent) {
+  event.preventDefault();
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const startWidth = previewWidth.value;
+  const startHeight = previewHeight.value;
+  function onMove(ev: MouseEvent) {
+    previewWidth.value = Math.max(PREVIEW_MIN_WIDTH, startWidth + (ev.clientX - startX));
+    previewHeight.value = Math.max(PREVIEW_MIN_HEIGHT, startHeight + (ev.clientY - startY));
+  }
+  function onUp() {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    document.body.style.userSelect = "";
+    cleanupPreviewResize = null;
+  }
+  document.body.style.userSelect = "none";
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup", onUp);
+  cleanupPreviewResize = onUp;
+}
+
+onBeforeUnmount(() => cleanupPreviewResize?.());
 
 // --- Quick actions (fire-and-forget helpers to existing tools) ---
 function repoFor(ws: Workspace): GitRepo | null {
@@ -158,8 +238,16 @@ const selectPt = {
                   <h2 class="section-title">{{ ws.name }}</h2>
                   <!-- Nút branch được WorkspaceGitPanel.vue teleport vào đây -->
                   <span :id="`ws-branch-slot-${ws.id}`" class="inline-flex" />
+                  <button
+                    v-if="autoWorkflowFor(ws)"
+                    class="flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-bold text-amber-600 transition-colors hover:bg-amber-500/20"
+                    :title="t('workspaces.dialog.autoWorkflowActive')"
+                    @click="openAutoWorkflowPreview(ws)"
+                  >
+                    <i class="pi pi-bolt" />
+                    {{ autoWorkflowFor(ws)!.name }}
+                  </button>
                 </div>
-                <p class="truncate text-xs text-muted">{{ ws.project_path }}</p>
               </div>
               <div class="ml-auto flex shrink-0 items-center gap-1">
                 <Button icon="pi pi-desktop" text rounded size="small" :title="t('workspaces.action.terminal')" @click="openEmbeddedTerminal(ws)" />
@@ -230,6 +318,19 @@ const selectPt = {
             </div>
           </div>
         </div>
+
+        <label class="block">
+          <span class="text-xs font-bold text-muted">{{ t("workspaces.dialog.autoWorkflow") }}</span>
+          <Select
+            v-model="wsAutoWorkflowId"
+            :options="autoWorkflowOptions"
+            optionLabel="label"
+            optionValue="value"
+            class="mt-1 w-full"
+            :pt="selectPt"
+          />
+          <p class="mt-1 text-[11px] text-muted">{{ t("workspaces.dialog.autoWorkflowHint") }}</p>
+        </label>
       </div>
 
       <template #footer>
@@ -252,5 +353,29 @@ const selectPt = {
       @update:visible="showWorkspaceIconPicker = $event"
       @select="(icon: string) => (wsIcon = 'pi ' + icon)"
     />
+
+    <!-- Auto-run Workflow — quick view (read-only diagram) -->
+    <Dialog
+      :visible="showWorkflowPreview"
+      class="rounded-lg bg-panel shadow-xl"
+      :style="{ width: previewWidth + 'px', height: previewHeight + 'px' }"
+      :closable="true"
+      modal
+      @update:visible="showWorkflowPreview = $event"
+    >
+      <template #header>
+        <div class="flex min-w-0 items-center gap-2">
+          <i :class="[previewWorkflow?.icon, 'text-brand']" />
+          <h3 class="section-title truncate">{{ previewWorkflow?.name }}</h3>
+          <span v-if="previewWorkflow" class="shrink-0 text-xs text-muted">
+            {{ t("workflow.stepCount", { count: previewWorkflow.steps.length }) }}
+          </span>
+        </div>
+      </template>
+
+      <WorkflowDiagramPreview v-if="previewWorkflow" :workflow="previewWorkflow" />
+
+      <div class="dialog-resize-handle" :title="t('common.resize')" @mousedown="startPreviewResize" />
+    </Dialog>
   </div>
 </template>

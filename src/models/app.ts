@@ -10,7 +10,9 @@ export type MenuKey =
   | "app-config"
   | "ai-usage"
   | "workflow"
-  | "workspaces";
+  | "workspaces"
+  | "skill"
+  | "prompt";
 
 export type AppRouteKey = MenuKey | "login" | "forgotPassword";
 

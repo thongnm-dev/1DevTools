@@ -11,6 +11,22 @@ pub enum CommandSource {
     Custom,
 }
 
+/// Loại tác dụng của lệnh (giúp UI/Automation phân biệt lệnh test khỏi lệnh chạy/build).
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub enum CommandKind {
+    #[serde(rename = "run")]
+    Run,
+    #[serde(rename = "test")]
+    Test,
+    #[serde(rename = "build")]
+    Build,
+}
+
+/// Mặc định khi dữ liệu cũ (lưu trước khi có field này) không có `kind`.
+fn default_kind() -> CommandKind {
+    CommandKind::Run
+}
+
 /// Nhóm (loại project) của một lệnh, giúp UI phân nhóm hiển thị.
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum CommandCategory {
@@ -49,4 +65,6 @@ pub struct DevCommand {
     /// File nguồn đã phát hiện ra lệnh (vd. "package.json"), rỗng nếu custom.
     #[serde(default)]
     pub source_file: String,
+    #[serde(default = "default_kind")]
+    pub kind: CommandKind,
 }

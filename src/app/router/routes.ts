@@ -90,6 +90,18 @@ export const appRoutes: AppRoute[] = [
     subtitle: "Build reusable step sequences (skill, prompt, runner, terminal) for your projects.",
   },
   {
+    key: "skill",
+    path: "/skill",
+    title: "Skill",
+    subtitle: "Reusable instructions you can load into an agent session.",
+  },
+  {
+    key: "prompt",
+    path: "/prompt",
+    title: "Prompt",
+    subtitle: "Reusable prompt snippets, with {{variable}} placeholders.",
+  },
+  {
     key: "login",
     path: "/login",
     title: "Login",
@@ -176,6 +188,16 @@ export const vueRoutes: RouteRecordRaw[] = [
     path: "/workflow",
     component: () => import("@/features/workspaces/components/WorkflowPage.vue"),
     meta: { key: "workflow" as MenuKey },
+  },
+  {
+    path: "/skill",
+    component: () => import("@/features/workspaces/components/SkillPage.vue"),
+    meta: { key: "skill" as MenuKey },
+  },
+  {
+    path: "/prompt",
+    component: () => import("@/features/workspaces/components/PromptPage.vue"),
+    meta: { key: "prompt" as MenuKey },
   },
   {
     path: "/login",

@@ -490,10 +490,33 @@
 }
 
 .p-dialog {
+  position: relative;
   border: 1px solid rgb(var(--color-brand) / 0.4) !important;
   box-shadow:
     0 0 0 3px rgb(var(--color-brand) / 0.12),
     var(--shadow-float) !important;
+}
+
+/* Grip kéo-resize góc dưới-phải — dùng chung cho các dialog cho phép đổi kích thước. */
+.dialog-resize-handle {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 14px;
+  height: 14px;
+  z-index: 20;
+  cursor: nwse-resize;
+  opacity: 0.5;
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(var(--color-muted)) 0,
+    rgb(var(--color-muted)) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+.dialog-resize-handle:hover {
+  opacity: 1;
 }
 
 /* SQL syntax highlight — nguồn màu duy nhất cho SqlEditorPage & StoreProcedurePage */

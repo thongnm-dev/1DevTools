@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use crate::models::dev_runner::{CommandCategory, CommandSource, DevCommand};
+use crate::models::dev_runner::{CommandCategory, CommandKind, CommandSource, DevCommand};
 
 /// Quét thư mục `repo_path` và trả về danh sách lệnh phát triển phát hiện được.
 /// Tìm ở root và cả subdirectory 1 cấp (deploy/, mobile/, services/, …).
@@ -69,7 +69,7 @@ fn make_id(category: &CommandCategory, label: &str) -> String {
     format!("{:?}:{}", category, label).to_lowercase()
 }
 
-fn auto_cmd(label: &str, command: &str, category: CommandCategory, source_file: &str) -> DevCommand {
+fn auto_cmd(label: &str, command: &str, category: CommandCategory, source_file: &str, kind: CommandKind) -> DevCommand {
     DevCommand {
         id: make_id(&category, label),
         label: label.to_string(),
@@ -77,6 +77,20 @@ fn auto_cmd(label: &str, command: &str, category: CommandCategory, source_file: 
         category,
         source: CommandSource::Auto,
         source_file: source_file.to_string(),
+        kind,
+    }
+}
+
+/// Suy luận kind từ tên lệnh (dùng cho npm script / Makefile target — tên tự do,
+/// không biết trước như các ecosystem còn lại).
+fn infer_kind(name: &str) -> CommandKind {
+    let lower = name.to_lowercase();
+    if lower.contains("test") || lower.contains("lint") || lower.contains("check") || lower.contains("typecheck") {
+        CommandKind::Test
+    } else if lower.contains("build") || lower.contains("compile") || lower.contains("package") {
+        CommandKind::Build
+    } else {
+        CommandKind::Run
     }
 }
 
@@ -113,7 +127,7 @@ fn detect_npm(root: &Path, out: &mut Vec<DevCommand>) {
 
     for (name, _) in sorted {
         let cmd = format!("{manager} run {name}");
-        out.push(auto_cmd(name, &cmd, CommandCategory::Npm, "package.json"));
+        out.push(auto_cmd(name, &cmd, CommandCategory::Npm, "package.json", infer_kind(name)));
     }
 }
 
@@ -123,13 +137,13 @@ fn detect_flutter(root: &Path, out: &mut Vec<DevCommand>) {
     if !root.join("pubspec.yaml").exists() {
         return;
     }
-    out.push(auto_cmd("flutter run", "flutter run", CommandCategory::Flutter, "pubspec.yaml"));
-    out.push(auto_cmd("flutter run (release)", "flutter run --release", CommandCategory::Flutter, "pubspec.yaml"));
-    out.push(auto_cmd("flutter build apk", "flutter build apk", CommandCategory::Flutter, "pubspec.yaml"));
-    out.push(auto_cmd("flutter build ios", "flutter build ios", CommandCategory::Flutter, "pubspec.yaml"));
-    out.push(auto_cmd("flutter test", "flutter test", CommandCategory::Flutter, "pubspec.yaml"));
-    out.push(auto_cmd("flutter pub get", "flutter pub get", CommandCategory::Flutter, "pubspec.yaml"));
-    out.push(auto_cmd("dart analyze", "dart analyze", CommandCategory::Flutter, "pubspec.yaml"));
+    out.push(auto_cmd("flutter run", "flutter run", CommandCategory::Flutter, "pubspec.yaml", CommandKind::Run));
+    out.push(auto_cmd("flutter run (release)", "flutter run --release", CommandCategory::Flutter, "pubspec.yaml", CommandKind::Run));
+    out.push(auto_cmd("flutter build apk", "flutter build apk", CommandCategory::Flutter, "pubspec.yaml", CommandKind::Build));
+    out.push(auto_cmd("flutter build ios", "flutter build ios", CommandCategory::Flutter, "pubspec.yaml", CommandKind::Build));
+    out.push(auto_cmd("flutter test", "flutter test", CommandCategory::Flutter, "pubspec.yaml", CommandKind::Test));
+    out.push(auto_cmd("flutter pub get", "flutter pub get", CommandCategory::Flutter, "pubspec.yaml", CommandKind::Run));
+    out.push(auto_cmd("dart analyze", "dart analyze", CommandCategory::Flutter, "pubspec.yaml", CommandKind::Test));
 }
 
 // ─── Maven (pom.xml) ───
@@ -143,11 +157,11 @@ fn detect_maven(root: &Path, out: &mut Vec<DevCommand>) {
     } else {
         "mvn"
     };
-    out.push(auto_cmd("spring-boot:run", &format!("{mvn} spring-boot:run"), CommandCategory::Maven, "pom.xml"));
-    out.push(auto_cmd("clean install", &format!("{mvn} clean install"), CommandCategory::Maven, "pom.xml"));
-    out.push(auto_cmd("clean package", &format!("{mvn} clean package"), CommandCategory::Maven, "pom.xml"));
-    out.push(auto_cmd("test", &format!("{mvn} test"), CommandCategory::Maven, "pom.xml"));
-    out.push(auto_cmd("compile", &format!("{mvn} compile"), CommandCategory::Maven, "pom.xml"));
+    out.push(auto_cmd("spring-boot:run", &format!("{mvn} spring-boot:run"), CommandCategory::Maven, "pom.xml", CommandKind::Run));
+    out.push(auto_cmd("clean install", &format!("{mvn} clean install"), CommandCategory::Maven, "pom.xml", CommandKind::Build));
+    out.push(auto_cmd("clean package", &format!("{mvn} clean package"), CommandCategory::Maven, "pom.xml", CommandKind::Build));
+    out.push(auto_cmd("test", &format!("{mvn} test"), CommandCategory::Maven, "pom.xml", CommandKind::Test));
+    out.push(auto_cmd("compile", &format!("{mvn} compile"), CommandCategory::Maven, "pom.xml", CommandKind::Build));
 }
 
 // ─── Gradle (build.gradle / build.gradle.kts) ───
@@ -162,10 +176,10 @@ fn detect_gradle(root: &Path, out: &mut Vec<DevCommand>) {
         "gradle"
     };
     let source = if root.join("build.gradle.kts").exists() { "build.gradle.kts" } else { "build.gradle" };
-    out.push(auto_cmd("bootRun", &format!("{gradle} bootRun"), CommandCategory::Gradle, source));
-    out.push(auto_cmd("build", &format!("{gradle} build"), CommandCategory::Gradle, source));
-    out.push(auto_cmd("clean build", &format!("{gradle} clean build"), CommandCategory::Gradle, source));
-    out.push(auto_cmd("test", &format!("{gradle} test"), CommandCategory::Gradle, source));
+    out.push(auto_cmd("bootRun", &format!("{gradle} bootRun"), CommandCategory::Gradle, source, CommandKind::Run));
+    out.push(auto_cmd("build", &format!("{gradle} build"), CommandCategory::Gradle, source, CommandKind::Build));
+    out.push(auto_cmd("clean build", &format!("{gradle} clean build"), CommandCategory::Gradle, source, CommandKind::Build));
+    out.push(auto_cmd("test", &format!("{gradle} test"), CommandCategory::Gradle, source, CommandKind::Test));
 }
 
 // ─── Cargo (Cargo.toml) ───
@@ -174,16 +188,16 @@ fn detect_cargo(root: &Path, out: &mut Vec<DevCommand>) {
     if !root.join("Cargo.toml").exists() {
         return;
     }
-    out.push(auto_cmd("cargo run", "cargo run", CommandCategory::Cargo, "Cargo.toml"));
-    out.push(auto_cmd("cargo build", "cargo build", CommandCategory::Cargo, "Cargo.toml"));
-    out.push(auto_cmd("cargo test", "cargo test", CommandCategory::Cargo, "Cargo.toml"));
-    out.push(auto_cmd("cargo check", "cargo check", CommandCategory::Cargo, "Cargo.toml"));
-    out.push(auto_cmd("cargo clippy", "cargo clippy", CommandCategory::Cargo, "Cargo.toml"));
+    out.push(auto_cmd("cargo run", "cargo run", CommandCategory::Cargo, "Cargo.toml", CommandKind::Run));
+    out.push(auto_cmd("cargo build", "cargo build", CommandCategory::Cargo, "Cargo.toml", CommandKind::Build));
+    out.push(auto_cmd("cargo test", "cargo test", CommandCategory::Cargo, "Cargo.toml", CommandKind::Test));
+    out.push(auto_cmd("cargo check", "cargo check", CommandCategory::Cargo, "Cargo.toml", CommandKind::Test));
+    out.push(auto_cmd("cargo clippy", "cargo clippy", CommandCategory::Cargo, "Cargo.toml", CommandKind::Test));
 
     // Tauri project
     if root.join("src-tauri").exists() || root.join("tauri.conf.json").exists() {
-        out.push(auto_cmd("tauri dev", "cargo tauri dev", CommandCategory::Cargo, "Cargo.toml"));
-        out.push(auto_cmd("tauri build", "cargo tauri build", CommandCategory::Cargo, "Cargo.toml"));
+        out.push(auto_cmd("tauri dev", "cargo tauri dev", CommandCategory::Cargo, "Cargo.toml", CommandKind::Run));
+        out.push(auto_cmd("tauri build", "cargo tauri build", CommandCategory::Cargo, "Cargo.toml", CommandKind::Build));
     }
 }
 
@@ -193,9 +207,9 @@ fn detect_go(root: &Path, out: &mut Vec<DevCommand>) {
     if !root.join("go.mod").exists() {
         return;
     }
-    out.push(auto_cmd("go run .", "go run .", CommandCategory::Go, "go.mod"));
-    out.push(auto_cmd("go build", "go build ./...", CommandCategory::Go, "go.mod"));
-    out.push(auto_cmd("go test", "go test ./...", CommandCategory::Go, "go.mod"));
+    out.push(auto_cmd("go run .", "go run .", CommandCategory::Go, "go.mod", CommandKind::Run));
+    out.push(auto_cmd("go build", "go build ./...", CommandCategory::Go, "go.mod", CommandKind::Build));
+    out.push(auto_cmd("go test", "go test ./...", CommandCategory::Go, "go.mod", CommandKind::Test));
 }
 
 // ─── Python (pyproject.toml / requirements.txt / manage.py) ───
@@ -212,16 +226,16 @@ fn detect_python(root: &Path, out: &mut Vec<DevCommand>) {
     let source = if has_pyproject { "pyproject.toml" } else { "requirements.txt" };
 
     if has_manage {
-        out.push(auto_cmd("django runserver", "python manage.py runserver", CommandCategory::Python, "manage.py"));
-        out.push(auto_cmd("django migrate", "python manage.py migrate", CommandCategory::Python, "manage.py"));
-        out.push(auto_cmd("django test", "python manage.py test", CommandCategory::Python, "manage.py"));
+        out.push(auto_cmd("django runserver", "python manage.py runserver", CommandCategory::Python, "manage.py", CommandKind::Run));
+        out.push(auto_cmd("django migrate", "python manage.py migrate", CommandCategory::Python, "manage.py", CommandKind::Run));
+        out.push(auto_cmd("django test", "python manage.py test", CommandCategory::Python, "manage.py", CommandKind::Test));
     }
 
     if has_pyproject {
-        out.push(auto_cmd("pip install -e .", "pip install -e .", CommandCategory::Python, source));
+        out.push(auto_cmd("pip install -e .", "pip install -e .", CommandCategory::Python, source, CommandKind::Run));
     }
 
-    out.push(auto_cmd("pytest", "pytest", CommandCategory::Python, source));
+    out.push(auto_cmd("pytest", "pytest", CommandCategory::Python, source, CommandKind::Test));
 }
 
 // ─── .NET (*.csproj / *.sln) ───
@@ -238,10 +252,10 @@ fn detect_dotnet(root: &Path, out: &mut Vec<DevCommand>) {
     if !has_csproj {
         return;
     }
-    out.push(auto_cmd("dotnet run", "dotnet run", CommandCategory::Dotnet, "*.csproj"));
-    out.push(auto_cmd("dotnet build", "dotnet build", CommandCategory::Dotnet, "*.csproj"));
-    out.push(auto_cmd("dotnet test", "dotnet test", CommandCategory::Dotnet, "*.csproj"));
-    out.push(auto_cmd("dotnet watch run", "dotnet watch run", CommandCategory::Dotnet, "*.csproj"));
+    out.push(auto_cmd("dotnet run", "dotnet run", CommandCategory::Dotnet, "*.csproj", CommandKind::Run));
+    out.push(auto_cmd("dotnet build", "dotnet build", CommandCategory::Dotnet, "*.csproj", CommandKind::Build));
+    out.push(auto_cmd("dotnet test", "dotnet test", CommandCategory::Dotnet, "*.csproj", CommandKind::Test));
+    out.push(auto_cmd("dotnet watch run", "dotnet watch run", CommandCategory::Dotnet, "*.csproj", CommandKind::Run));
 }
 
 // ─── Makefile ───
@@ -257,7 +271,7 @@ fn detect_make(root: &Path, out: &mut Vec<DevCommand>) {
         if let Some(target) = line.strip_suffix(':') {
             let target = target.trim();
             if !target.is_empty() && !target.starts_with('.') && !target.contains(' ') && !target.contains('%') {
-                out.push(auto_cmd(target, &format!("make {target}"), CommandCategory::Make, "Makefile"));
+                out.push(auto_cmd(target, &format!("make {target}"), CommandCategory::Make, "Makefile", infer_kind(target)));
             }
         }
     }
@@ -270,8 +284,8 @@ fn detect_docker(root: &Path, out: &mut Vec<DevCommand>) {
     let found = compose_files.iter().find(|f| root.join(f).exists());
     let Some(file) = found else { return };
 
-    out.push(auto_cmd("compose up", &format!("docker compose -f {file} up"), CommandCategory::Docker, file));
-    out.push(auto_cmd("compose up -d", &format!("docker compose -f {file} up -d"), CommandCategory::Docker, file));
-    out.push(auto_cmd("compose down", &format!("docker compose -f {file} down"), CommandCategory::Docker, file));
-    out.push(auto_cmd("compose build", &format!("docker compose -f {file} build"), CommandCategory::Docker, file));
+    out.push(auto_cmd("compose up", &format!("docker compose -f {file} up"), CommandCategory::Docker, file, CommandKind::Run));
+    out.push(auto_cmd("compose up -d", &format!("docker compose -f {file} up -d"), CommandCategory::Docker, file, CommandKind::Run));
+    out.push(auto_cmd("compose down", &format!("docker compose -f {file} down"), CommandCategory::Docker, file, CommandKind::Run));
+    out.push(auto_cmd("compose build", &format!("docker compose -f {file} build"), CommandCategory::Docker, file, CommandKind::Build));
 }

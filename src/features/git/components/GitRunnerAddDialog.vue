@@ -3,8 +3,9 @@ import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
+import Select from "primevue/select";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
-import type { DevCommand } from "@/models/dev_runner";
+import type { CommandKind, DevCommand } from "@/models/dev_runner";
 
 const props = defineProps<{ editing: DevCommand | null }>();
 const visible = defineModel<boolean>("visible", { default: false });
@@ -14,15 +15,24 @@ const { t } = useI18n();
 
 const label = ref("");
 const command = ref("");
+const kind = ref<CommandKind>("run");
+
+const kindOptions = computed(() => [
+  { label: t("git.runner.kind.run"), value: "run" as CommandKind },
+  { label: t("git.runner.kind.test"), value: "test" as CommandKind },
+  { label: t("git.runner.kind.build"), value: "build" as CommandKind },
+]);
 
 watch(visible, (v) => {
   if (!v) return;
   if (props.editing) {
     label.value = props.editing.label;
     command.value = props.editing.command;
+    kind.value = props.editing.kind;
   } else {
     label.value = "";
     command.value = "";
+    kind.value = "run";
   }
 });
 
@@ -39,6 +49,7 @@ function doSave() {
     category: "custom",
     source: "custom",
     source_file: "",
+    kind: kind.value,
   });
   visible.value = false;
 }
@@ -64,6 +75,10 @@ function doSave() {
           :placeholder="t('git.runner.commandPlaceholder')"
           @keydown.enter="doSave"
         />
+      </div>
+      <div>
+        <label class="mb-1 block text-xs font-bold text-muted">{{ t("git.runner.kindField") }}</label>
+        <Select v-model="kind" :options="kindOptions" optionLabel="label" optionValue="value" class="w-full" />
       </div>
     </div>
     <template #footer>

@@ -21,6 +21,8 @@ use commands::terminal_commands::*;
 use commands::user_commands::*;
 use commands::workflow_commands::*;
 use commands::workspace_commands::*;
+use commands::skill_commands::*;
+use commands::prompt_commands::*;
 
 /// Xây dựng handler cho `Builder::invoke_handler`, gộp toàn bộ command đã đăng ký.
 ///
@@ -206,6 +208,17 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         workspace_create,
         workspace_update,
         workspace_remove,
-        workspace_touch
+        workspace_touch,
+        // === Skill commands: CRUD (JSON cục bộ) ===
+        skill_list,
+        skill_create,
+        skill_update,
+        skill_delete,
+        // === Prompt commands: CRUD + đếm lượt dùng (JSON cục bộ) ===
+        prompt_list,
+        prompt_create,
+        prompt_update,
+        prompt_delete,
+        prompt_mark_used
     ]
 }

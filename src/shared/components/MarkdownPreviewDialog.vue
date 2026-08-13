@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { onBeforeUnmount, ref, watch, computed } from "vue";
 import { useI18n } from "vue-i18n";
 import { marked } from "marked";
 import Dialog from "primevue/dialog";
@@ -18,6 +18,37 @@ const content = ref("");
 const loading = ref(false);
 const error = ref("");
 const isMaximized = ref(false);
+
+// --- Resize bằng cách kéo góc dưới-phải (giữ nguyên kích thước giữa các lần mở) ---
+const dialogWidth = ref(780);
+const contentHeight = ref(520);
+const MIN_WIDTH = 420;
+const MIN_HEIGHT = 200;
+let cleanupResize: (() => void) | null = null;
+
+function startResize(event: MouseEvent) {
+  event.preventDefault();
+  const startX = event.clientX;
+  const startY = event.clientY;
+  const startWidth = dialogWidth.value;
+  const startHeight = contentHeight.value;
+  function onMove(ev: MouseEvent) {
+    dialogWidth.value = Math.max(MIN_WIDTH, startWidth + (ev.clientX - startX));
+    contentHeight.value = Math.max(MIN_HEIGHT, startHeight + (ev.clientY - startY));
+  }
+  function onUp() {
+    document.removeEventListener("mousemove", onMove);
+    document.removeEventListener("mouseup", onUp);
+    document.body.style.userSelect = "";
+    cleanupResize = null;
+  }
+  document.body.style.userSelect = "none";
+  document.addEventListener("mousemove", onMove);
+  document.addEventListener("mouseup", onUp);
+  cleanupResize = onUp;
+}
+
+onBeforeUnmount(() => cleanupResize?.());
 
 const fileName = computed(() => {
   if (!props.filePath) return "";
@@ -51,7 +82,7 @@ watch(visible, async (v) => {
     modal
     maximizable
     :header="fileName || t('markdownPreview.title')"
-    :style="{ width: '780px' }"
+    :style="{ width: dialogWidth + 'px' }"
     :pt="{ root: { class: 'md-preview-dialog' } }"
     @maximize="isMaximized = true"
     @unmaximize="isMaximized = false"
@@ -72,9 +103,13 @@ watch(visible, async (v) => {
     <div
       v-else
       class="md-body"
-      :class="isMaximized ? '' : 'h-[520px] overflow-y-auto overflow-x-hidden'"
+      :class="isMaximized ? '' : 'overflow-y-auto overflow-x-hidden'"
+      :style="isMaximized ? {} : { height: contentHeight + 'px' }"
       v-html="rendered"
     />
+
+    <!-- Resize handle (ẩn khi đang maximize) -->
+    <div v-if="!isMaximized" class="dialog-resize-handle" :title="t('common.resize')" @mousedown="startResize" />
 
     <template #footer>
       <DialogFooter

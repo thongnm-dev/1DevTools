@@ -34,13 +34,14 @@ pub fn workspace_create(request: CreateWorkspaceRequest) -> Result<Workspace, Ap
         project_path: request.project_path,
         icon: request.icon,
         last_opened_at: now,
+        auto_workflow_id: None,
     };
     data.workspaces.push(workspace.clone());
     workspace_store::save(&data).map_err(log_err)?;
     Ok(workspace)
 }
 
-/// Đổi tên/icon workspace.
+/// Đổi tên/icon/auto-trigger workspace.
 #[tauri::command]
 pub fn workspace_update(id: i64, request: UpdateWorkspaceRequest) -> Result<Workspace, AppErrorPayload> {
     let mut data = workspace_store::load().map_err(log_err)?;
@@ -51,6 +52,7 @@ pub fn workspace_update(id: i64, request: UpdateWorkspaceRequest) -> Result<Work
         .ok_or_else(|| log_err(crate::app::error::AppError::new(format!("Workspace #{id} không tồn tại"))))?;
     workspace.name = request.name;
     workspace.icon = request.icon;
+    workspace.auto_workflow_id = request.auto_workflow_id;
     let result = workspace.clone();
     workspace_store::save(&data).map_err(log_err)?;
     Ok(result)
