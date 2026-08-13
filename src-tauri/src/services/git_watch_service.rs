@@ -1,16 +1,19 @@
-//! Theo dõi thay đổi file trên đĩa của repo Git đang mở, để tab Changes ở
-//! frontend tự cập nhật danh sách file mà không cần bấm nút reload.
+//! Theo dõi thay đổi file trên đĩa của (nhiều) repo Git đang mở, để tab Changes
+//! ở frontend tự cập nhật danh sách file mà không cần bấm nút reload.
 //!
-//! Cơ chế: frontend gọi [`start`] mỗi khi mở/chuyển repo (dừng watcher cũ nếu
-//! có, chỉ theo dõi 1 repo tại một thời điểm — đúng model "1 repo đang active"
-//! của màn hình Git Desktop). `notify` báo sự kiện thay đổi file qua 1 kênh;
-//! một thread nền gom (debounce) các sự kiện đến dồn dập rồi bắn **1 event**
-//! `git-repo-changed` cho frontend refresh status.
+//! Cơ chế: mỗi lần frontend mở/chuyển sang 1 repo, gọi [`start`] cho path đó
+//! (no-op nếu path này đã đang được theo dõi). Nhiều path có thể được theo dõi
+//! đồng thời — cần thiết khi nhiều workspace (mỗi workspace 1 repo riêng) cùng
+//! chạy nền trong 1 cửa sổ. `notify` báo sự kiện thay đổi file qua 1 kênh riêng
+//! cho mỗi path; một thread nền gom (debounce) các sự kiện đến dồn dập rồi bắn
+//! **1 event** `git-repo-changed` (kèm path) cho frontend — frontend tự lọc
+//! theo path của mình để refresh đúng repo, không refresh nhầm repo khác.
 //!
 //! Bỏ qua thay đổi bên trong thư mục `.git/` — nội bộ Git tự ghi liên tục
 //! (lock file, refs, logs...) và các thao tác Git trong app đã tự refresh UI
 //! ngay sau khi gọi xong, không cần watcher báo lại (tránh nhiễu/refresh kép).
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::mpsc::{channel, RecvTimeoutError};
 use std::sync::{Mutex, OnceLock};
@@ -26,29 +29,27 @@ pub const REPO_CHANGED_EVENT: &str = "git-repo-changed";
 /// file / build tool ghi hàng loạt).
 const DEBOUNCE: Duration = Duration::from_millis(500);
 
-/// Watcher + đường dẫn đang theo dõi. Drop struct này (thay `None`) là dừng
+/// Watcher đang theo dõi 1 path. Drop struct này (remove khỏi map) là dừng
 /// theo dõi: `RecommendedWatcher` đóng handle hệ điều hành, và channel Sender
 /// (giữ trong closure event handler của watcher) bị đóng theo, khiến thread
 /// debounce nhận `Disconnected` và tự thoát.
 struct Active {
     _watcher: RecommendedWatcher,
-    path: String,
 }
 
-/// Watcher đang hoạt động (toàn cục, tối đa 1). Khởi tạo lười bằng `OnceLock`.
-fn active() -> &'static Mutex<Option<Active>> {
-    static ACTIVE: OnceLock<Mutex<Option<Active>>> = OnceLock::new();
-    ACTIVE.get_or_init(|| Mutex::new(None))
+/// Tập watcher đang hoạt động, key theo path đang theo dõi. Khởi tạo lười
+/// bằng `OnceLock`.
+fn active() -> &'static Mutex<HashMap<String, Active>> {
+    static ACTIVE: OnceLock<Mutex<HashMap<String, Active>>> = OnceLock::new();
+    ACTIVE.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
-/// Bắt đầu theo dõi `path` (dừng watcher cũ nếu đang theo dõi repo khác).
-/// No-op nếu đã đang theo dõi đúng `path` này.
+/// Bắt đầu theo dõi `path`. No-op nếu path này đã đang được theo dõi (không
+/// đụng tới watcher của các path khác).
 pub fn start(app: AppHandle, path: String) {
-    let mut slot = active().lock().unwrap();
-    if let Some(cur) = slot.as_ref() {
-        if cur.path == path {
-            return;
-        }
+    let mut map = active().lock().unwrap();
+    if map.contains_key(&path) {
+        return;
     }
 
     let (tx, rx) = channel::<()>();
@@ -94,15 +95,13 @@ pub fn start(app: AppHandle, path: String) {
         }
     });
 
-    *slot = Some(Active {
-        _watcher: watcher,
-        path,
-    });
+    map.insert(path, Active { _watcher: watcher });
 }
 
-/// Dừng theo dõi (nếu đang có).
-pub fn stop() {
-    *active().lock().unwrap() = None;
+/// Dừng theo dõi `path` (no-op nếu path này không đang được theo dõi). Không
+/// ảnh hưởng tới watcher của các path khác.
+pub fn stop(path: String) {
+    active().lock().unwrap().remove(&path);
 }
 
 /// Bỏ qua thay đổi bên trong `.git/`.

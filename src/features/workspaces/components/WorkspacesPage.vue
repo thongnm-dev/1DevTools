@@ -12,12 +12,9 @@ import TabList from "primevue/tablist";
 import Tabs from "primevue/tabs";
 import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
+import WorkspaceGitPanel from "./WorkspaceGitPanel.vue";
 import { useWorkspace } from "../composables/useWorkspace";
 import { useTerminal } from "@/features/terminal/composables/useTerminal";
-import { useToast } from "@/shared/composables/useToast";
-import { friendlyError } from "@/tauri/commands/_base";
-import { explorerOpen } from "@/tauri/commands/explorer";
-import { gitOpenVscode } from "@/tauri/commands/git";
 import type { GitRepo } from "@/models/git";
 import type { Workspace } from "@/models/workspace";
 import { DEFAULT_WORKSPACE_ICON } from "@/models/workspace";
@@ -27,7 +24,6 @@ const ACTIVE_REPO_KEY = "git.activeRepoId";
 const { t } = useI18n();
 const router = useRouter();
 const term = useTerminal();
-const toast = useToast();
 const ctrl = useWorkspace();
 
 // --- New/Edit workspace dialog (shared fields, only one open at a time) ---
@@ -85,10 +81,13 @@ async function saveWorkspace() {
   showWorkspaceDialog.value = false;
 }
 
-// --- Quick actions (fire-and-forget helpers to existing tools; not yet embedded — see Phase 2) ---
+// --- Quick actions (fire-and-forget helpers to existing tools) ---
+function repoFor(ws: Workspace): GitRepo | null {
+  return ctrl.gitRepos.value.find((r) => r.path === ws.project_path) ?? null;
+}
+
 function repoIdFor(ws: Workspace): number | null {
-  const repo = ctrl.gitRepos.value.find((r) => r.path === ws.project_path);
-  return repo?.id ?? null;
+  return repoFor(ws)?.id ?? null;
 }
 
 function openEmbeddedTerminal(ws: Workspace) {
@@ -100,22 +99,6 @@ async function openInGitDesktop(ws: Workspace) {
   const id = repoIdFor(ws);
   if (id !== null) localStorage.setItem(ACTIVE_REPO_KEY, String(id));
   await router.push("/git");
-}
-
-async function openInVscode(ws: Workspace) {
-  try {
-    await gitOpenVscode(ws.project_path);
-  } catch (e) {
-    toast.error(friendlyError(e));
-  }
-}
-
-async function showInExplorer(ws: Workspace) {
-  try {
-    await explorerOpen(ws.project_path);
-  } catch (e) {
-    toast.error(friendlyError(e));
-  }
 }
 
 const selectPt = {
@@ -160,57 +143,42 @@ const selectPt = {
       </div>
     </div>
 
-    <!-- Active workspace -->
-    <div v-else-if="ctrl.activeWorkspace.value" class="flex flex-1 flex-col gap-4 overflow-auto">
-      <div class="shrink-0 rounded-lg border border-divider bg-panel p-6 shadow-sm">
-        <div class="flex flex-wrap items-center gap-3">
-          <i :class="[ctrl.activeWorkspace.value.icon, 'text-2xl text-muted']" />
-          <div class="min-w-0">
-            <h2 class="page-title">{{ ctrl.activeWorkspace.value.name }}</h2>
-            <p class="truncate text-sm text-muted">{{ ctrl.activeWorkspace.value.project_path }}</p>
+    <!-- One block per open workspace, kept mounted via v-show (not v-if) so each
+         workspace's Git panel — and its file watcher — keeps running in the
+         background when you switch to another tab, instead of being torn down
+         and reloaded every time. -->
+    <template v-else>
+      <template v-for="ws in ctrl.workspaces.value" :key="ws.id">
+        <div v-show="ws.id === ctrl.activeId.value" class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+          <div class="shrink-0 rounded-lg border border-divider bg-panel p-4 shadow-sm">
+            <div class="flex flex-wrap items-center gap-3">
+              <i :class="[ws.icon, 'text-xl text-muted']" />
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <h2 class="section-title">{{ ws.name }}</h2>
+                  <!-- Nút branch được WorkspaceGitPanel.vue teleport vào đây -->
+                  <span :id="`ws-branch-slot-${ws.id}`" class="inline-flex" />
+                </div>
+                <p class="truncate text-xs text-muted">{{ ws.project_path }}</p>
+              </div>
+              <div class="ml-auto flex shrink-0 items-center gap-1">
+                <Button icon="pi pi-desktop" text rounded size="small" :title="t('workspaces.action.terminal')" @click="openEmbeddedTerminal(ws)" />
+                <Button icon="pi pi-github" text rounded size="small" :title="t('workspaces.action.git')" @click="openInGitDesktop(ws)" />
+                <Button icon="pi pi-pencil" text rounded size="small" :title="t('workspaces.edit')" @click="openEditWorkspaceDialog(ws)" />
+                <Button icon="pi pi-times" text rounded size="small" severity="danger" :title="t('workspaces.close')" @click="ctrl.removeWorkspace(ws.id)" />
+              </div>
+            </div>
           </div>
-          <div class="ml-auto flex shrink-0 items-center gap-2">
-            <Button icon="pi pi-pencil" :label="t('workspaces.edit')" severity="secondary" size="small" @click="openEditWorkspaceDialog(ctrl.activeWorkspace.value)" />
-            <Button icon="pi pi-times" :label="t('workspaces.close')" severity="danger" text size="small" @click="ctrl.removeWorkspace(ctrl.activeWorkspace.value.id)" />
+
+          <div class="min-h-0 flex-1 overflow-hidden rounded-lg border border-divider bg-panel shadow-sm">
+            <WorkspaceGitPanel v-if="repoFor(ws)" :repo="repoFor(ws)!" :workspace-id="ws.id" />
+            <div v-else class="flex h-full items-center justify-center p-6 text-center text-xs text-muted">
+              {{ t("workspaces.git.repoNotFound") }}
+            </div>
           </div>
         </div>
-      </div>
-
-      <div class="grid shrink-0 grid-cols-2 gap-3 sm:grid-cols-4">
-        <button
-          class="flex flex-col items-center gap-2 rounded-lg border border-divider bg-panel p-4 shadow-sm transition-shadow hover:shadow-float"
-          @click="openEmbeddedTerminal(ctrl.activeWorkspace.value)"
-        >
-          <i class="pi pi-desktop text-xl text-brand" />
-          <span class="text-xs font-bold text-ink">{{ t("workspaces.action.terminal") }}</span>
-        </button>
-        <button
-          class="flex flex-col items-center gap-2 rounded-lg border border-divider bg-panel p-4 shadow-sm transition-shadow hover:shadow-float"
-          @click="openInGitDesktop(ctrl.activeWorkspace.value)"
-        >
-          <i class="pi pi-github text-xl text-brand" />
-          <span class="text-xs font-bold text-ink">{{ t("workspaces.action.git") }}</span>
-        </button>
-        <button
-          class="flex flex-col items-center gap-2 rounded-lg border border-divider bg-panel p-4 shadow-sm transition-shadow hover:shadow-float"
-          @click="openInVscode(ctrl.activeWorkspace.value)"
-        >
-          <i class="pi pi-code text-xl text-brand" />
-          <span class="text-xs font-bold text-ink">{{ t("workspaces.action.vscode") }}</span>
-        </button>
-        <button
-          class="flex flex-col items-center gap-2 rounded-lg border border-divider bg-panel p-4 shadow-sm transition-shadow hover:shadow-float"
-          @click="showInExplorer(ctrl.activeWorkspace.value)"
-        >
-          <i class="pi pi-folder-open text-xl text-brand" />
-          <span class="text-xs font-bold text-ink">{{ t("workspaces.action.explorer") }}</span>
-        </button>
-      </div>
-
-      <div class="flex-1 rounded-lg border border-dashed border-divider bg-panel/50 p-6 text-center text-sm text-muted">
-        {{ t("workspaces.comingSoon") }}
-      </div>
-    </div>
+      </template>
+    </template>
 
     <!-- New/Edit Workspace Dialog -->
     <Dialog

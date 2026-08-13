@@ -293,6 +293,6 @@ export function gitWatchStart(path: string) {
   return safeInvoke<void>("git_watch_start", { path });
 }
 
-export function gitWatchStop() {
-  return safeInvoke<void>("git_watch_stop");
+export function gitWatchStop(path: string) {
+  return safeInvoke<void>("git_watch_stop", { path });
 }

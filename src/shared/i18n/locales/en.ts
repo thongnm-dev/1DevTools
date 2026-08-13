@@ -1154,12 +1154,9 @@ export default {
     close: "Close",
     edit: "Edit",
     emptyState: "No workspace open. Add a project to get started.",
-    comingSoon: "Git, Terminal, Runner, and Agent panels will be embedded directly here in a later phase. For now, use the quick actions above.",
     action: {
       terminal: "Open Terminal",
       git: "Open in Git",
-      vscode: "Open in VS Code",
-      explorer: "Show in Explorer",
     },
     dialog: {
       newTitle: "New Workspace",
@@ -1177,6 +1174,25 @@ export default {
     toast: {
       created: "Workspace created",
       closed: "Workspace closed",
+    },
+    git: {
+      staged: "Staged",
+      unstaged: "Unstaged",
+      stage: "Stage",
+      unstage: "Unstage",
+      stageAll: "Stage all",
+      unstageAll: "Unstage all",
+      noChanges: "No changes",
+      selectFileHint: "Select a file to view its diff",
+      binaryFile: "Binary file",
+      commitPlaceholder: "Commit message",
+      commit: "Commit",
+      repoNotFound: "This project's Git repo could not be found. Try re-adding it from Git Desktop.",
+      switchBranch: "Switch branch",
+      detachedAt: "detached @ {name}",
+      filterBranchPlaceholder: "Filter branches...",
+      deleteBranch: "Delete branch",
+      noBranchesMatch: "No branches match",
     },
   },
   workflow: {

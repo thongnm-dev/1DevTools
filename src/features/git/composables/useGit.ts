@@ -216,7 +216,7 @@ export function useGit() {
         if (next) {
           await openRepo(next);
         } else {
-          gitWatchStop().catch(() => {});
+          stopWatch();
         }
       }
       toast.success(t("git.toast.repoRemoved", { name: repo.name }));
@@ -241,14 +241,27 @@ export function useGit() {
     commitFileDiff.value = null;
   }
 
-  async function openRepo(repo: GitRepo) {
+  /**
+   * `persist`: mặc định `true` — ghi lại repo vừa mở vào `ACTIVE_REPO_KEY` để
+   * lần sau mở màn Git Desktop tự chọn lại. Truyền `false` khi dùng instance
+   * này để nhúng 1 repo cố định vào nơi khác (ví dụ panel Git trong
+   * Workspaces) — tránh việc mở repo ở đó ghi đè "repo đang xem" của màn Git
+   * Desktop độc lập.
+   */
+  async function openRepo(repo: GitRepo, options?: { persist?: boolean }) {
     activeRepo.value = repo;
-    localStorage.setItem(ACTIVE_REPO_KEY, String(repo.id));
+    if (options?.persist !== false) {
+      localStorage.setItem(ACTIVE_REPO_KEY, String(repo.id));
+    }
     loadingRepo.value = true;
     resetRepoState();
     try {
       await Promise.all([refreshStatusAndInfo(), refreshBranches(), refreshStashes()]);
       gitTouchRepo(repo.id).catch(() => {});
+      if (watchedPath && watchedPath !== repo.path) {
+        gitWatchStop(watchedPath).catch(() => {});
+      }
+      watchedPath = repo.path;
       gitWatchStart(repo.path).catch(() => {});
     } catch (e) {
       reportError(t("git.toast.repoOpenFailed"), e);
@@ -260,6 +273,19 @@ export function useGit() {
   const repoPath = () => activeRepo.value?.path ?? "";
 
   // === Theo dõi thay đổi file trên đĩa (auto-refresh tab Changes) ===
+  //
+  // `watchedPath` theo dõi path mà RIÊNG instance `useGit()` này đang xem —
+  // mỗi instance tự quản lý watcher của mình (backend hỗ trợ nhiều path theo
+  // dõi đồng thời), nên nhiều instance (ví dụ mỗi workspace 1 instance) có
+  // thể cùng theo dõi các repo khác nhau mà không dừng lẫn nhau.
+
+  let watchedPath = "";
+  function stopWatch() {
+    if (!watchedPath) return;
+    const path = watchedPath;
+    watchedPath = "";
+    gitWatchStop(path).catch(() => {});
+  }
 
   let repoChangedUnlisten: (() => void) | null = null;
   onGitRepoChanged((changedPath) => {
@@ -269,7 +295,7 @@ export function useGit() {
   });
 
   onUnmounted(() => {
-    gitWatchStop().catch(() => {});
+    stopWatch();
     repoChangedUnlisten?.();
   });
 

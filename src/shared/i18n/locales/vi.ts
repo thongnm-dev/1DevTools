@@ -1158,12 +1158,9 @@ export default {
     close: "Đóng",
     edit: "Sửa",
     emptyState: "Chưa mở workspace nào. Thêm project để bắt đầu.",
-    comingSoon: "Panel Git, Terminal, Runner, Agent sẽ được gắn trực tiếp vào đây ở phase sau. Hiện tại dùng các quick action ở trên.",
     action: {
       terminal: "Mở Terminal",
       git: "Mở trong Git",
-      vscode: "Mở bằng VS Code",
-      explorer: "Hiện trong Explorer",
     },
     dialog: {
       newTitle: "Workspace mới",
@@ -1181,6 +1178,25 @@ export default {
     toast: {
       created: "Đã tạo workspace",
       closed: "Đã đóng workspace",
+    },
+    git: {
+      staged: "Staged",
+      unstaged: "Unstaged",
+      stage: "Stage",
+      unstage: "Unstage",
+      stageAll: "Stage tất cả",
+      unstageAll: "Unstage tất cả",
+      noChanges: "Không có thay đổi",
+      selectFileHint: "Chọn 1 file để xem diff",
+      binaryFile: "File binary",
+      commitPlaceholder: "Nội dung commit",
+      commit: "Commit",
+      repoNotFound: "Không tìm thấy Git repo của project này. Thử thêm lại từ Git Desktop.",
+      switchBranch: "Đổi branch",
+      detachedAt: "detached @ {name}",
+      filterBranchPlaceholder: "Tìm branch...",
+      deleteBranch: "Xoá branch",
+      noBranchesMatch: "Không có branch khớp",
     },
   },
   workflow: {

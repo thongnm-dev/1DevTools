@@ -656,8 +656,9 @@ pub fn git_watch_start(app: tauri::AppHandle, path: String) {
     git_watch_service::start(app, path);
 }
 
-/// Dừng theo dõi (gọi khi đóng repo / rời màn hình Git Desktop).
+/// Dừng theo dõi `path` (gọi khi đóng repo / chuyển sang repo khác / rời màn hình).
+/// Không ảnh hưởng watcher của các path khác đang theo dõi đồng thời.
 #[tauri::command]
-pub fn git_watch_stop() {
-    git_watch_service::stop();
+pub fn git_watch_stop(path: String) {
+    git_watch_service::stop(path);
 }
