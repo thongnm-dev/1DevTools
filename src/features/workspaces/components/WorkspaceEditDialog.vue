@@ -9,12 +9,11 @@ import Select from "primevue/select";
 import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
 import type { WorkspaceApi } from "../composables/useWorkspace";
-import type { WorkflowApi } from "../composables/useWorkflow";
 import type { GitRepo } from "@/models/git";
 import type { Workspace } from "@/models/workspace";
 import { DEFAULT_WORKSPACE_ICON } from "@/models/workspace";
 
-const props = defineProps<{ workspaceCtrl: WorkspaceApi; workflowCtrl: WorkflowApi; editingWorkspace: Workspace | null }>();
+const props = defineProps<{ workspaceCtrl: WorkspaceApi; editingWorkspace: Workspace | null }>();
 const visible = defineModel<boolean>("visible", { default: false });
 
 const { t } = useI18n();
@@ -22,7 +21,6 @@ const { t } = useI18n();
 const selectedRepoId = ref<number | null>(null);
 const wsName = ref("");
 const wsIcon = ref(DEFAULT_WORKSPACE_ICON);
-const wsAutoWorkflowId = ref<number | null>(null);
 const showIconPicker = ref(false);
 
 const isEditing = computed(() => props.editingWorkspace !== null);
@@ -33,14 +31,9 @@ watch(visible, (v) => {
   selectedRepoId.value = null;
   wsName.value = ws?.name ?? "";
   wsIcon.value = ws?.icon ?? DEFAULT_WORKSPACE_ICON;
-  wsAutoWorkflowId.value = ws?.auto_workflow_id ?? null;
 });
 
 const repoOptions = computed(() => props.workspaceCtrl.gitRepos.value.map((r) => ({ label: r.name, value: r.id })));
-const autoWorkflowOptions = computed(() => [
-  { label: t("workspaces.dialog.autoWorkflowNone"), value: null },
-  ...props.workflowCtrl.workflows.value.map((w) => ({ label: w.name, value: w.id })),
-]);
 
 function onRepoSelected() {
   const repo = props.workspaceCtrl.gitRepos.value.find((r) => r.id === selectedRepoId.value);
@@ -58,7 +51,7 @@ async function saveWorkspace() {
   const name = wsName.value.trim();
   if (!name) return;
   if (props.editingWorkspace !== null) {
-    await props.workspaceCtrl.updateWorkspace(props.editingWorkspace.id, { name, icon: wsIcon.value, auto_workflow_id: wsAutoWorkflowId.value });
+    await props.workspaceCtrl.updateWorkspace(props.editingWorkspace.id, { name, icon: wsIcon.value });
   } else {
     const repo = props.workspaceCtrl.gitRepos.value.find((r: GitRepo) => r.id === selectedRepoId.value);
     if (!repo) return;
@@ -125,18 +118,6 @@ const selectPt = {
         </div>
       </div>
 
-      <label class="block">
-        <span class="text-xs font-bold text-muted">{{ t("workspaces.dialog.autoWorkflow") }}</span>
-        <Select
-          v-model="wsAutoWorkflowId"
-          :options="autoWorkflowOptions"
-          optionLabel="label"
-          optionValue="value"
-          class="mt-1 w-full"
-          :pt="selectPt"
-        />
-        <p class="mt-1 text-[11px] text-muted">{{ t("workspaces.dialog.autoWorkflowHint") }}</p>
-      </label>
     </div>
 
     <template #footer>

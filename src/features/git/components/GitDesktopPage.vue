@@ -38,6 +38,7 @@ import GitBlameDialog from "./GitBlameDialog.vue";
 import GitLogDialog from "./GitLogDialog.vue";
 import GitAgentTerminalDialog from "./GitAgentTerminalDialog.vue";
 import GitRightSidebar from "./GitRightSidebar.vue";
+import GitMoreActionsMenu from "./GitMoreActionsMenu.vue";
 
 const { t } = useI18n();
 const git = useGit();
@@ -58,18 +59,14 @@ function closeMenus() {
   moreMenuOpen.value = false;
 }
 
-function toggleMoreMenu() {
-  repoMenuOpen.value = false;
-  branchMenuOpen.value = false;
-  moreMenuOpen.value = !moreMenuOpen.value;
-}
-
 function toggleRepoMenu() {
   branchMenuOpen.value = false;
+  moreMenuOpen.value = false;
   repoMenuOpen.value = !repoMenuOpen.value;
 }
 function toggleBranchMenu() {
   repoMenuOpen.value = false;
+  moreMenuOpen.value = false;
   branchMenuOpen.value = !branchMenuOpen.value;
   branchFilter.value = "";
 }
@@ -389,6 +386,27 @@ function openAgentTerminalDialog() {
   agentTerminalDialogVisible.value = true;
 }
 
+// === More actions menu handler ===
+function handleMoreAction(name: string) {
+  switch (name) {
+    case "rebase": openRebaseDialog(); break;
+    case "create-worktree": openWorktreeCreate(); break;
+    case "manage-worktrees": openWorktreeList(); break;
+    case "manage-stash": openStashList(); break;
+    case "create-tag": openTagDialog(); break;
+    case "manage-tags": openTagListDialog(); break;
+    case "merge": openMergeDialog(); break;
+    case "compare": openCompareDialog(); break;
+    case "view-prs": openPrDialog(); break;
+    case "update-from-main": openUpdateDialog(); break;
+    case "reset-head": openResetHeadDialog(); break;
+    case "cleanup": openCleanupDialog(); break;
+    case "browse-commits": openCommitBrowser(); break;
+    case "show-log": openLogDialog(); break;
+    case "show-graph": openGraphDialog(); break;
+  }
+}
+
 // === Context menu trên history ===
 const commitMenu = ref<{ x: number; y: number; commit: GitCommit } | null>(null);
 
@@ -671,69 +689,12 @@ onUnmounted(closeCommitMenu);
             </button>
 
             <!-- More actions -->
-            <div class="relative">
-              <button
-                class="flex h-7 items-center rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand"
-                :title="t('git.page.moreActions')"
-                @click="toggleMoreMenu"
-              >
-                <i class="pi pi-ellipsis-h text-[11px]" />
-              </button>
-              <div
-                v-if="moreMenuOpen"
-                class="absolute bottom-full right-0 z-30 mb-2 w-60 rounded-lg border border-divider bg-panel p-1.5 shadow-float"
-              >
-                <button class="ctx-menu-item" @click="openRebaseDialog">
-                  <i class="pi pi-arrows-v text-xs" /> {{ t("git.page.menu.rebase") }}
-                </button>
-                <button class="ctx-menu-item" @click="openWorktreeCreate">
-                  <i class="pi pi-clone text-xs" /> {{ t("git.page.menu.createWorktree") }}
-                </button>
-                <button class="ctx-menu-item" @click="openWorktreeList">
-                  <i class="pi pi-list text-xs" /> {{ t("git.page.menu.manageWorktree") }}
-                </button>
-                <div class="my-1 border-t border-divider" />
-                <button class="ctx-menu-item" @click="openStashList">
-                  <i class="pi pi-inbox text-xs" /> {{ t("git.page.menu.manageStash") }}
-                  <span v-if="git.stashes.value.length" class="ml-auto rounded-full bg-canvas px-1.5 text-[10px] font-semibold text-muted">{{ git.stashes.value.length }}</span>
-                </button>
-                <div class="my-1 border-t border-divider" />
-                <button class="ctx-menu-item" @click="openTagDialog()">
-                  <i class="pi pi-tag text-xs" /> {{ t("git.page.menu.createTag") }}
-                </button>
-                <button class="ctx-menu-item" @click="openTagListDialog">
-                  <i class="pi pi-tags text-xs" /> {{ t("git.page.menu.manageTags") }}
-                </button>
-                <button class="ctx-menu-item" @click="openMergeDialog">
-                  <i class="pi pi-code-branch text-xs" /> {{ t("git.page.menu.mergeBranch") }}
-                </button>
-                <button class="ctx-menu-item" @click="openCompareDialog">
-                  <i class="pi pi-arrows-h text-xs" /> {{ t("git.page.menu.compare") }}
-                </button>
-                <button class="ctx-menu-item" @click="openPrDialog">
-                  <i class="pi pi-flag text-xs" /> {{ t("git.page.menu.viewPrs") }}
-                </button>
-                <div class="my-1 border-t border-divider" />
-                <button v-if="!isOnBaseBranch" class="ctx-menu-item" @click="openUpdateDialog">
-                  <i class="pi pi-arrow-circle-down text-xs" /> {{ t("git.page.menu.updateFromMain") }}
-                </button>
-                <button class="ctx-menu-item" @click="openResetHeadDialog">
-                  <i class="pi pi-backward text-xs" /> {{ t("git.page.menu.resetHead") }}
-                </button>
-                <button class="ctx-menu-item" @click="openCleanupDialog">
-                  <i class="pi pi-eraser text-xs" /> {{ t("git.page.menu.cleanup") }}
-                </button>
-                <button class="ctx-menu-item" @click="openCommitBrowser">
-                  <i class="pi pi-copy text-xs" /> {{ t("git.page.menu.browseCommits") }}
-                </button>
-                <button class="ctx-menu-item" @click="logDialogVisible = true;">
-                  <i class="pi pi-list-check text-xs" /> {{ t("git.page.menu.showLog") }}
-                </button>
-                <button class="ctx-menu-item" @click="openGraphDialog">
-                  <i class="pi pi-sitemap text-xs" /> {{ t("git.page.menu.showGraph") }}
-                </button>
-              </div>
-            </div>
+            <GitMoreActionsMenu
+              v-model:open="moreMenuOpen"
+              :git="git"
+              :is-on-base-branch="isOnBaseBranch"
+              @action="handleMoreAction"
+            />
           </template>
         </div>
       </div>

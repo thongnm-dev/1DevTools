@@ -6,10 +6,15 @@ import WorkspaceRightSidebar from "./WorkspaceRightSidebar.vue";
 import WorkspaceIdePanel from "./WorkspaceIdePanel.vue";
 import WorkspaceAgentsPanel from "./WorkspaceAgentsPanel.vue";
 import WorkspaceTerminalPanel from "./WorkspaceTerminalPanel.vue";
+import WorkspaceTasksPanel from "./WorkspaceTasksPanel.vue";
 import type { GitRepo } from "@/models/git";
 import type { Workspace, WorkspaceMainPanel } from "@/models/workspace";
 
 const props = defineProps<{ workspace: Workspace; repo: GitRepo | null }>();
+const emit = defineEmits<{
+  edit: [];
+  delete: [];
+}>();
 const { t } = useI18n();
 
 // Panel đang hiển thị trong vùng nội dung chính — mọi panel đều giữ mounted
@@ -22,7 +27,7 @@ const activePanel = ref<WorkspaceMainPanel>("git");
   <div class="flex min-h-0 flex-1 overflow-hidden">
     <div class="min-h-0 flex-1 overflow-hidden rounded-lg border border-divider bg-panel shadow-sm">
       <div v-show="activePanel === 'git'" class="h-full">
-        <WorkspaceGitPanel v-if="repo" :repo="repo" :workspace-id="workspace.id" />
+        <WorkspaceGitPanel v-if="repo" :repo="repo" />
         <div v-else class="flex h-full items-center justify-center p-6 text-center text-xs text-muted">
           {{ t("workspaces.git.repoNotFound") }}
         </div>
@@ -39,8 +44,16 @@ const activePanel = ref<WorkspaceMainPanel>("git");
       <WorkspaceAgentsPanel v-show="activePanel === 'agents'" class="h-full" />
 
       <WorkspaceIdePanel v-show="activePanel === 'ide'" :root="workspace.project_path" class="h-full" />
+
+      <WorkspaceTasksPanel v-show="activePanel === 'tasks'" :workspace="workspace" class="h-full" />
     </div>
 
-    <WorkspaceRightSidebar :active-panel="activePanel" @select="activePanel = $event" />
+    <WorkspaceRightSidebar
+      :active-panel="activePanel"
+      :workspace="workspace"
+      @select="activePanel = $event"
+      @edit="emit('edit')"
+      @delete="emit('delete')"
+    />
   </div>
 </template>

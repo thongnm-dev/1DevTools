@@ -93,7 +93,7 @@ export function useWorkspace() {
     }
   }
 
-  async function updateWorkspace(id: number, patch: { name?: string; icon?: string; auto_workflow_id?: number | null }) {
+  async function updateWorkspace(id: number, patch: { name?: string; icon?: string }) {
     const ws = workspaces.value.find((w) => w.id === id);
     if (!ws) return;
     error.value = "";
@@ -101,7 +101,6 @@ export function useWorkspace() {
       const updated = await workspaceUpdate(id, {
         name: patch.name ?? ws.name,
         icon: patch.icon ?? ws.icon,
-        auto_workflow_id: patch.auto_workflow_id !== undefined ? patch.auto_workflow_id : ws.auto_workflow_id,
       });
       const idx = workspaces.value.findIndex((w) => w.id === id);
       if (idx !== -1) workspaces.value[idx] = updated;

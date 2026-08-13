@@ -64,4 +64,6 @@ mod services {
     pub mod claude_capture;
     /// Service phát hiện lệnh phát triển từ project files (npm/flutter/maven/cargo...).
     pub mod dev_runner_service;
+    /// Service cho module cài đặt người dùng (profile + theme/language/tab_mode).
+    pub mod settings_service;
 }

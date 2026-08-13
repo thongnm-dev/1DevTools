@@ -12,7 +12,8 @@ export type MenuKey =
   | "workflow"
   | "workspaces"
   | "skill"
-  | "prompt";
+  | "prompt"
+  | "settings";
 
 export type AppRouteKey = MenuKey | "login" | "forgotPassword";
 

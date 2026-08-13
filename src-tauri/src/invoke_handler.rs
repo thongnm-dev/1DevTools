@@ -23,6 +23,7 @@ use commands::workflow_commands::*;
 use commands::workspace_commands::*;
 use commands::skill_commands::*;
 use commands::prompt_commands::*;
+use commands::settings_commands::*;
 
 /// Xây dựng handler cho `Builder::invoke_handler`, gộp toàn bộ command đã đăng ký.
 ///
@@ -219,6 +220,9 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         prompt_create,
         prompt_update,
         prompt_delete,
-        prompt_mark_used
+        prompt_mark_used,
+        // === Settings commands (profile + theme/language/tab_mode) ===
+        get_settings,
+        save_settings,
     ]
 }

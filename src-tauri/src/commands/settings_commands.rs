@@ -1,0 +1,19 @@
+//! Tauri command handlers cho module cài đặt người dùng.
+
+use crate::app::error::AppErrorPayload;
+use crate::models::settings::{AppSettings, SaveSettingsRequest};
+use crate::services::settings_service;
+
+#[tauri::command]
+pub async fn get_settings(user_id: i32) -> Result<AppSettings, AppErrorPayload> {
+    settings_service::get_settings(user_id)
+        .await
+        .map_err(crate::app::error::log_err)
+}
+
+#[tauri::command]
+pub async fn save_settings(request: SaveSettingsRequest) -> Result<AppSettings, AppErrorPayload> {
+    settings_service::save_settings(request)
+        .await
+        .map_err(crate::app::error::log_err)
+}

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from "vue";
+import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import Tab from "primevue/tab";
@@ -7,21 +7,13 @@ import TabList from "primevue/tablist";
 import Tabs from "primevue/tabs";
 import WorkspaceMainArea from "./WorkspaceMainArea.vue";
 import WorkspaceEditDialog from "./WorkspaceEditDialog.vue";
-import WorkflowAutoRunPreviewDialog from "./WorkflowAutoRunPreviewDialog.vue";
 import { useWorkspace } from "../composables/useWorkspace";
-import { useWorkflow } from "../composables/useWorkflow";
-import { useWorkflowRunner } from "../composables/useWorkflowRunner";
 import { useWorkspaceTerminal } from "../composables/useWorkspaceTerminal";
-import { onGitRepoChanged } from "@/tauri/events";
-import type { UnlistenFn } from "@tauri-apps/api/event";
 import type { GitRepo } from "@/models/git";
 import type { Workspace } from "@/models/workspace";
-import type { Workflow } from "@/models/workflow";
 
 const { t } = useI18n();
 const ctrl = useWorkspace();
-const workflowCtrl = useWorkflow();
-const runner = useWorkflowRunner();
 const workspaceTerminal = useWorkspaceTerminal();
 
 // --- New/Edit workspace dialog (shared fields, only one open at a time) ---
@@ -40,40 +32,6 @@ function openEditWorkspaceDialog(ws: Workspace) {
 
 function onTabChange(value: string | number) {
   ctrl.selectWorkspace(Number(value));
-}
-
-// --- Auto-trigger: chạy workflow tự động khi file trong workspace thay đổi ---
-let unlistenGitRepoChanged: UnlistenFn | null = null;
-
-onMounted(async () => {
-  unlistenGitRepoChanged = await onGitRepoChanged((path) => {
-    for (const ws of ctrl.workspaces.value) {
-      if (ws.project_path !== path || ws.auto_workflow_id === null) continue;
-      const workflow = workflowCtrl.workflows.value.find((w) => w.id === ws.auto_workflow_id);
-      if (!workflow) continue;
-      void runner.runWorkflow(workflow, ws);
-    }
-  });
-});
-
-onUnmounted(() => {
-  unlistenGitRepoChanged?.();
-});
-
-// --- Xem nhanh workflow tự động (diagram read-only, giống canvas ở WorkflowPage.vue) ---
-const showWorkflowPreview = ref(false);
-const previewWorkflow = ref<Workflow | null>(null);
-
-function autoWorkflowFor(ws: Workspace): Workflow | null {
-  if (ws.auto_workflow_id === null) return null;
-  return workflowCtrl.workflows.value.find((w) => w.id === ws.auto_workflow_id) ?? null;
-}
-
-function openAutoWorkflowPreview(ws: Workspace) {
-  const wf = autoWorkflowFor(ws);
-  if (!wf) return;
-  previewWorkflow.value = wf;
-  showWorkflowPreview.value = true;
 }
 
 // --- Quick actions (fire-and-forget helpers to existing tools) ---
@@ -129,34 +87,13 @@ async function closeWorkspace(ws: Workspace) {
          and reloaded every time. -->
     <template v-else>
       <template v-for="ws in ctrl.workspaces.value" :key="ws.id">
-        <div v-show="ws.id === ctrl.activeId.value" class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
-          <div class="shrink-0 rounded-lg border border-divider bg-panel p-4 shadow-sm">
-            <div class="flex flex-wrap items-center gap-3">
-              <i :class="[ws.icon, 'text-xl text-muted']" />
-              <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                  <h2 class="section-title">{{ ws.name }}</h2>
-                  <!-- Nút branch được WorkspaceGitPanel.vue teleport vào đây -->
-                  <span :id="`ws-branch-slot-${ws.id}`" class="inline-flex" />
-                  <button
-                    v-if="autoWorkflowFor(ws)"
-                    class="flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-bold text-amber-600 transition-colors hover:bg-amber-500/20"
-                    :title="t('workspaces.dialog.autoWorkflowActive')"
-                    @click="openAutoWorkflowPreview(ws)"
-                  >
-                    <i class="pi pi-bolt" />
-                    {{ autoWorkflowFor(ws)!.name }}
-                  </button>
-                </div>
-              </div>
-              <div class="ml-auto flex shrink-0 items-center gap-1">
-                <Button icon="pi pi-pencil" text rounded size="small" :title="t('workspaces.edit')" @click="openEditWorkspaceDialog(ws)" />
-                <Button icon="pi pi-times" text rounded size="small" severity="danger" :title="t('workspaces.close')" @click="closeWorkspace(ws)" />
-              </div>
-            </div>
-          </div>
-
-          <WorkspaceMainArea :workspace="ws" :repo="repoFor(ws)" />
+        <div v-show="ws.id === ctrl.activeId.value" class="flex min-h-0 flex-1 overflow-hidden">
+          <WorkspaceMainArea
+            :workspace="ws"
+            :repo="repoFor(ws)"
+            @edit="openEditWorkspaceDialog(ws)"
+            @delete="closeWorkspace(ws)"
+          />
         </div>
       </template>
     </template>
@@ -164,10 +101,7 @@ async function closeWorkspace(ws: Workspace) {
     <WorkspaceEditDialog
       v-model:visible="showWorkspaceDialog"
       :workspace-ctrl="ctrl"
-      :workflow-ctrl="workflowCtrl"
       :editing-workspace="editingWorkspace"
     />
-
-    <WorkflowAutoRunPreviewDialog v-model:visible="showWorkflowPreview" :workflow="previewWorkflow" />
   </div>
 </template>

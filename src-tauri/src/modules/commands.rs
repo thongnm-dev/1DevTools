@@ -39,4 +39,6 @@ mod commands {
     pub mod skill_commands;
     /// Commands cho thư viện Prompt (CRUD + đếm lượt dùng).
     pub mod prompt_commands;
+    /// Commands cho module cài đặt người dùng (get/save profile + preferences).
+    pub mod settings_commands;
 }

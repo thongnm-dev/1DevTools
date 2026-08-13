@@ -35,4 +35,6 @@ mod models {
     pub mod skill;
     /// Model cho thư viện Prompt (snippet tái sử dụng, hỗ trợ placeholder).
     pub mod prompt;
+    /// Model cho module cài đặt người dùng.
+    pub mod settings;
 }

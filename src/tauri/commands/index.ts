@@ -13,3 +13,4 @@ export * from "./git";
 export * from "./explorer";
 export * from "./terminal";
 export * from "./docker";
+export * from "./settings";

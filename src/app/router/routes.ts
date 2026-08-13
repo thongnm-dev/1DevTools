@@ -102,6 +102,12 @@ export const appRoutes: AppRoute[] = [
     subtitle: "Reusable prompt snippets, with {{variable}} placeholders.",
   },
   {
+    key: "settings",
+    path: "/settings",
+    title: "Settings",
+    subtitle: "Manage your profile and preferences.",
+  },
+  {
     key: "login",
     path: "/login",
     title: "Login",
@@ -198,6 +204,11 @@ export const vueRoutes: RouteRecordRaw[] = [
     path: "/prompt",
     component: () => import("@/features/workspaces/components/PromptPage.vue"),
     meta: { key: "prompt" as MenuKey },
+  },
+  {
+    path: "/settings",
+    component: () => import("@/features/settings/components/SettingsPage.vue"),
+    meta: { key: "settings" as MenuKey },
   },
   {
     path: "/login",
