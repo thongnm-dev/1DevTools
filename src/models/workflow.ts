@@ -24,20 +24,25 @@ export interface Workflow {
   id: number;
   name: string;
   description: string;
+  icon: string;
   steps: WorkflowStep[];
   layout: Record<string, NodePos>;
   created_at: string;
   updated_at: string;
 }
 
+export const DEFAULT_WORKFLOW_ICON = "pi pi-sitemap";
+
 export interface CreateWorkflowRequest {
   name: string;
   description: string;
+  icon: string;
 }
 
 export interface UpdateWorkflowRequest {
   name: string;
   description: string;
+  icon: string;
   steps: WorkflowStep[];
 }
 

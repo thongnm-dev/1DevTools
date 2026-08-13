@@ -59,6 +59,11 @@ pub struct NodePos {
     pub y: f64,
 }
 
+/// Icon mặc định khi workflow chưa chọn icon riêng (và cho dữ liệu cũ trước khi có field này).
+fn default_workflow_icon() -> String {
+    "pi pi-sitemap".to_string()
+}
+
 /// Một workflow — thư viện global, tái sử dụng cho mọi workspace.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Workflow {
@@ -66,6 +71,8 @@ pub struct Workflow {
     pub name: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default = "default_workflow_icon")]
+    pub icon: String,
     #[serde(default)]
     pub steps: Vec<WorkflowStep>,
     /// Vị trí canvas theo `step.id`.
@@ -81,6 +88,8 @@ pub struct CreateWorkflowRequest {
     pub name: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default = "default_workflow_icon")]
+    pub icon: String,
 }
 
 /// Request cập nhật workflow — ghi đè toàn bộ `steps` (không có API riêng cho từng step).
@@ -89,6 +98,8 @@ pub struct UpdateWorkflowRequest {
     pub name: String,
     #[serde(default)]
     pub description: String,
+    #[serde(default = "default_workflow_icon")]
+    pub icon: String,
     #[serde(default)]
     pub steps: Vec<WorkflowStep>,
 }

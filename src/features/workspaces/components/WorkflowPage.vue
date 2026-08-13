@@ -10,7 +10,7 @@ import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
 import { useWorkflow } from "../composables/useWorkflow";
 import type { NodePos, WorkflowStepType } from "@/models/workflow";
-import { STEP_TYPE_META } from "@/models/workflow";
+import { DEFAULT_WORKFLOW_ICON, STEP_TYPE_META } from "@/models/workflow";
 
 const { t } = useI18n();
 const ctrl = useWorkflow();
@@ -52,11 +52,14 @@ const showWorkflowDialog = ref(false);
 const editingWorkflowId = ref<number | null>(null);
 const wfName = ref("");
 const wfDescription = ref("");
+const wfIcon = ref(DEFAULT_WORKFLOW_ICON);
+const showWorkflowIconPicker = ref(false);
 
 function openCreateWorkflowDialog() {
   editingWorkflowId.value = null;
   wfName.value = "";
   wfDescription.value = "";
+  wfIcon.value = DEFAULT_WORKFLOW_ICON;
   showWorkflowDialog.value = true;
 }
 
@@ -66,6 +69,7 @@ function openEditWorkflowDialog() {
   editingWorkflowId.value = wf.id;
   wfName.value = wf.name;
   wfDescription.value = wf.description;
+  wfIcon.value = wf.icon;
   showWorkflowDialog.value = true;
 }
 
@@ -73,9 +77,9 @@ async function saveWorkflow() {
   const name = wfName.value.trim();
   if (!name) return;
   if (editingWorkflowId.value) {
-    await ctrl.updateWorkflow(editingWorkflowId.value, { name, description: wfDescription.value.trim() });
+    await ctrl.updateWorkflow(editingWorkflowId.value, { name, description: wfDescription.value.trim(), icon: wfIcon.value });
   } else {
-    await ctrl.createWorkflow(name, wfDescription.value.trim());
+    await ctrl.createWorkflow(name, wfDescription.value.trim(), wfIcon.value);
   }
   showWorkflowDialog.value = false;
 }
@@ -294,7 +298,7 @@ function agentLabel(id: number | null): string {
   return account ? account.name : "";
 }
 
-const showIconPicker = ref(false);
+const showStepIconPicker = ref(false);
 
 // --- Free-form canvas node positioning ---
 const NODE_W = 208;
@@ -415,19 +419,28 @@ const selectPt = {
 
 <template>
   <div class="flex flex-1 gap-3 overflow-hidden">
-    <!-- Left sidebar: workflow list -->
+    <!-- Left sidebar: workflow list (shrinks to an icon rail instead of hiding, so the
+         expand toggle never floats over the detail panel) -->
     <aside
-      v-if="!sidebarCollapsed"
-      class="flex shrink-0 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm"
-      :style="{ width: sidebarWidth + 'px' }"
+      class="flex shrink-0 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm transition-[width] duration-150"
+      :style="{ width: (sidebarCollapsed ? 52 : sidebarWidth) + 'px' }"
     >
-      <div class="flex items-center gap-2 border-b border-divider p-3">
-        <Button icon="pi pi-angle-double-left" text rounded size="small" :title="t('common.close')" @click="toggleSidebar" />
-        <span class="text-sm font-semibold text-ink">{{ t("workflow.title") }}</span>
-        <Button icon="pi pi-plus" size="small" class="ml-auto" :title="t('workflow.newWorkflow')" @click="openCreateWorkflowDialog" />
+      <div class="flex items-center gap-2 border-b border-divider p-3" :class="{ 'justify-center': sidebarCollapsed }">
+        <Button
+          :icon="sidebarCollapsed ? 'pi pi-angle-double-right' : 'pi pi-angle-double-left'"
+          text
+          rounded
+          size="small"
+          :title="sidebarCollapsed ? t('workflow.title') : t('common.close')"
+          @click="toggleSidebar"
+        />
+        <template v-if="!sidebarCollapsed">
+          <span class="text-sm font-semibold text-ink">{{ t("workflow.title") }}</span>
+          <Button icon="pi pi-plus" size="small" class="ml-auto" :title="t('workflow.newWorkflow')" @click="openCreateWorkflowDialog" />
+        </template>
       </div>
 
-      <div class="border-b border-divider px-3 py-2">
+      <div v-if="!sidebarCollapsed" class="border-b border-divider px-3 py-2">
         <span class="flex items-center gap-2 rounded-md border border-divider bg-canvas px-2">
           <i class="pi pi-search text-xs text-muted" />
           <InputText
@@ -438,33 +451,54 @@ const selectPt = {
         </span>
       </div>
 
-      <div class="flex-1 space-y-1 overflow-auto p-2">
-        <div v-if="ctrl.isLoading.value" class="px-2 py-4 text-center text-xs text-muted">{{ t("common.loading") }}</div>
+      <div class="flex-1 overflow-auto p-2" :class="sidebarCollapsed ? 'flex flex-col items-center space-y-1' : 'space-y-1'">
+        <template v-if="sidebarCollapsed">
+          <button
+            v-for="wf in ctrl.filteredWorkflows.value"
+            :key="wf.id"
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors"
+            :class="wf.id === ctrl.activeId.value ? 'bg-brand/10 text-brand' : 'text-secondary hover:bg-canvas'"
+            :title="wf.name"
+            @click="ctrl.selectWorkflow(wf.id)"
+          >
+            <i :class="wf.icon" />
+          </button>
+          <button
+            class="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-dashed border-divider text-muted transition-colors hover:border-brand hover:text-brand"
+            :title="t('workflow.newWorkflow')"
+            @click="openCreateWorkflowDialog"
+          >
+            <i class="pi pi-plus text-xs" />
+          </button>
+        </template>
+        <template v-else>
+          <div v-if="ctrl.isLoading.value" class="px-2 py-4 text-center text-xs text-muted">{{ t("common.loading") }}</div>
 
-        <p v-else-if="ctrl.filteredWorkflows.value.length === 0" class="px-2 py-4 text-center text-xs text-muted">
-          {{ t("workflow.empty") }}
-        </p>
+          <p v-else-if="ctrl.filteredWorkflows.value.length === 0" class="px-2 py-4 text-center text-xs text-muted">
+            {{ t("workflow.empty") }}
+          </p>
 
-        <button
-          v-for="wf in ctrl.filteredWorkflows.value"
-          :key="wf.id"
-          class="group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left transition-colors"
-          :class="wf.id === ctrl.activeId.value ? 'bg-brand/10 text-brand' : 'text-secondary hover:bg-canvas'"
-          @click="ctrl.selectWorkflow(wf.id)"
-        >
-          <i class="pi pi-sitemap shrink-0 text-xs" />
-          <span class="min-w-0 flex-1">
-            <span class="block truncate text-xs font-bold">{{ wf.name }}</span>
-            <span class="block truncate text-[10px] text-muted">
-              {{ formatDate(wf.updated_at) }} · {{ t("workflow.stepCount", { count: wf.steps.length }) }}
+          <button
+            v-for="wf in ctrl.filteredWorkflows.value"
+            :key="wf.id"
+            class="group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left transition-colors"
+            :class="wf.id === ctrl.activeId.value ? 'bg-brand/10 text-brand' : 'text-secondary hover:bg-canvas'"
+            @click="ctrl.selectWorkflow(wf.id)"
+          >
+            <i :class="[wf.icon, 'shrink-0 text-xs']" />
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-xs font-bold">{{ wf.name }}</span>
+              <span class="block truncate text-[10px] text-muted">
+                {{ formatDate(wf.updated_at) }} · {{ t("workflow.stepCount", { count: wf.steps.length }) }}
+              </span>
             </span>
-          </span>
-          <i
-            class="pi pi-trash shrink-0 text-xs text-muted opacity-0 hover:text-red-500 group-hover:opacity-100"
-            :title="t('workflow.delete')"
-            @click.stop="confirmDeleteWorkflow"
-          />
-        </button>
+            <i
+              class="pi pi-trash shrink-0 text-xs text-muted opacity-0 hover:text-red-500 group-hover:opacity-100"
+              :title="t('workflow.delete')"
+              @click.stop="confirmDeleteWorkflow"
+            />
+          </button>
+        </template>
       </div>
     </aside>
 
@@ -480,18 +514,6 @@ const selectPt = {
 
     <!-- Main area -->
     <div class="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-hidden">
-      <!-- Expand sidebar button -->
-      <Button
-        v-if="sidebarCollapsed"
-        icon="pi pi-angle-double-right"
-        severity="secondary"
-        outlined
-        size="small"
-        class="absolute left-3 top-3 z-10"
-        :title="t('workflow.title')"
-        @click="toggleSidebar"
-      />
-
       <!-- Empty state -->
       <div v-if="!ctrl.activeWorkflow.value" class="flex flex-1 items-center justify-center rounded-lg border border-dashed border-divider bg-panel/50 p-12">
         <div class="text-center">
@@ -505,7 +527,7 @@ const selectPt = {
         <!-- Header panel -->
         <div class="shrink-0 rounded-lg border border-divider bg-panel p-6 shadow-sm">
           <div class="flex flex-wrap items-center gap-3">
-            <i class="pi pi-sitemap text-2xl text-muted" />
+            <i :class="[ctrl.activeWorkflow.value.icon, 'text-2xl text-muted']" />
             <div class="min-w-0">
               <h2 class="page-title">{{ ctrl.activeWorkflow.value.name }}</h2>
               <p class="text-sm text-muted">{{ ctrl.activeWorkflow.value.description || t("workflow.noDescription") }}</p>
@@ -640,10 +662,26 @@ const selectPt = {
       </template>
 
       <div class="space-y-4">
-        <label class="block">
-          <span class="text-xs font-bold text-muted">{{ t("workflow.dialog.name") }} <span class="text-red-500">*</span></span>
-          <InputText v-model="wfName" class="mt-1 w-full" :placeholder="t('workflow.dialog.namePlaceholder')" autofocus />
-        </label>
+        <div class="flex items-end gap-3">
+          <label class="block min-w-0 flex-1">
+            <span class="text-xs font-bold text-muted">{{ t("workflow.dialog.name") }} <span class="text-red-500">*</span></span>
+            <InputText v-model="wfName" class="mt-1 w-full" :placeholder="t('workflow.dialog.namePlaceholder')" autofocus />
+          </label>
+          <label class="block">
+            <span class="text-xs font-bold text-muted">{{ t("workflow.step.icon") }}</span>
+            <div class="mt-1 flex items-center gap-2">
+              <div class="flex h-10 items-center gap-2 rounded-md border border-divider bg-panel px-3">
+                <i :class="[wfIcon, 'text-brand']" />
+                <InputText
+                  v-model="wfIcon"
+                  class="embedded-input w-24 border-0 !bg-transparent !p-0 !text-sm"
+                  placeholder="pi pi-sitemap"
+                />
+              </div>
+              <Button icon="pi pi-th-large" severity="secondary" outlined :title="t('workflow.step.browseIcons')" @click="showWorkflowIconPicker = true" />
+            </div>
+          </label>
+        </div>
         <label class="block">
           <span class="text-xs font-bold text-muted">{{ t("workflow.dialog.description") }}</span>
           <InputText v-model="wfDescription" class="mt-1 w-full" :placeholder="t('workflow.dialog.descriptionPlaceholder')" />
@@ -689,7 +727,7 @@ const selectPt = {
                   placeholder="pi pi-cog"
                 />
               </div>
-              <Button icon="pi pi-th-large" severity="secondary" outlined :title="t('workflow.step.browseIcons')" @click="showIconPicker = true" />
+              <Button icon="pi pi-th-large" severity="secondary" outlined :title="t('workflow.step.browseIcons')" @click="showStepIconPicker = true" />
             </div>
           </label>
         </div>
@@ -774,12 +812,20 @@ const selectPt = {
       </template>
     </Dialog>
 
-    <!-- Icon Picker Dialog -->
+    <!-- Step Icon Picker Dialog -->
     <IconPickerDialog
-      :visible="showIconPicker"
+      :visible="showStepIconPicker"
       :selected="stepIcon"
-      @update:visible="showIconPicker = $event"
+      @update:visible="showStepIconPicker = $event"
       @select="(icon: string) => (stepIcon = 'pi ' + icon)"
+    />
+
+    <!-- Workflow Icon Picker Dialog -->
+    <IconPickerDialog
+      :visible="showWorkflowIconPicker"
+      :selected="wfIcon"
+      @update:visible="showWorkflowIconPicker = $event"
+      @select="(icon: string) => (wfIcon = 'pi ' + icon)"
     />
 
     <!-- Delete Confirmation Dialog -->

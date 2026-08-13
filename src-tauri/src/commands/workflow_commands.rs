@@ -25,6 +25,7 @@ pub fn workflow_create(request: CreateWorkflowRequest) -> Result<Workflow, AppEr
         id: data.next_id,
         name: request.name,
         description: request.description,
+        icon: request.icon,
         steps: Vec::new(),
         layout: HashMap::new(),
         created_at: now.clone(),
@@ -46,6 +47,7 @@ pub fn workflow_update(id: i64, request: UpdateWorkflowRequest) -> Result<Workfl
         .ok_or_else(|| log_err(AppError::new(format!("Workflow #{id} không tồn tại"))))?;
     workflow.name = request.name;
     workflow.description = request.description;
+    workflow.icon = request.icon;
     workflow.steps = request.steps;
     workflow.updated_at = chrono::Local::now().to_rfc3339();
     let result = workflow.clone();
@@ -79,6 +81,7 @@ pub fn workflow_duplicate(id: i64) -> Result<Workflow, AppErrorPayload> {
         id: data.next_id,
         name: format!("{} (copy)", source.name),
         description: source.description,
+        icon: source.icon,
         steps: source.steps,
         layout: HashMap::new(),
         created_at: now.clone(),

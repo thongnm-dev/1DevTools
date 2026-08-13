@@ -6,7 +6,7 @@ import { workflowCreate, workflowDelete, workflowDuplicate, workflowList, workfl
 import { aiUsageListAccounts } from "@/tauri/commands/ai-usage";
 import type { AiAccount } from "@/models/ai-usage";
 import type { NodePos, Workflow, WorkflowStep, WorkflowStepType } from "@/models/workflow";
-import { STEP_TYPE_META } from "@/models/workflow";
+import { DEFAULT_WORKFLOW_ICON, STEP_TYPE_META } from "@/models/workflow";
 import { useToast } from "@/shared/composables/useToast";
 
 export function useWorkflow() {
@@ -62,10 +62,10 @@ export function useWorkflow() {
     selectedStepId.value = null;
   }
 
-  async function createWorkflow(name: string, description: string): Promise<Workflow | null> {
+  async function createWorkflow(name: string, description: string, icon?: string): Promise<Workflow | null> {
     error.value = "";
     try {
-      const wf = await workflowCreate({ name, description });
+      const wf = await workflowCreate({ name, description, icon: icon ?? DEFAULT_WORKFLOW_ICON });
       workflows.value.unshift(wf);
       activeId.value = wf.id;
       selectedStepId.value = null;
@@ -78,7 +78,7 @@ export function useWorkflow() {
     }
   }
 
-  async function updateWorkflow(id: number, patch: { name?: string; description?: string }) {
+  async function updateWorkflow(id: number, patch: { name?: string; description?: string; icon?: string }) {
     const wf = workflows.value.find((w) => w.id === id);
     if (!wf) return;
     error.value = "";
@@ -86,6 +86,7 @@ export function useWorkflow() {
       const updated = await workflowUpdate(id, {
         name: patch.name ?? wf.name,
         description: patch.description ?? wf.description,
+        icon: patch.icon ?? wf.icon,
         steps: wf.steps,
       });
       const idx = workflows.value.findIndex((w) => w.id === id);
@@ -131,7 +132,7 @@ export function useWorkflow() {
     const wf = activeWorkflow.value;
     if (!wf) return;
     try {
-      const updated = await workflowUpdate(wf.id, { name: wf.name, description: wf.description, steps: wf.steps });
+      const updated = await workflowUpdate(wf.id, { name: wf.name, description: wf.description, icon: wf.icon, steps: wf.steps });
       const idx = workflows.value.findIndex((w) => w.id === wf.id);
       if (idx !== -1) workflows.value[idx] = updated;
     } catch (e) {
