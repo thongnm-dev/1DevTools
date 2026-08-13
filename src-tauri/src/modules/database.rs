@@ -25,4 +25,6 @@ mod database {
     pub mod dev_runner_store;
     /// Lưu trữ cục bộ (JSON file) danh sách Workflow (kèm steps + layout canvas).
     pub mod workflow_store;
+    /// Lưu trữ cục bộ (JSON file) registry Workspace (đồng thời là tab bar).
+    pub mod workspace_store;
 }

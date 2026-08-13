@@ -33,4 +33,6 @@ mod commands {
     pub mod dev_runner_commands;
     /// Commands cho màn hình Workflow (CRUD + layout canvas).
     pub mod workflow_commands;
+    /// Commands cho registry Workspace (CRUD, đồng thời là tab bar).
+    pub mod workspace_commands;
 }

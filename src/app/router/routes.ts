@@ -78,6 +78,12 @@ export const appRoutes: AppRoute[] = [
     breadcrumbs: ["AI", "Usage"],
   },
   {
+    key: "workspaces",
+    path: "/workspaces",
+    title: "Workspaces",
+    subtitle: "Open and switch between multiple projects in one window.",
+  },
+  {
     key: "workflow",
     path: "/workflow",
     title: "Workflow",
@@ -160,6 +166,11 @@ export const vueRoutes: RouteRecordRaw[] = [
     path: "/ai/usage",
     component: () => import("@/features/ai-agent/components/AiUsagePage.vue"),
     meta: { key: "ai-usage" as MenuKey },
+  },
+  {
+    path: "/workspaces",
+    component: () => import("@/features/workspaces/components/WorkspacesPage.vue"),
+    meta: { key: "workspaces" as MenuKey },
   },
   {
     path: "/workflow",

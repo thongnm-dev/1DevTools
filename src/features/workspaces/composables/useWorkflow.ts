@@ -17,19 +17,12 @@ export function useWorkflow() {
   const aiAccounts = ref<AiAccount[]>([]);
   const activeId = ref<number | null>(null);
   const selectedStepId = ref<string | null>(null);
-  const searchQuery = ref("");
   const isLoading = ref(false);
   const error = ref("");
 
   const activeWorkflow = computed(() => workflows.value.find((w) => w.id === activeId.value) ?? null);
   const activeSteps = computed(() => activeWorkflow.value?.steps ?? []);
   const selectedStep = computed(() => activeSteps.value.find((s) => s.id === selectedStepId.value) ?? null);
-
-  const filteredWorkflows = computed(() => {
-    const q = searchQuery.value.trim().toLowerCase();
-    if (!q) return workflows.value;
-    return workflows.value.filter((w) => w.name.toLowerCase().includes(q) || w.description.toLowerCase().includes(q));
-  });
 
   async function loadWorkflows() {
     isLoading.value = true;
@@ -209,11 +202,9 @@ export function useWorkflow() {
     aiAccounts,
     activeId,
     selectedStepId,
-    searchQuery,
     activeWorkflow,
     activeSteps,
     selectedStep,
-    filteredWorkflows,
     isLoading,
     error,
     selectWorkflow,

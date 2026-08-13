@@ -5,11 +5,12 @@ import Button from "primevue/button";
 import Checkbox from "primevue/checkbox";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
+import Listbox from "primevue/listbox";
 import Select from "primevue/select";
 import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
 import { useWorkflow } from "../composables/useWorkflow";
-import type { NodePos, WorkflowStepType } from "@/models/workflow";
+import type { NodePos, Workflow, WorkflowStepType } from "@/models/workflow";
 import { DEFAULT_WORKFLOW_ICON, STEP_TYPE_META } from "@/models/workflow";
 
 const { t } = useI18n();
@@ -177,10 +178,10 @@ async function saveStep() {
 const showDeleteDialog = ref(false);
 const deleteTarget = ref<{ type: "workflow" | "step"; id: number | string; name: string } | null>(null);
 
-function confirmDeleteWorkflow() {
-  const wf = ctrl.activeWorkflow.value;
-  if (!wf) return;
-  deleteTarget.value = { type: "workflow", id: wf.id, name: wf.name };
+function confirmDeleteWorkflow(wf?: Workflow) {
+  const target = wf ?? ctrl.activeWorkflow.value;
+  if (!target) return;
+  deleteTarget.value = { type: "workflow", id: target.id, name: target.name };
   showDeleteDialog.value = true;
 }
 
@@ -412,8 +413,18 @@ function stopNodeDrag() {
 
 const selectPt = {
   root: { class: "!bg-panel !border-divider" },
-  label: { class: "!text-xs !py-1.5 !text-ink" },
+  label: { class: "!flex !items-center !text-xs !py-1.5 !text-ink" },
   option: { class: "!text-xs" },
+};
+
+const listboxPt = {
+  root: { class: "!flex !min-h-0 !flex-1 !flex-col !border-0 !bg-transparent !shadow-none" },
+  header: { class: "!border-0 !bg-transparent !p-0 !pb-2" },
+  pcFilter: { class: "embedded-input w-full !bg-canvas !text-xs" },
+  listContainer: { class: "!flex-1 !p-0" },
+  list: { class: "!gap-1 !p-0" },
+  option: { class: "group !items-center !rounded-md !px-2 !py-2" },
+  emptyMessage: { class: "!px-2 !py-4 !text-center !text-xs !text-muted" },
 };
 </script>
 
@@ -440,65 +451,65 @@ const selectPt = {
         </template>
       </div>
 
-      <div v-if="!sidebarCollapsed" class="border-b border-divider px-3 py-2">
-        <span class="flex items-center gap-2 rounded-md border border-divider bg-canvas px-2">
-          <i class="pi pi-search text-xs text-muted" />
-          <InputText
-            v-model="ctrl.searchQuery.value"
-            class="embedded-input w-full border-0 !bg-transparent !py-1.5 !text-xs"
-            :placeholder="t('workflow.searchPlaceholder')"
-          />
-        </span>
-      </div>
-
-      <div class="flex-1 overflow-auto p-2" :class="sidebarCollapsed ? 'flex flex-col items-center space-y-1' : 'space-y-1'">
+      <div class="flex min-h-0 flex-1 flex-col overflow-auto p-2" :class="{ 'items-center': sidebarCollapsed }">
         <template v-if="sidebarCollapsed">
-          <button
-            v-for="wf in ctrl.filteredWorkflows.value"
+          <Button
+            v-for="wf in ctrl.workflows.value"
             :key="wf.id"
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors"
-            :class="wf.id === ctrl.activeId.value ? 'bg-brand/10 text-brand' : 'text-secondary hover:bg-canvas'"
+            :icon="wf.icon"
+            text
+            rounded
+            size="small"
+            class="mb-1"
+            :class="wf.id === ctrl.activeId.value ? '!bg-brand/10 !text-brand' : ''"
             :title="wf.name"
             @click="ctrl.selectWorkflow(wf.id)"
-          >
-            <i :class="wf.icon" />
-          </button>
-          <button
-            class="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-dashed border-divider text-muted transition-colors hover:border-brand hover:text-brand"
+          />
+          <Button
+            icon="pi pi-plus"
+            text
+            rounded
+            size="small"
+            severity="secondary"
             :title="t('workflow.newWorkflow')"
             @click="openCreateWorkflowDialog"
-          >
-            <i class="pi pi-plus text-xs" />
-          </button>
+          />
         </template>
-        <template v-else>
-          <div v-if="ctrl.isLoading.value" class="px-2 py-4 text-center text-xs text-muted">{{ t("common.loading") }}</div>
-
-          <p v-else-if="ctrl.filteredWorkflows.value.length === 0" class="px-2 py-4 text-center text-xs text-muted">
-            {{ t("workflow.empty") }}
-          </p>
-
-          <button
-            v-for="wf in ctrl.filteredWorkflows.value"
-            :key="wf.id"
-            class="group flex w-full items-center gap-2 rounded-md px-2 py-2 text-left transition-colors"
-            :class="wf.id === ctrl.activeId.value ? 'bg-brand/10 text-brand' : 'text-secondary hover:bg-canvas'"
-            @click="ctrl.selectWorkflow(wf.id)"
-          >
-            <i :class="[wf.icon, 'shrink-0 text-xs']" />
+        <div v-else-if="ctrl.isLoading.value" class="px-2 py-4 text-center text-xs text-muted">{{ t("common.loading") }}</div>
+        <Listbox
+          v-else
+          :model-value="ctrl.activeId.value"
+          :options="ctrl.workflows.value"
+          option-label="name"
+          option-value="id"
+          filter
+          :filter-placeholder="t('workflow.searchPlaceholder')"
+          :filter-fields="['name', 'description']"
+          :pt="listboxPt"
+          @update:model-value="(id: number | null) => id !== null && ctrl.selectWorkflow(id)"
+        >
+          <template #option="{ option }">
+            <i :class="[option.icon, 'shrink-0 text-xs']" />
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-xs font-bold">{{ wf.name }}</span>
+              <span class="block truncate text-xs font-bold">{{ option.name }}</span>
               <span class="block truncate text-[10px] text-muted">
-                {{ formatDate(wf.updated_at) }} · {{ t("workflow.stepCount", { count: wf.steps.length }) }}
+                {{ formatDate(option.updated_at) }} · {{ t("workflow.stepCount", { count: option.steps.length }) }}
               </span>
             </span>
-            <i
-              class="pi pi-trash shrink-0 text-xs text-muted opacity-0 hover:text-red-500 group-hover:opacity-100"
+            <Button
+              icon="pi pi-trash"
+              text
+              rounded
+              size="small"
+              severity="danger"
+              class="!h-6 !w-6 shrink-0 opacity-0 group-hover:opacity-100"
               :title="t('workflow.delete')"
-              @click.stop="confirmDeleteWorkflow"
+              @click.stop="confirmDeleteWorkflow(option)"
             />
-          </button>
-        </template>
+          </template>
+          <template #emptyfilter>{{ t("workflow.empty") }}</template>
+          <template #empty>{{ t("workflow.empty") }}</template>
+        </Listbox>
       </div>
     </aside>
 
@@ -536,7 +547,7 @@ const selectPt = {
               <Button icon="pi pi-objects-column" :label="t('workflow.autoLayout')" severity="secondary" size="small" @click="autoLayout" />
               <Button icon="pi pi-pencil" :label="t('workflow.edit')" severity="secondary" size="small" @click="openEditWorkflowDialog" />
               <Button icon="pi pi-copy" :label="t('workflow.duplicate')" severity="secondary" size="small" @click="ctrl.duplicateWorkflow(ctrl.activeId.value!)" />
-              <Button icon="pi pi-trash" :label="t('workflow.delete')" severity="danger" text size="small" @click="confirmDeleteWorkflow" />
+              <Button icon="pi pi-trash" :label="t('workflow.delete')" severity="danger" text size="small" @click="confirmDeleteWorkflow()" />
             </div>
           </div>
         </div>
@@ -667,7 +678,7 @@ const selectPt = {
             <span class="text-xs font-bold text-muted">{{ t("workflow.dialog.name") }} <span class="text-red-500">*</span></span>
             <InputText v-model="wfName" class="mt-1 w-full" :placeholder="t('workflow.dialog.namePlaceholder')" autofocus />
           </label>
-          <label class="block">
+          <div class="block">
             <span class="text-xs font-bold text-muted">{{ t("workflow.step.icon") }}</span>
             <div class="mt-1 flex items-center gap-2">
               <div class="flex h-10 items-center gap-2 rounded-md border border-divider bg-panel px-3">
@@ -680,7 +691,7 @@ const selectPt = {
               </div>
               <Button icon="pi pi-th-large" severity="secondary" outlined :title="t('workflow.step.browseIcons')" @click="showWorkflowIconPicker = true" />
             </div>
-          </label>
+          </div>
         </div>
         <label class="block">
           <span class="text-xs font-bold text-muted">{{ t("workflow.dialog.description") }}</span>
@@ -690,7 +701,10 @@ const selectPt = {
 
       <template #footer>
         <DialogFooter
+          cancel-icon="pi pi-times"
+          cancel-severity="danger"
           :confirm-label="editingWorkflowId ? t('workflow.dialog.save') : t('workflow.dialog.create')"
+          :confirm-icon="editingWorkflowId ? 'pi pi-check' : 'pi pi-plus'"
           :confirm-disabled="!wfName.trim()"
           @cancel="showWorkflowDialog = false"
           @confirm="saveWorkflow"
@@ -716,7 +730,7 @@ const selectPt = {
             <span class="text-xs font-bold text-muted">{{ t("workflow.step.name") }} <span class="text-red-500">*</span></span>
             <InputText v-model="stepName" class="mt-1 w-full" :placeholder="t('workflow.step.namePlaceholder')" autofocus />
           </label>
-          <label class="block">
+          <div class="block">
             <span class="text-xs font-bold text-muted">{{ t("workflow.step.icon") }}</span>
             <div class="mt-1 flex items-center gap-2">
               <div class="flex h-10 items-center gap-2 rounded-md border border-divider bg-panel px-3">
@@ -729,7 +743,7 @@ const selectPt = {
               </div>
               <Button icon="pi pi-th-large" severity="secondary" outlined :title="t('workflow.step.browseIcons')" @click="showStepIconPicker = true" />
             </div>
-          </label>
+          </div>
         </div>
         <label class="block">
           <span class="text-xs font-bold text-muted">{{ t("workflow.step.type") }}</span>
@@ -804,7 +818,10 @@ const selectPt = {
 
       <template #footer>
         <DialogFooter
+          cancel-icon="pi pi-times"
+          cancel-severity="danger"
           :confirm-label="editingStepId ? t('workflow.step.save') : t('workflow.step.add')"
+          :confirm-icon="editingStepId ? 'pi pi-check' : 'pi pi-plus'"
           :confirm-disabled="!stepName.trim()"
           @cancel="showStepDialog = false"
           @confirm="saveStep"
@@ -843,7 +860,15 @@ const selectPt = {
       <p class="text-sm text-ink">{{ t("workflow.deleteConfirm.message", { name: deleteTarget?.name ?? "" }) }}</p>
 
       <template #footer>
-        <DialogFooter :confirm-label="t('workflow.delete')" confirm-severity="danger" @cancel="showDeleteDialog = false" @confirm="executeDelete" />
+        <DialogFooter
+          cancel-icon="pi pi-times"
+          cancel-severity="danger"
+          :confirm-label="t('workflow.delete')"
+          confirm-icon="pi pi-trash"
+          confirm-severity="danger"
+          @cancel="showDeleteDialog = false"
+          @confirm="executeDelete"
+        />
       </template>
     </Dialog>
   </div>

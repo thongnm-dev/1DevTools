@@ -1148,6 +1148,37 @@ export default {
   markdownPreview: {
     title: "Markdown Preview",
   },
+  workspaces: {
+    title: "Workspaces",
+    newWorkspace: "New workspace",
+    close: "Close",
+    edit: "Edit",
+    emptyState: "No workspace open. Add a project to get started.",
+    comingSoon: "Git, Terminal, Runner, and Agent panels will be embedded directly here in a later phase. For now, use the quick actions above.",
+    action: {
+      terminal: "Open Terminal",
+      git: "Open in Git",
+      vscode: "Open in VS Code",
+      explorer: "Show in Explorer",
+    },
+    dialog: {
+      newTitle: "New Workspace",
+      editTitle: "Edit Workspace",
+      project: "Project",
+      projectPlaceholder: "Select an added project",
+      browse: "Browse folder...",
+      selectFolderTitle: "Select project folder",
+      name: "Name",
+      namePlaceholder: "e.g. My Project",
+      icon: "Icon",
+      browseIcons: "Browse icons",
+      create: "Create",
+    },
+    toast: {
+      created: "Workspace created",
+      closed: "Workspace closed",
+    },
+  },
   workflow: {
     title: "Workflows",
     searchPlaceholder: "Search workflows...",

@@ -29,4 +29,6 @@ mod models {
     pub mod dev_runner;
     /// Model cho màn hình Workflow (chuỗi step tự động hoá skill/prompt/runner/terminal).
     pub mod workflow;
+    /// Model cho registry Workspace (mở nhiều project cùng lúc, đồng thời là tab bar).
+    pub mod workspace;
 }

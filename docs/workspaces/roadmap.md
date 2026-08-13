@@ -37,7 +37,7 @@ workspace không ở tab active, không phải load lại khi chuyển tab.
 
 ## 4. Lộ trình theo phase
 
-1. **Phase 1 — Workspace registry**: `workspace_store.rs` (JSON, giống `git_repo_store`) + UI tab bar; mỗi workspace trỏ tới 1 `GitRepo.path` có sẵn.
+1. **Phase 1 — Workspace registry** ✅ **Đã làm**: `workspace_store.rs` + `workspace_commands.rs` (JSON, giống `git_repo_store`, dedupe theo `project_path`) + `WorkspacesPage.vue` (tab bar MRU, dialog tạo/sửa workspace — chọn từ `GitRepo` đã add hoặc browse folder mới, icon picker). Nội dung mỗi tab hiện là panel overview (icon/tên/path + 4 quick action: Terminal/Git/VS Code/Explorer) — CHƯA embed Git/Terminal/Runner thật, việc đó thuộc Phase 2.
 2. **Phase 2 — Chạy nền thật sự**: refactor `useGit.ts` → instance theo `workspaceId`; sửa `git_watch_service.rs` → keyed map theo path; gắn Terminal/Runner (đã sẵn multi-instance) vào từng workspace.
 3. **Phase 3 — Agent/Skill/Prompt**: picker agent/provider (tái dùng `ai_account_store`); thêm `skill_store.rs` + `prompt_store.rs` (CRUD).
 4. **Phase 4 — Workflow/Automation**: `workflow_store.rs` (chuỗi step + canvas layout); trigger tự động từ git-watch event; thêm field `kind` vào `DevCommand` cho Testing.

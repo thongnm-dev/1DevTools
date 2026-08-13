@@ -1152,6 +1152,37 @@ export default {
   markdownPreview: {
     title: "Xem Markdown",
   },
+  workspaces: {
+    title: "Workspaces",
+    newWorkspace: "Workspace mới",
+    close: "Đóng",
+    edit: "Sửa",
+    emptyState: "Chưa mở workspace nào. Thêm project để bắt đầu.",
+    comingSoon: "Panel Git, Terminal, Runner, Agent sẽ được gắn trực tiếp vào đây ở phase sau. Hiện tại dùng các quick action ở trên.",
+    action: {
+      terminal: "Mở Terminal",
+      git: "Mở trong Git",
+      vscode: "Mở bằng VS Code",
+      explorer: "Hiện trong Explorer",
+    },
+    dialog: {
+      newTitle: "Workspace mới",
+      editTitle: "Sửa Workspace",
+      project: "Project",
+      projectPlaceholder: "Chọn 1 project đã thêm",
+      browse: "Chọn thư mục...",
+      selectFolderTitle: "Chọn thư mục project",
+      name: "Tên",
+      namePlaceholder: "VD: My Project",
+      icon: "Icon",
+      browseIcons: "Chọn icon",
+      create: "Tạo",
+    },
+    toast: {
+      created: "Đã tạo workspace",
+      closed: "Đã đóng workspace",
+    },
+  },
   workflow: {
     title: "Workflow",
     searchPlaceholder: "Tìm workflow...",

@@ -39,6 +39,7 @@ ON CONFLICT (user_id, role_id) DO NOTHING;
 -- ── Menu configuration (khớp route của app) ────────────────────────────────
 INSERT INTO menu_configs (key, title, path, icon, menu_group, is_visible, display_order) VALUES
     ('overview',        'Overview',    '/overview',               'pi-home',       '—',          TRUE, 1),
+    ('workspaces',      'Workspaces',  '/workspaces',             'pi-th-large',   '—',          TRUE, 5),
     ('git',             'Git',         '/git',                    'pi-github',     '—',          TRUE, 10),
     ('terminal',        'Terminal',    '/terminal',               'pi-desktop',    '—',          TRUE, 11),
     ('docker',          'Docker',      '/docker',                 'pi-server',     '—',          TRUE, 12),
