@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import Button from "primevue/button";
 import InputText from "primevue/inputtext";
 import Popover from "primevue/popover";
 import Textarea from "primevue/textarea";
@@ -110,6 +109,13 @@ function handleMoreAction(name: string) {
   }
 }
 
+function handleCommitKeydown(e: KeyboardEvent) {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    if (git.canCommit.value) void git.commit();
+  }
+}
+
 function lineClass(kind: string): string {
   switch (kind) {
     case "add":
@@ -196,14 +202,13 @@ function lineClass(kind: string): string {
 
     <!-- Commit box -->
     <div class="flex shrink-0 items-end gap-2 rounded-lg border border-divider bg-canvas p-2">
-      <Textarea v-model="git.commitMessage.value" rows="2" class="!flex-1 !text-xs" :placeholder="t('workspaces.git.commitPlaceholder')" />
-      <Button
-        icon="pi pi-check"
-        :label="t('workspaces.git.commit')"
-        size="small"
-        :disabled="!git.canCommit.value"
-        :loading="git.committing.value"
-        @click="git.commit()"
+      <Textarea
+        v-model="git.commitMessage.value"
+        rows="2"
+        class="!flex-1 !text-xs"
+        :placeholder="t('workspaces.git.commitPlaceholder')"
+        :disabled="git.committing.value"
+        @keydown="handleCommitKeydown"
       />
     </div>
 

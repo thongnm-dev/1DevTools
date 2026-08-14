@@ -51,6 +51,9 @@ interface TermEntry {
   fit: FitAddon;
   ro: ResizeObserver | null;
   sessionId: string | null;
+  /** Container DOM hiện tại đã `open()` — dùng để bỏ qua các lần gọi `bindContainer` lặp lại
+   * với cùng phần tử (vd. do Vue gọi lại function ref trên mỗi lần re-render). */
+  el: HTMLElement | null;
 }
 
 /** Giải mã base64 (byte thô từ PTY) thành `Uint8Array` để nạp vào xterm. */
@@ -142,11 +145,18 @@ export function useTerminal() {
   async function bindContainer(key: string, el: HTMLElement) {
     const existing = entries.get(key);
     if (existing) {
-      // Component (vd. TerminalPage) có thể đã unmount/remount — container DOM cũ đã bị
-      // hủy. `open()` lại vào container hiện tại để "chuyển nhà" instance xterm sẵn có
-      // thay vì tạo phiên mới, giữ nguyên buffer/scrollback và phiên PTY đang chạy.
+      // Vue gọi lại function ref (`:ref="(el) => ..."`) trên MỌI lần re-render của component
+      // chứa nó (vd. khi đổi tab khiến `v-show`/`:class` cập nhật), không chỉ lúc mount —
+      // nếu container chưa đổi thì bỏ qua, tránh gọi lại `term.open()` làm hỏng vùng render
+      // hiện có (xoá sạch màn hình về màu đen dù buffer/PTY vẫn còn sống).
+      if (existing.el === el) return;
+
+      // Container DOM cũ đã đổi thật sự (component unmount/remount, hoặc "chuyển nhà" sang
+      // container khác) — `open()` lại vào container mới để giữ nguyên buffer/scrollback và
+      // phiên PTY đang chạy thay vì tạo phiên mới.
       existing.ro?.disconnect();
       existing.term.open(el);
+      existing.el = el;
       const ro = new ResizeObserver(() => fit(key));
       ro.observe(el);
       existing.ro = ro;
@@ -168,7 +178,7 @@ export function useTerminal() {
     term.open(el);
     fitAddon.fit();
 
-    const entry: TermEntry = { term, fit: fitAddon, ro: null, sessionId: null };
+    const entry: TermEntry = { term, fit: fitAddon, ro: null, sessionId: null, el };
     entries.set(key, entry);
 
     // Gõ phím → gửi xuống PTY.
@@ -241,10 +251,17 @@ export function useTerminal() {
   function fit(key: string) {
     const entry = entries.get(key);
     if (!entry) return;
+    // Container đang ẩn (vd. tab không active, `display: none` qua v-show) có kích thước 0,
+    // nhưng `FitAddon.fit()` KHÔNG throw trong trường hợp đó — nó tự kẹp về tối thiểu 2 cột x
+    // 1 hàng rồi gọi `term.resize()` thật sự, xoá sạch nội dung đang hiển thị (render service
+    // bị clear). ResizeObserver vẫn báo resize khi container ẩn/hiện (0 <-> kích thước thật),
+    // nên phải tự chặn ở đây: bỏ qua khi container không có kích thước thật, chỉ fit khi
+    // container đang thực sự hiển thị.
+    if (!entry.el || entry.el.offsetWidth === 0 || entry.el.offsetHeight === 0) return;
     try {
       entry.fit.fit();
     } catch {
-      // Container có thể đang ẩn (kích thước 0) — bỏ qua, sẽ fit lại khi hiện.
+      // Phòng hờ các trường hợp khác khiến fit() throw.
     }
   }
 

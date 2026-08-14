@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
 import { canUseTauriRuntime } from "@/tauri/commands/_base";
 import { detectDevCommands, loadCustomCommands, saveCustomCommands } from "@/tauri/commands/dev_runner";
 import { useTerminal } from "@/features/terminal/composables/useTerminal";
@@ -12,9 +11,9 @@ import type { GitApi } from "../composables/useGit";
 import GitRunnerAddDialog from "./GitRunnerAddDialog.vue";
 
 const props = defineProps<{ git: GitApi }>();
+const emit = defineEmits<{ run: [key: string] }>();
 
 const { t } = useI18n();
-const router = useRouter();
 const term = useTerminal();
 const runtimeAvailable = canUseTauriRuntime();
 
@@ -105,8 +104,8 @@ function runCommand(cmd: DevCommand) {
   const path = repoPath.value;
   if (!path) return;
   const repoName = props.git.activeRepo.value?.name ?? path.split(/[\\/]/).filter(Boolean).pop() ?? "runner";
-  term.addTab({ title: `${cmd.label} · ${repoName}`, startDir: path, autoCommand: cmd.command });
-  void router.push("/terminal");
+  const key = term.addTab({ title: `${cmd.label} · ${repoName}`, startDir: path, autoCommand: cmd.command });
+  if (key) emit("run", key);
 }
 
 function openAddDialog() {

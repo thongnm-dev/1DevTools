@@ -41,7 +41,7 @@ function repoFor(ws: Workspace): GitRepo | null {
 
 /** Đóng workspace — dọn theo cả phiên terminal riêng của nó ở sidebar (nếu có). */
 async function closeWorkspace(ws: Workspace) {
-  await workspaceTerminal.closeTabFor(ws.id);
+  await workspaceTerminal.closeAllTabsFor(ws.id);
   await ctrl.removeWorkspace(ws.id);
 }
 </script>

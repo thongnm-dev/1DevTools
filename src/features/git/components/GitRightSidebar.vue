@@ -17,7 +17,7 @@ const props = defineProps<{
   isResizing: boolean;
 }>();
 
-const emit = defineEmits<{ resize: [e: MouseEvent] }>();
+const emit = defineEmits<{ resize: [e: MouseEvent]; run: [key: string] }>();
 
 const stored = localStorage.getItem(ACTIVE_KEY);
 const activePanel = ref<PanelId | null>(stored === "explorer" || stored === "runner" ? stored : "explorer");
@@ -54,7 +54,12 @@ defineExpose({ visible: panelVisible, panelRef });
       :style="{ width: width + 'px' }"
     >
       <FileTreePanel v-if="activePanel === 'explorer'" :root="root" class="min-h-0 flex-1" />
-      <GitRunnerPanel v-else-if="activePanel === 'runner'" :git="git" class="min-h-0 flex-1" />
+      <GitRunnerPanel
+        v-else-if="activePanel === 'runner'"
+        :git="git"
+        class="min-h-0 flex-1"
+        @run="emit('run', $event)"
+      />
     </div>
 
     <!-- Activity bar (always visible) -->

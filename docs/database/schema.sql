@@ -60,6 +60,15 @@ CREATE TABLE IF NOT EXISTS user_settings (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS master_data (
+    id          SERIAL       PRIMARY KEY,
+    name        VARCHAR(100) NOT NULL UNIQUE,
+    keygroup       VARCHAR(50)  NOT NULL DEFAULT '',
+    description TEXT         NOT NULL DEFAULT '',
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
 -- ============================================================================
 -- MENU & PERMISSIONS
 -- ============================================================================
@@ -95,6 +104,88 @@ CREATE TABLE IF NOT EXISTS user_menu_permissions (
 
 CREATE INDEX IF NOT EXISTS idx_role_menu_perm_menu ON role_menu_permissions(menu_key);
 CREATE INDEX IF NOT EXISTS idx_user_menu_perm_menu ON user_menu_permissions(menu_key);
+
+-- ============================================================================
+-- WORKFLOW
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS workflows (
+    id          SERIAL       PRIMARY KEY,
+    name        VARCHAR(200) NOT NULL,
+    description TEXT         NOT NULL DEFAULT '',
+    layout      JSONB        NOT NULL DEFAULT '{}',
+    created_by  VARCHAR(100) NOT NULL,
+    created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_workflows_created_by ON workflows(created_by);
+
+-- Danh mục model AI để chọn cho từng workflow step. Hiện chỉ đối ứng provider 'claude'.
+CREATE TABLE IF NOT EXISTS ai_models (
+    id       SERIAL       PRIMARY KEY,
+    provider VARCHAR(50)  NOT NULL DEFAULT 'claude',
+    model    VARCHAR(100) NOT NULL,
+    version  VARCHAR(50)  NOT NULL DEFAULT '',
+    UNIQUE (provider, model, version)
+);
+
+CREATE TABLE IF NOT EXISTS workflow_steps (
+    id            SERIAL       PRIMARY KEY,
+    workflow_id   INTEGER      NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+    name          VARCHAR(200) NOT NULL,
+    step_type     VARCHAR(20)  NOT NULL DEFAULT '',
+    skill_name    VARCHAR(200) NOT NULL DEFAULT '',
+    description   TEXT         NOT NULL DEFAULT '',
+    icon          VARCHAR(50)  NOT NULL DEFAULT 'pi pi-cog',
+    step_order    INTEGER      NOT NULL DEFAULT 0,
+    is_latest_step BOOLEAN     NOT NULL DEFAULT FALSE,
+    model_id      INTEGER      REFERENCES ai_models(id) ON DELETE SET NULL,
+    created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_workflow_steps_workflow ON workflow_steps(workflow_id);
+
+CREATE TABLE IF NOT EXISTS tasks (
+    id           SERIAL       PRIMARY KEY,
+    task_cd      VARCHAR(100) NOT NULL,
+    task_name    VARCHAR(300) NOT NULL DEFAULT '',
+    category_id     VARCHAR(30)  NOT NULL DEFAULT '',
+    is_complete  BOOLEAN      NOT NULL DEFAULT FALSE,
+    completed_at TIMESTAMPTZ,
+    created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_by   VARCHAR(100) NOT NULL,
+    updated_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_by   VARCHAR(100) NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_tasks_task_cd ON tasks(task_cd);
+
+CREATE TABLE IF NOT EXISTS task_wf_proc (
+    id             SERIAL       PRIMARY KEY,
+    task_id        INTEGER      NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    wf_id          INTEGER      NOT NULL REFERENCES workflows(id) ON DELETE CASCADE,
+    latest_step_id INTEGER      REFERENCES workflow_steps(id) ON DELETE SET NULL,
+    created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_by     VARCHAR(100) NOT NULL,
+    updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_by     VARCHAR(100) NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_wf_proc_task ON task_wf_proc(task_id);
+
+CREATE TABLE IF NOT EXISTS task_wf_proc_step (
+    id              SERIAL       PRIMARY KEY,
+    wf_proc_id      INTEGER      NOT NULL REFERENCES task_wf_proc(id) ON DELETE CASCADE,
+    wf_step_id      INTEGER      NOT NULL REFERENCES workflow_steps(id) ON DELETE CASCADE,
+    status          VARCHAR(20)  NOT NULL DEFAULT '',
+    created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    created_by      VARCHAR(100) NOT NULL,
+    updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    updated_by      VARCHAR(100) NOT NULL DEFAULT ''
+);
+
+CREATE INDEX IF NOT EXISTS idx_task_wf_proc_step_proc ON task_wf_proc_step(wf_proc_id);
 
 -- ============================================================================
 -- TRIGGERS — auto-update updated_at

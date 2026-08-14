@@ -30,7 +30,7 @@ export function useAppShell() {
   });
   const message = ref("");
   const messageMode = ref<MessageMode>("info");
-  const isSidebarCollapsed = ref(false);
+  const isSidebarCollapsed = ref(true);
   const isBootstrapping = ref(true);
 
   const router = useRouter();

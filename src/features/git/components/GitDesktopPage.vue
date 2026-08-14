@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRouter } from "vue-router";
 import Button from "primevue/button";
 import Checkbox from "primevue/checkbox";
 import InputText from "primevue/inputtext";
 import Textarea from "primevue/textarea";
+import "@xterm/xterm/css/xterm.css";
 
 import { useGit } from "../composables/useGit";
+import { useTerminal } from "@/features/terminal/composables/useTerminal";
 import type { GitBranch, GitCommit, GitFileChange, GitRepo } from "@/models/git";
 import { statusMeta, baseName, dirName } from "../utils/fileStatus";
 import { guessBase } from "../utils/gitRefs";
@@ -20,7 +23,6 @@ import GitRevertDialog from "./GitRevertDialog.vue";
 import GitWorktreeCreateDialog from "./GitWorktreeCreateDialog.vue";
 import GitWorktreeListDialog from "./GitWorktreeListDialog.vue";
 import GitStashListDialog from "./GitStashListDialog.vue";
-import GitStashSaveDialog from "./GitStashSaveDialog.vue";
 import GitTagDialog from "./GitTagDialog.vue";
 import GitTagListDialog from "./GitTagListDialog.vue";
 import GitMergeDialog from "./GitMergeDialog.vue";
@@ -41,11 +43,35 @@ import GitRightSidebar from "./GitRightSidebar.vue";
 import GitMoreActionsMenu from "./GitMoreActionsMenu.vue";
 
 const { t } = useI18n();
+const router = useRouter();
 const git = useGit();
+const term = useTerminal();
 
 onMounted(() => {
   git.loadRepos();
 });
+
+// === Runner output — hiển thị ngay dưới vùng diff khi bấm Run ở panel Runner ===
+const runnerTabKey = ref<string | null>(null);
+const runnerTab = computed(() => term.tabs.value.find((tb) => tb.key === runnerTabKey.value) ?? null);
+
+function handleRunnerRun(key: string) {
+  runnerTabKey.value = key;
+  git.switchTab("changes");
+}
+
+function closeRunnerPanel() {
+  runnerTabKey.value = null;
+}
+
+function bindRunnerTerminal(el: Element | null) {
+  if (runnerTabKey.value && el instanceof HTMLElement) void term.bindContainer(runnerTabKey.value, el);
+}
+
+function openRunnerInTerminalPage() {
+  if (runnerTabKey.value) term.setActive(runnerTabKey.value);
+  void router.push("/terminal");
+}
 
 // === Popovers (repo picker / branch picker) ===
 const repoMenuOpen = ref(false);
@@ -233,12 +259,8 @@ function openWorktreeList() {
 
 // === Stash ===
 const stashListDialogVisible = ref(false);
-const stashSaveDialogVisible = ref(false);
 function openStashList() {
   stashListDialogVisible.value = true;
-}
-function openStashSave() {
-  stashSaveDialogVisible.value = true;
 }
 
 // === Tag ===
@@ -614,15 +636,75 @@ onUnmounted(closeCommitMenu);
           </div>
         </div>
 
-        <!-- Fetch -->
-        <button
-          v-if="git.activeRepo.value"
-          class="flex h-7 items-center gap-1 rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand disabled:opacity-50"
-          :disabled="git.syncing.value"
-          @click="git.fetch()"
-        >
-          <i class="pi text-[11px]" :class="git.syncing.value ? 'pi-spinner pi-spin' : 'pi-refresh'" />
-        </button>
+        <template v-if="git.activeRepo.value">
+          <div class="mx-0.5 h-4 w-px bg-divider" />
+
+          <!-- Fetch / Pull / Push -->
+          <button
+            class="flex h-7 items-center gap-1.5 rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="git.syncing.value"
+            :title="t('git.page.fetch')"
+            @click="git.fetch()"
+          >
+            <i class="pi text-[11px]" :class="git.syncing.value ? 'pi-spinner pi-spin' : 'pi-cloud-download'" />
+            <span>{{ t("git.page.fetch") }}</span>
+          </button>
+          <button
+            class="flex h-7 items-center gap-1.5 rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="git.syncing.value"
+            :title="t('git.page.pull')"
+            @click="git.pull()"
+          >
+            <i class="pi pi-arrow-down text-[11px]" />
+            <span>{{ t("git.page.pull") }}</span>
+            <span v-if="git.info.value?.behind" class="badge-info">{{ git.info.value.behind }}</span>
+          </button>
+          <button
+            class="flex h-7 items-center gap-1.5 rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="git.syncing.value"
+            :title="t('git.page.push')"
+            @click="git.push()"
+          >
+            <i class="pi pi-arrow-up text-[11px]" />
+            <span>{{ t("git.page.push") }}</span>
+            <span v-if="git.info.value?.ahead" class="rounded-full bg-brand/15 px-1 text-[9px] font-bold text-brand">{{ git.info.value.ahead }}</span>
+          </button>
+
+          <div class="mx-0.5 h-4 w-px bg-divider" />
+
+          <!-- Stash / Pop stash -->
+          <button
+            class="flex h-7 items-center gap-1.5 rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="git.syncing.value || !git.hasChanges.value"
+            :title="t('git.page.stashChanges')"
+            @click="git.stashSave('')"
+          >
+            <i class="pi pi-inbox text-[11px]" />
+            <span>{{ t("git.page.stash") }}</span>
+          </button>
+          <button
+            class="flex h-7 items-center gap-1.5 rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="git.syncing.value || !git.stashes.value.length"
+            :title="t('git.page.popStash')"
+            @click="git.stashApply(git.stashes.value[0]?.reference ?? '', true)"
+          >
+            <i class="pi pi-arrow-circle-up text-[11px]" />
+            <span>{{ t("git.page.popStash") }}</span>
+          </button>
+
+          <div class="mx-0.5 h-4 w-px bg-divider" />
+
+          <!-- Undo commit -->
+          <button
+            class="flex h-7 items-center gap-1.5 rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="git.committing.value"
+            :title="t('git.page.undoCommit')"
+            @click="git.undoLastCommit()"
+          >
+            <i class="pi pi-undo text-[11px]" />
+            <span>{{ t("git.page.undoCommit") }}</span>
+          </button>
+        </template>
 
         <!-- Trạng thái bận / tiến trình -->
         <div v-if="git.busyMessage.value" class="ml-2 flex items-center gap-2 text-[11px] text-muted">
@@ -670,22 +752,6 @@ onUnmounted(closeCommitMenu);
               @click="git.showInFolder(git.info.value?.path || git.activeRepo.value.path)"
             >
               <i class="pi pi-folder-open text-[11px]" />
-            </button>
-            <button
-              class="flex h-7 items-center gap-1 rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand disabled:opacity-50"
-              :disabled="git.syncing.value"
-              @click="git.pull()"
-            >
-              <i class="pi pi-arrow-down text-[11px]" />
-              <span v-if="git.info.value?.behind" class="badge-info">{{ git.info.value.behind }}</span>
-            </button>
-            <button
-              class="flex h-7 items-center gap-1 rounded-md bg-brand px-2.5 font-medium text-white transition-colors hover:brightness-110 disabled:opacity-50"
-              :disabled="git.syncing.value"
-              @click="git.push()"
-            >
-              <i class="pi pi-arrow-up text-[11px]" />
-              <span v-if="git.info.value?.ahead" class="rounded-full bg-white/25 px-1 text-[9px] font-bold">{{ git.info.value.ahead }}</span>
             </button>
 
             <!-- More actions -->
@@ -915,16 +981,6 @@ onUnmounted(closeCommitMenu);
                   {{ t("git.page.commitTo") }}
                 </Button>
                 <Button
-                  size="small"
-                  outlined
-                  severity="secondary"
-                  :disabled="!git.hasChanges.value"
-                  :title="t('git.page.stashChanges')"
-                  @click="openStashSave"
-                >
-                  <i class="pi pi-inbox" />
-                </Button>
-                <Button
                   v-if="git.stashes.value.length"
                   size="small"
                   outlined
@@ -951,8 +1007,9 @@ onUnmounted(closeCommitMenu);
             <div class="h-8 w-0.5 rounded-full bg-divider" :class="isResizing ? 'bg-brand' : ''" />
           </div>
 
-          <!-- Right: diff -->
-          <div class="flex min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm">
+          <!-- Right: diff (+ runner output below) -->
+          <div class="flex min-w-0 flex-1 flex-col gap-2 overflow-hidden">
+          <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm">
             <div v-if="git.selectedFile.value" class="flex items-center gap-2 border-b border-divider bg-canvas px-3 py-2">
               <i class="pi pi-file text-xs text-muted" />
               <span class="truncate font-mono text-xs text-ink">{{ git.selectedFile.value.path }}</span>
@@ -1008,6 +1065,40 @@ onUnmounted(closeCommitMenu);
             </div>
           </div>
 
+          <!-- Runner output — hiện ngay dưới vùng diff khi bấm Run ở panel Runner -->
+          <div
+            v-if="runnerTabKey && runnerTab"
+            class="flex shrink-0 flex-col overflow-hidden rounded-lg border border-divider shadow-sm"
+            style="height: 260px; min-height: 120px; max-height: 70vh; resize: vertical; background: #0b0f19"
+          >
+            <div class="flex shrink-0 items-center gap-2 border-b border-divider/50 bg-panel px-3 py-1.5">
+              <i class="pi pi-desktop shrink-0 text-[11px] text-brand" />
+              <span class="min-w-0 flex-1 truncate text-xs font-medium text-ink">{{ runnerTab.title }}</span>
+              <span v-if="runnerTab.exited" class="shrink-0 text-[10px]" :class="runnerTab.exitCode === 0 ? 'text-emerald-500' : 'text-red-500'">
+                {{ runnerTab.exitCode === 0 ? t("git.runner.done") : t("git.runner.failed") }}
+              </span>
+              <i v-else class="pi pi-spinner pi-spin shrink-0 text-[10px] text-muted" />
+              <button
+                class="shrink-0 rounded p-1 text-secondary transition-colors hover:bg-canvas hover:text-brand"
+                :title="t('git.runner.openInTerminal')"
+                @click="openRunnerInTerminalPage"
+              >
+                <i class="pi pi-external-link text-[10px]" />
+              </button>
+              <button
+                class="shrink-0 rounded p-1 text-secondary transition-colors hover:bg-canvas hover:text-red-500"
+                :title="t('git.runner.closePanel')"
+                @click="closeRunnerPanel"
+              >
+                <i class="pi pi-times text-[10px]" />
+              </button>
+            </div>
+            <div class="min-h-0 flex-1 overflow-hidden p-2">
+              <div :ref="(el) => bindRunnerTerminal(el as Element | null)" class="h-full w-full" />
+            </div>
+          </div>
+          </div>
+
           <GitRightSidebar
             ref="explorerTreeRef"
             :git="git"
@@ -1015,6 +1106,7 @@ onUnmounted(closeCommitMenu);
             :width="explorerTreeWidth"
             :is-resizing="isResizing"
             @resize="startResizeExplorerTree"
+            @run="handleRunnerRun"
           />
         </div>
 
@@ -1184,6 +1276,7 @@ onUnmounted(closeCommitMenu);
             :width="explorerTreeWidth"
             :is-resizing="isResizing"
             @resize="startResizeExplorerTree"
+            @run="handleRunnerRun"
           />
         </div>
       </div>
@@ -1205,7 +1298,6 @@ onUnmounted(closeCommitMenu);
       @create-worktree="worktreeCreateDialogVisible = true"
     />
     <GitStashListDialog v-model:visible="stashListDialogVisible" :git="git" />
-    <GitStashSaveDialog v-model:visible="stashSaveDialogVisible" :git="git" />
     <GitTagDialog v-model:visible="tagDialogVisible" :git="git" :target="tagTarget" />
     <GitTagListDialog
       v-model:visible="tagListDialogVisible"
