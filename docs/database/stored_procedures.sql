@@ -896,3 +896,845 @@ BEGIN
 END;
 $$;
 
+-- ----------------------------------------------------------------------------
+-- sp_workflow_insert
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_insert
+-- Insert a new workflow (no steps yet) and return the created row.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_insert(
+    p_name        VARCHAR(200),
+    p_description TEXT,
+    p_icon        VARCHAR(50),
+    p_created_by  VARCHAR(100)
+)
+RETURNS TABLE (
+    id          INTEGER,
+    name        VARCHAR(200),
+    description TEXT,
+    icon        VARCHAR(50),
+    layout      JSONB,
+    created_by  VARCHAR(100),
+    step_count  BIGINT,
+    created_at  TEXT,
+    updated_at  TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    INSERT INTO workflows (name, description, icon, created_by)
+    VALUES (p_name, p_description, p_icon, p_created_by)
+    RETURNING
+        workflows.id, workflows.name, workflows.description, workflows.icon, workflows.layout,
+        workflows.created_by, 0::BIGINT,
+        to_char(workflows.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(workflows.updated_at, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_workflow_select_list
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_select_list
+-- List all workflows owned by a user, most recently updated first, with a
+-- computed step_count.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_select_list(p_created_by VARCHAR(100))
+RETURNS TABLE (
+    id          INTEGER,
+    name        VARCHAR(200),
+    description TEXT,
+    icon        VARCHAR(50),
+    layout      JSONB,
+    created_by  VARCHAR(100),
+    step_count  BIGINT,
+    created_at  TEXT,
+    updated_at  TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        w.id, w.name, w.description, w.icon, w.layout, w.created_by,
+        (SELECT COUNT(*) FROM workflow_steps s WHERE s.workflow_id = w.id),
+        to_char(w.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(w.updated_at, 'YYYY-MM-DD HH24:MI:SS')
+    FROM workflows w
+    WHERE w.created_by = p_created_by
+    ORDER BY w.updated_at DESC;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_workflow_update
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_update
+-- Update a workflow's name/description/icon (not its steps). Scoped by owner.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_update(
+    p_id          INTEGER,
+    p_name        VARCHAR(200),
+    p_description TEXT,
+    p_icon        VARCHAR(50),
+    p_created_by  VARCHAR(100)
+)
+RETURNS TABLE (
+    id          INTEGER,
+    name        VARCHAR(200),
+    description TEXT,
+    icon        VARCHAR(50),
+    layout      JSONB,
+    created_by  VARCHAR(100),
+    step_count  BIGINT,
+    created_at  TEXT,
+    updated_at  TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    UPDATE workflows w
+    SET name = p_name, description = p_description, icon = p_icon
+    WHERE w.id = p_id AND w.created_by = p_created_by
+    RETURNING
+        w.id, w.name, w.description, w.icon, w.layout, w.created_by,
+        (SELECT COUNT(*) FROM workflow_steps s WHERE s.workflow_id = w.id),
+        to_char(w.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(w.updated_at, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_workflow_delete
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_delete
+-- Delete a workflow by ID, scoped by owner. Cascades to workflow_steps.
+-- Returns the count of deleted rows.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_delete(
+    p_id         INTEGER,
+    p_created_by VARCHAR(100)
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_count INTEGER;
+BEGIN
+    DELETE FROM workflows WHERE id = p_id AND created_by = p_created_by;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RETURN v_count;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_workflow_update_layout
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_update_layout
+-- Persist canvas node positions (keyed by step id) without touching steps.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_update_layout(
+    p_id         INTEGER,
+    p_layout     JSONB,
+    p_created_by VARCHAR(100)
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_count INTEGER;
+BEGIN
+    UPDATE workflows SET layout = p_layout WHERE id = p_id AND created_by = p_created_by;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RETURN v_count;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_workflow_duplicate
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_duplicate
+-- Clone a workflow (name suffixed " (copy)") together with all of its steps,
+-- preserving step_order. Canvas layout is intentionally not copied (the
+-- frontend auto-lays-out a workflow with an empty layout).
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_duplicate(
+    p_id         INTEGER,
+    p_created_by VARCHAR(100)
+)
+RETURNS TABLE (
+    id          INTEGER,
+    name        VARCHAR(200),
+    description TEXT,
+    icon        VARCHAR(50),
+    layout      JSONB,
+    created_by  VARCHAR(100),
+    step_count  BIGINT,
+    created_at  TEXT,
+    updated_at  TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_new_id INTEGER;
+BEGIN
+    INSERT INTO workflows (name, description, icon, created_by)
+    SELECT w.name || ' (copy)', w.description, w.icon, p_created_by
+    FROM workflows w
+    WHERE w.id = p_id AND w.created_by = p_created_by
+    RETURNING workflows.id INTO v_new_id;
+
+    IF v_new_id IS NULL THEN
+        RETURN;
+    END IF;
+
+    INSERT INTO workflow_steps (
+        workflow_id, name, step_type, skill_name, prompt_id, runner_command, ai_account_id,
+        description, icon, step_order, is_latest_step, model_id
+    )
+    SELECT v_new_id, s.name, s.step_type, s.skill_name, s.prompt_id, s.runner_command, s.ai_account_id,
+        s.description, s.icon, s.step_order, s.is_latest_step, s.model_id
+    FROM workflow_steps s
+    WHERE s.workflow_id = p_id
+    ORDER BY s.step_order;
+
+    RETURN QUERY
+    SELECT
+        w.id, w.name, w.description, w.icon, w.layout, w.created_by,
+        (SELECT COUNT(*) FROM workflow_steps s WHERE s.workflow_id = w.id),
+        to_char(w.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(w.updated_at, 'YYYY-MM-DD HH24:MI:SS')
+    FROM workflows w
+    WHERE w.id = v_new_id;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_workflow_step_select
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_step_select
+-- List all steps of a workflow, ordered by step_order.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_step_select(p_workflow_id INTEGER)
+RETURNS TABLE (
+    id             INTEGER,
+    workflow_id    INTEGER,
+    name           VARCHAR(200),
+    step_type      VARCHAR(20),
+    skill_name     VARCHAR(200),
+    prompt_id      INTEGER,
+    runner_command TEXT,
+    ai_account_id  INTEGER,
+    description    TEXT,
+    icon           VARCHAR(50),
+    step_order     INTEGER,
+    is_latest_step BOOLEAN,
+    model_id       INTEGER,
+    created_at     TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT s.id, s.workflow_id, s.name, s.step_type, s.skill_name, s.prompt_id, s.runner_command,
+        s.ai_account_id, s.description, s.icon, s.step_order, s.is_latest_step, s.model_id,
+        to_char(s.created_at, 'YYYY-MM-DD HH24:MI:SS')
+    FROM workflow_steps s
+    WHERE s.workflow_id = p_workflow_id
+    ORDER BY s.step_order ASC, s.id ASC;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_workflow_step_insert
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_step_insert
+-- Insert a new step. When p_is_latest_step is set, first clears the flag on
+-- every other step of the same workflow, so at most one step is ever "latest".
+-- Also bumps the parent workflow's updated_at.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_step_insert(
+    p_workflow_id    INTEGER,
+    p_name           VARCHAR(200),
+    p_step_type      VARCHAR(20),
+    p_skill_name     VARCHAR(200),
+    p_prompt_id      INTEGER,
+    p_runner_command TEXT,
+    p_ai_account_id  INTEGER,
+    p_description    TEXT,
+    p_icon           VARCHAR(50),
+    p_step_order     INTEGER,
+    p_is_latest_step BOOLEAN,
+    p_model_id       INTEGER
+)
+RETURNS TABLE (
+    id             INTEGER,
+    workflow_id    INTEGER,
+    name           VARCHAR(200),
+    step_type      VARCHAR(20),
+    skill_name     VARCHAR(200),
+    prompt_id      INTEGER,
+    runner_command TEXT,
+    ai_account_id  INTEGER,
+    description    TEXT,
+    icon           VARCHAR(50),
+    step_order     INTEGER,
+    is_latest_step BOOLEAN,
+    model_id       INTEGER,
+    created_at     TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_is_latest_step THEN
+        UPDATE workflow_steps SET is_latest_step = FALSE
+        WHERE workflow_steps.workflow_id = p_workflow_id;
+    END IF;
+
+    RETURN QUERY
+    INSERT INTO workflow_steps (
+        workflow_id, name, step_type, skill_name, prompt_id, runner_command, ai_account_id,
+        description, icon, step_order, is_latest_step, model_id
+    )
+    VALUES (
+        p_workflow_id, p_name, p_step_type, p_skill_name, p_prompt_id, p_runner_command, p_ai_account_id,
+        p_description, p_icon, p_step_order, p_is_latest_step, p_model_id
+    )
+    RETURNING
+        workflow_steps.id, workflow_steps.workflow_id, workflow_steps.name, workflow_steps.step_type,
+        workflow_steps.skill_name, workflow_steps.prompt_id, workflow_steps.runner_command,
+        workflow_steps.ai_account_id, workflow_steps.description, workflow_steps.icon,
+        workflow_steps.step_order, workflow_steps.is_latest_step, workflow_steps.model_id,
+        to_char(workflow_steps.created_at, 'YYYY-MM-DD HH24:MI:SS');
+
+    UPDATE workflows SET updated_at = NOW() WHERE workflows.id = p_workflow_id;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_workflow_step_update
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_step_update
+-- Update a step. When p_is_latest_step is set, first clears the flag on every
+-- sibling step. Also bumps the parent workflow's updated_at.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_step_update(
+    p_id             INTEGER,
+    p_name           VARCHAR(200),
+    p_step_type      VARCHAR(20),
+    p_skill_name     VARCHAR(200),
+    p_prompt_id      INTEGER,
+    p_runner_command TEXT,
+    p_ai_account_id  INTEGER,
+    p_description    TEXT,
+    p_icon           VARCHAR(50),
+    p_step_order     INTEGER,
+    p_is_latest_step BOOLEAN,
+    p_model_id       INTEGER
+)
+RETURNS TABLE (
+    id             INTEGER,
+    workflow_id    INTEGER,
+    name           VARCHAR(200),
+    step_type      VARCHAR(20),
+    skill_name     VARCHAR(200),
+    prompt_id      INTEGER,
+    runner_command TEXT,
+    ai_account_id  INTEGER,
+    description    TEXT,
+    icon           VARCHAR(50),
+    step_order     INTEGER,
+    is_latest_step BOOLEAN,
+    model_id       INTEGER,
+    created_at     TEXT
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_workflow_id INTEGER;
+BEGIN
+    SELECT s.workflow_id INTO v_workflow_id FROM workflow_steps s WHERE s.id = p_id;
+
+    -- Cột trong RETURNS TABLE (id, workflow_id, ...) tạo ra biến OUT trùng tên cột
+    -- bảng, nên mọi tham chiếu cột ở đây PHẢI qua alias/tên bảng — nếu không
+    -- Postgres báo "ambiguous" (không biết là biến OUT hay cột bảng).
+    IF p_is_latest_step AND v_workflow_id IS NOT NULL THEN
+        UPDATE workflow_steps SET is_latest_step = FALSE
+        WHERE workflow_steps.workflow_id = v_workflow_id AND workflow_steps.id <> p_id;
+    END IF;
+
+    RETURN QUERY
+    UPDATE workflow_steps s
+    SET name = p_name, step_type = p_step_type, skill_name = p_skill_name, prompt_id = p_prompt_id,
+        runner_command = p_runner_command, ai_account_id = p_ai_account_id, description = p_description,
+        icon = p_icon, step_order = p_step_order, is_latest_step = p_is_latest_step, model_id = p_model_id
+    WHERE s.id = p_id
+    RETURNING s.id, s.workflow_id, s.name, s.step_type, s.skill_name, s.prompt_id, s.runner_command,
+        s.ai_account_id, s.description, s.icon, s.step_order, s.is_latest_step, s.model_id,
+        to_char(s.created_at, 'YYYY-MM-DD HH24:MI:SS');
+
+    IF v_workflow_id IS NOT NULL THEN
+        UPDATE workflows SET updated_at = NOW() WHERE workflows.id = v_workflow_id;
+    END IF;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_workflow_step_delete
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_step_delete
+-- Delete a step by ID and bump the parent workflow's updated_at.
+-- Returns the count of deleted rows.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_step_delete(p_id INTEGER)
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_workflow_id INTEGER;
+    v_count       INTEGER;
+BEGIN
+    SELECT workflow_id INTO v_workflow_id FROM workflow_steps WHERE id = p_id;
+    DELETE FROM workflow_steps WHERE id = p_id;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    IF v_workflow_id IS NOT NULL THEN
+        UPDATE workflows SET updated_at = NOW() WHERE id = v_workflow_id;
+    END IF;
+    RETURN v_count;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_workflow_step_reorder
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_workflow_step_reorder
+-- Reassign step_order (0-based) to match the given id order, scoped by
+-- workflow. Also bumps the parent workflow's updated_at.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_workflow_step_reorder(
+    p_workflow_id INTEGER,
+    p_step_ids    INTEGER[]
+)
+RETURNS VOID
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_order INTEGER := 0;
+    v_id    INTEGER;
+BEGIN
+    FOREACH v_id IN ARRAY p_step_ids LOOP
+        UPDATE workflow_steps SET step_order = v_order
+        WHERE id = v_id AND workflow_id = p_workflow_id;
+        v_order := v_order + 1;
+    END LOOP;
+    UPDATE workflows SET updated_at = NOW() WHERE id = p_workflow_id;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_ai_model_select_list
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_ai_model_select_list
+-- List the AI model catalog used by the workflow step "Model" picker.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_ai_model_select_list()
+RETURNS TABLE (id INTEGER, provider VARCHAR(50), model VARCHAR(100), version VARCHAR(50))
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT m.id, m.provider, m.model, m.version
+    FROM ai_models m
+    ORDER BY m.provider ASC, m.id ASC;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_task_insert
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_task_insert
+-- Insert a new task and return the created row.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_task_insert(
+    p_task_cd    VARCHAR(100),
+    p_task_name  VARCHAR(300),
+    p_category_id VARCHAR(30),
+    p_created_by VARCHAR(100)
+)
+RETURNS TABLE (
+    id           INTEGER,
+    task_cd      VARCHAR(100),
+    task_name    VARCHAR(300),
+    category_id  VARCHAR(30),
+    is_complete  BOOLEAN,
+    completed_at TEXT,
+    created_at   TEXT,
+    created_by   VARCHAR(100),
+    updated_at   TEXT,
+    updated_by   VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    INSERT INTO tasks (task_cd, task_name, category_id, created_by, updated_by)
+    VALUES (p_task_cd, p_task_name, p_category_id, p_created_by, p_created_by)
+    RETURNING
+        tasks.id, tasks.task_cd, tasks.task_name, tasks.category_id, tasks.is_complete,
+        COALESCE(to_char(tasks.completed_at, 'YYYY-MM-DD HH24:MI:SS'), ''),
+        to_char(tasks.created_at, 'YYYY-MM-DD HH24:MI:SS'), tasks.created_by,
+        to_char(tasks.updated_at, 'YYYY-MM-DD HH24:MI:SS'), tasks.updated_by;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_task_select_list
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_task_select_list
+-- Search tasks by keyword (task_cd/task_name/category_id) and completion
+-- state, joining each task's current in-progress step (if any) for display.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_task_select_list(
+    p_keyword     TEXT DEFAULT NULL,
+    p_is_complete BOOLEAN DEFAULT NULL
+)
+RETURNS TABLE (
+    id                  INTEGER,
+    task_cd             VARCHAR(100),
+    task_name           VARCHAR(300),
+    category_id         VARCHAR(30),
+    is_complete         BOOLEAN,
+    completed_at        TEXT,
+    created_at          TEXT,
+    created_by          VARCHAR(100),
+    updated_at          TEXT,
+    updated_by          VARCHAR(100),
+    current_wf_name     TEXT,
+    current_step_name   TEXT,
+    current_step_status TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        t.id, t.task_cd, t.task_name, t.category_id, t.is_complete,
+        COALESCE(to_char(t.completed_at, 'YYYY-MM-DD HH24:MI:SS'), ''),
+        to_char(t.created_at, 'YYYY-MM-DD HH24:MI:SS'), t.created_by,
+        to_char(t.updated_at, 'YYYY-MM-DD HH24:MI:SS'), t.updated_by,
+        COALESCE(cur.wf_name, '')::TEXT, COALESCE(cur.step_name, '')::TEXT, COALESCE(cur.step_status, '')::TEXT
+    FROM tasks t
+    LEFT JOIN LATERAL (
+        SELECT w.name AS wf_name, s.name AS step_name, ps.status AS step_status
+        FROM task_wf_proc p
+        JOIN task_wf_proc_step ps ON ps.wf_proc_id = p.id
+        JOIN workflows w ON w.id = p.wf_id
+        JOIN workflow_steps s ON s.id = ps.wf_step_id
+        WHERE p.task_id = t.id AND ps.status = 'in_progress'
+        ORDER BY ps.updated_at DESC
+        LIMIT 1
+    ) cur ON TRUE
+    WHERE (p_keyword IS NULL OR p_keyword = ''
+       OR t.task_cd ILIKE '%' || p_keyword || '%'
+       OR t.task_name ILIKE '%' || p_keyword || '%'
+       OR t.category_id ILIKE '%' || p_keyword || '%')
+      AND (p_is_complete IS NULL OR t.is_complete = p_is_complete)
+    ORDER BY t.created_at DESC
+    LIMIT 200;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_task_update
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_task_update
+-- Update a task. Auto-manages completed_at: sets it to NOW() the moment
+-- is_complete flips TRUE, clears it when is_complete flips back to FALSE.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_task_update(
+    p_id          INTEGER,
+    p_task_cd     VARCHAR(100),
+    p_task_name   VARCHAR(300),
+    p_category_id VARCHAR(30),
+    p_is_complete BOOLEAN,
+    p_updated_by  VARCHAR(100)
+)
+RETURNS TABLE (
+    id           INTEGER,
+    task_cd      VARCHAR(100),
+    task_name    VARCHAR(300),
+    category_id  VARCHAR(30),
+    is_complete  BOOLEAN,
+    completed_at TEXT,
+    created_at   TEXT,
+    created_by   VARCHAR(100),
+    updated_at   TEXT,
+    updated_by   VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    UPDATE tasks t
+    SET task_cd = p_task_cd,
+        task_name = p_task_name,
+        category_id = p_category_id,
+        is_complete = p_is_complete,
+        completed_at = CASE
+            WHEN p_is_complete AND NOT t.is_complete THEN NOW()
+            WHEN NOT p_is_complete THEN NULL
+            ELSE t.completed_at
+        END,
+        updated_by = p_updated_by
+    WHERE t.id = p_id
+    RETURNING
+        t.id, t.task_cd, t.task_name, t.category_id, t.is_complete,
+        COALESCE(to_char(t.completed_at, 'YYYY-MM-DD HH24:MI:SS'), ''),
+        to_char(t.created_at, 'YYYY-MM-DD HH24:MI:SS'), t.created_by,
+        to_char(t.updated_at, 'YYYY-MM-DD HH24:MI:SS'), t.updated_by;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_task_wf_proc_insert
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_task_wf_proc_insert
+-- Start tracking a task's progress through a workflow.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_task_wf_proc_insert(
+    p_task_id    INTEGER,
+    p_wf_id      INTEGER,
+    p_created_by VARCHAR(100)
+)
+RETURNS TABLE (
+    id             INTEGER,
+    task_id        INTEGER,
+    wf_id          INTEGER,
+    latest_step_id INTEGER,
+    created_at     TEXT,
+    created_by     VARCHAR(100),
+    updated_at     TEXT,
+    updated_by     VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    INSERT INTO task_wf_proc (task_id, wf_id, created_by, updated_by)
+    VALUES (p_task_id, p_wf_id, p_created_by, p_created_by)
+    RETURNING
+        task_wf_proc.id, task_wf_proc.task_id, task_wf_proc.wf_id, task_wf_proc.latest_step_id,
+        to_char(task_wf_proc.created_at, 'YYYY-MM-DD HH24:MI:SS'), task_wf_proc.created_by,
+        to_char(task_wf_proc.updated_at, 'YYYY-MM-DD HH24:MI:SS'), task_wf_proc.updated_by;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_task_wf_proc_select_by_task
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_task_wf_proc_select_by_task
+-- List every workflow-process a task has been attached to.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_task_wf_proc_select_by_task(p_task_id INTEGER)
+RETURNS TABLE (
+    id             INTEGER,
+    task_id        INTEGER,
+    wf_id          INTEGER,
+    latest_step_id INTEGER,
+    created_at     TEXT,
+    created_by     VARCHAR(100),
+    updated_at     TEXT,
+    updated_by     VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT p.id, p.task_id, p.wf_id, p.latest_step_id,
+        to_char(p.created_at, 'YYYY-MM-DD HH24:MI:SS'), p.created_by,
+        to_char(p.updated_at, 'YYYY-MM-DD HH24:MI:SS'), p.updated_by
+    FROM task_wf_proc p
+    WHERE p.task_id = p_task_id
+    ORDER BY p.created_at DESC;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_task_wf_proc_update
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_task_wf_proc_update
+-- Advance a task's workflow-process to a new "latest" step.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_task_wf_proc_update(
+    p_id             INTEGER,
+    p_latest_step_id INTEGER,
+    p_updated_by     VARCHAR(100)
+)
+RETURNS TABLE (
+    id             INTEGER,
+    task_id        INTEGER,
+    wf_id          INTEGER,
+    latest_step_id INTEGER,
+    created_at     TEXT,
+    created_by     VARCHAR(100),
+    updated_at     TEXT,
+    updated_by     VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    UPDATE task_wf_proc p
+    SET latest_step_id = p_latest_step_id, updated_by = p_updated_by
+    WHERE p.id = p_id
+    RETURNING p.id, p.task_id, p.wf_id, p.latest_step_id,
+        to_char(p.created_at, 'YYYY-MM-DD HH24:MI:SS'), p.created_by,
+        to_char(p.updated_at, 'YYYY-MM-DD HH24:MI:SS'), p.updated_by;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_task_wf_proc_step_insert
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_task_wf_proc_step_insert
+-- Record a task's status at a specific workflow step.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_task_wf_proc_step_insert(
+    p_wf_proc_id INTEGER,
+    p_wf_step_id INTEGER,
+    p_status     VARCHAR(20),
+    p_created_by VARCHAR(100)
+)
+RETURNS TABLE (
+    id         INTEGER,
+    wf_proc_id INTEGER,
+    wf_step_id INTEGER,
+    status     VARCHAR(20),
+    created_at TEXT,
+    created_by VARCHAR(100),
+    updated_at TEXT,
+    updated_by VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    INSERT INTO task_wf_proc_step (wf_proc_id, wf_step_id, status, created_by, updated_by)
+    VALUES (p_wf_proc_id, p_wf_step_id, p_status, p_created_by, p_created_by)
+    RETURNING
+        task_wf_proc_step.id, task_wf_proc_step.wf_proc_id, task_wf_proc_step.wf_step_id,
+        task_wf_proc_step.status,
+        to_char(task_wf_proc_step.created_at, 'YYYY-MM-DD HH24:MI:SS'), task_wf_proc_step.created_by,
+        to_char(task_wf_proc_step.updated_at, 'YYYY-MM-DD HH24:MI:SS'), task_wf_proc_step.updated_by;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_task_wf_proc_step_select_by_proc
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_task_wf_proc_step_select_by_proc
+-- List every step status recorded for a workflow-process.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_task_wf_proc_step_select_by_proc(p_wf_proc_id INTEGER)
+RETURNS TABLE (
+    id         INTEGER,
+    wf_proc_id INTEGER,
+    wf_step_id INTEGER,
+    status     VARCHAR(20),
+    created_at TEXT,
+    created_by VARCHAR(100),
+    updated_at TEXT,
+    updated_by VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT s.id, s.wf_proc_id, s.wf_step_id, s.status,
+        to_char(s.created_at, 'YYYY-MM-DD HH24:MI:SS'), s.created_by,
+        to_char(s.updated_at, 'YYYY-MM-DD HH24:MI:SS'), s.updated_by
+    FROM task_wf_proc_step s
+    WHERE s.wf_proc_id = p_wf_proc_id
+    ORDER BY s.created_at ASC;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_task_wf_proc_step_update
+-- ----------------------------------------------------------------------------
+-- ============================================================================
+-- sp_task_wf_proc_step_update
+-- Update the status of a task's recorded step (pending/in_progress/
+-- completed/skipped).
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_task_wf_proc_step_update(
+    p_id         INTEGER,
+    p_status     VARCHAR(20),
+    p_updated_by VARCHAR(100)
+)
+RETURNS TABLE (
+    id         INTEGER,
+    wf_proc_id INTEGER,
+    wf_step_id INTEGER,
+    status     VARCHAR(20),
+    created_at TEXT,
+    created_by VARCHAR(100),
+    updated_at TEXT,
+    updated_by VARCHAR(100)
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    UPDATE task_wf_proc_step s
+    SET status = p_status, updated_by = p_updated_by
+    WHERE s.id = p_id
+    RETURNING s.id, s.wf_proc_id, s.wf_step_id, s.status,
+        to_char(s.created_at, 'YYYY-MM-DD HH24:MI:SS'), s.created_by,
+        to_char(s.updated_at, 'YYYY-MM-DD HH24:MI:SS'), s.updated_by;
+END;
+$$;
+

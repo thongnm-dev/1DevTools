@@ -60,6 +60,14 @@ watch(cogOpen, (val) => {
   <div class="ml-0.5 flex shrink-0 flex-col items-center gap-0.5 self-stretch rounded-lg border border-sidebar-border bg-sidebar p-0.5 shadow-md">
     <button
       class="flex items-center justify-center rounded-md p-2 transition-colors"
+      :class="itemClass('overview', activePanel)"
+      :title="t('workspaces.sidebar.overview')"
+      @click="emit('select', 'overview')"
+    >
+      <i class="pi pi-chart-bar text-sm" />
+    </button>
+    <button
+      class="flex items-center justify-center rounded-md p-2 transition-colors"
       :class="itemClass('git', activePanel)"
       :title="t('workspaces.action.git')"
       @click="emit('select', 'git')"

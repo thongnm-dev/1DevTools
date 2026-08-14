@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
-import type { NodePos, Workflow, WorkflowStepType } from "@/models/workflow";
+import type { NodePos, Workflow, WorkflowStep, WorkflowStepType } from "@/models/workflow";
 import { STEP_TYPE_META } from "@/models/workflow";
+import { workflowStepList } from "@/tauri/commands/workflow";
 
 const props = defineProps<{ workflow: Workflow }>();
 const { t } = useI18n();
@@ -17,13 +18,22 @@ const NODES_PER_ROW = 3;
 
 const nodesContainer = ref<HTMLElement | null>(null);
 const arrowPaths = ref<{ id: string; d: string }[]>([]);
+const steps = ref<WorkflowStep[]>([]);
 let resizeObserver: ResizeObserver | null = null;
+
+async function loadSteps() {
+  try {
+    steps.value = await workflowStepList(props.workflow.id);
+  } catch {
+    steps.value = [];
+  }
+}
 
 const nodePositions = computed<Record<string, NodePos>>(() => {
   const layout = props.workflow.layout;
   if (layout && Object.keys(layout).length > 0) return layout;
   const pos: Record<string, NodePos> = {};
-  props.workflow.steps.forEach((step, i) => {
+  steps.value.forEach((step, i) => {
     const col = i % NODES_PER_ROW;
     const row = Math.floor(i / NODES_PER_ROW);
     pos[step.id] = { x: col * (NODE_W + H_GAP), y: row * (NODE_H + V_GAP) };
@@ -43,8 +53,7 @@ const canvasSize = computed(() => {
 
 function updateArrows() {
   const container = nodesContainer.value;
-  const steps = props.workflow.steps;
-  if (!container || steps.length < 2) {
+  if (!container || steps.value.length < 2) {
     arrowPaths.value = [];
     return;
   }
@@ -52,9 +61,11 @@ function updateArrows() {
   const containerRect = container.getBoundingClientRect();
   const paths: { id: string; d: string }[] = [];
 
-  for (let i = 0; i < steps.length - 1; i++) {
-    const fromEl = container.querySelector(`[data-step-id="${steps[i].id}"]`) as HTMLElement | null;
-    const toEl = container.querySelector(`[data-step-id="${steps[i + 1].id}"]`) as HTMLElement | null;
+  for (let i = 0; i < steps.value.length - 1; i++) {
+    const from = steps.value[i];
+    const to = steps.value[i + 1];
+    const fromEl = container.querySelector(`[data-step-id="${from.id}"]`) as HTMLElement | null;
+    const toEl = container.querySelector(`[data-step-id="${to.id}"]`) as HTMLElement | null;
     if (!fromEl || !toEl) continue;
 
     const fromRect = fromEl.getBoundingClientRect();
@@ -73,7 +84,7 @@ function updateArrows() {
     } else {
       d = `M ${x1} ${y1} C ${x1 + 50} ${y1}, ${x2 - 50} ${y2}, ${x2} ${y2}`;
     }
-    paths.push({ id: `arrow-${steps[i].id}-${steps[i + 1].id}`, d });
+    paths.push({ id: `arrow-${from.id}-${to.id}`, d });
   }
 
   arrowPaths.value = paths;
@@ -82,12 +93,14 @@ function updateArrows() {
 watch(
   () => props.workflow.id,
   async () => {
+    await loadSteps();
     await nextTick();
     updateArrows();
   },
 );
 
-onMounted(() => {
+onMounted(async () => {
+  await loadSteps();
   void nextTick(() => updateArrows());
   if (nodesContainer.value) {
     resizeObserver = new ResizeObserver(() => updateArrows());
@@ -132,7 +145,7 @@ function stepTypeLabel(type: WorkflowStepType): string {
       </svg>
 
       <div
-        v-for="(step, index) in workflow.steps"
+        v-for="(step, index) in steps"
         :key="step.id"
         :data-step-id="step.id"
         class="absolute z-10 w-52 rounded-lg border border-divider bg-panel p-4 shadow-card"

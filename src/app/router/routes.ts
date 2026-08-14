@@ -78,6 +78,20 @@ export const appRoutes: AppRoute[] = [
     breadcrumbs: ["AI", "Usage"],
   },
   {
+    key: "ai-tasks",
+    path: "/ai/tasks",
+    title: "AI Tasks",
+    subtitle: "Track tasks and the workflow step they are currently on.",
+    breadcrumbs: ["AI", "Tasks"],
+  },
+  {
+    key: "ai-cowork",
+    path: "/ai/cowork",
+    title: "AI Cowork",
+    subtitle: "Run tasks through a workflow's steps, one terminal per step.",
+    breadcrumbs: ["AI", "Cowork"],
+  },
+  {
     key: "workspaces",
     path: "/workspaces",
     title: "Workspaces",
@@ -186,23 +200,33 @@ export const vueRoutes: RouteRecordRaw[] = [
     meta: { key: "ai-usage" as MenuKey },
   },
   {
+    path: "/ai/tasks",
+    component: () => import("@/features/task/components/TaskPage.vue"),
+    meta: { key: "ai-tasks" as MenuKey },
+  },
+  {
+    path: "/ai/cowork",
+    component: () => import("@/features/ai-agent/components/AiCoworkPage.vue"),
+    meta: { key: "ai-cowork" as MenuKey },
+  },
+  {
     path: "/workspaces",
     component: () => import("@/features/workspaces/components/WorkspacesPage.vue"),
     meta: { key: "workspaces" as MenuKey },
   },
   {
     path: "/workflow",
-    component: () => import("@/features/workspaces/components/WorkflowPage.vue"),
+    component: () => import("@/features/workflow/components/WorkflowPage.vue"),
     meta: { key: "workflow" as MenuKey },
   },
   {
     path: "/skill",
-    component: () => import("@/features/workspaces/components/SkillPage.vue"),
+    component: () => import("@/features/skill/components/SkillPage.vue"),
     meta: { key: "skill" as MenuKey },
   },
   {
     path: "/prompt",
-    component: () => import("@/features/workspaces/components/PromptPage.vue"),
+    component: () => import("@/features/prompt/components/PromptPage.vue"),
     meta: { key: "prompt" as MenuKey },
   },
   {

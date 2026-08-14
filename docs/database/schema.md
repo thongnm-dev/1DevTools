@@ -135,3 +135,122 @@ Override quyền menu riêng cho từng user — ghi đè kết quả tổng h�
 | | | PRIMARY KEY (`user_id`, `menu_key`) | Mỗi cặp user–menu là duy nhất. |
 
 Index: `idx_user_menu_perm_menu` trên (`menu_key`).
+
+---
+
+## Workflow & Tasks
+
+Nhóm bảng cho màn hình **Workflow** (chuỗi step tái sử dụng, hiển thị dạng canvas) và tính năng **AI Tasks / AI Cowork** (theo dõi một task đi qua từng step của workflow, mở terminal chạy `claude` cho step dạng `skill`).
+
+```
+workflows ─┬─< workflow_steps
+           │        │
+           │        └─< task_wf_proc_step >─┐
+           │                                │
+tasks ─────┴─< task_wf_proc >───────────────┘
+```
+
+### `workflows`
+
+Thư viện workflow — không gắn cố định vào 1 workspace, chọn workspace/task đích tại thời điểm chạy.
+
+| Column | Type | Constraints | Mô tả |
+|---|---|---|---|
+| `id` | `SERIAL` | PRIMARY KEY | Khóa chính tự tăng. |
+| `name` | `VARCHAR(200)` | NOT NULL | Tên workflow. |
+| `description` | `TEXT` | NOT NULL, DEFAULT `''` | Mô tả. |
+| `icon` | `VARCHAR(50)` | NOT NULL, DEFAULT `'pi pi-sitemap'` | Icon PrimeIcons hiển thị ở sidebar/canvas. |
+| `layout` | `JSONB` | NOT NULL, DEFAULT `'{}'` | Vị trí node trên canvas, dạng `{ "<step_id>": {"x":.., "y":..} }`. |
+| `created_by` | `VARCHAR(100)` | NOT NULL | Username chủ sở hữu (mỗi user chỉ thấy workflow của mình). |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Thời điểm tạo. |
+| `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Thời điểm cập nhật (auto qua trigger). |
+
+Index: `idx_workflows_created_by` trên (`created_by`).
+
+### `ai_models`
+
+Danh mục model AI để chọn cho từng workflow step. Hiện chỉ đối ứng provider `claude`.
+
+| Column | Type | Constraints | Mô tả |
+|---|---|---|---|
+| `id` | `SERIAL` | PRIMARY KEY | Khóa chính tự tăng. |
+| `provider` | `VARCHAR(50)` | NOT NULL, DEFAULT `'claude'` | Nhà cung cấp. |
+| `model` | `VARCHAR(100)` | NOT NULL | Tên model (`opus` / `sonnet` / `haiku`). |
+| `version` | `VARCHAR(50)` | NOT NULL, DEFAULT `''` | Version pin cụ thể; rỗng = chạy alias mới nhất. |
+| | | UNIQUE (`provider`, `model`, `version`) | Không trùng bộ 3 provider/model/version. |
+
+### `workflow_steps`
+
+Một step trong workflow, theo thứ tự `step_order`.
+
+| Column | Type | Constraints | Mô tả |
+|---|---|---|---|
+| `id` | `SERIAL` | PRIMARY KEY | Khóa chính tự tăng. |
+| `workflow_id` | `INTEGER` | NOT NULL, FK → `workflows(id)` ON DELETE CASCADE | Workflow cha. |
+| `name` | `VARCHAR(200)` | NOT NULL | Tên step. |
+| `step_type` | `VARCHAR(20)` | NOT NULL, DEFAULT `''` | `skill` \| `prompt` \| `runner` \| `terminal` \| `custom`. |
+| `skill_name` | `VARCHAR(200)` | NOT NULL, DEFAULT `''` | Slug skill dùng khi `step_type = 'skill'` (vd `create-plan`), gõ tự do — không đối chiếu thư mục `.claude/skills`. |
+| `prompt_id` | `INTEGER` | NULLABLE | Id prompt (thư viện Prompt cục bộ) khi `step_type = 'prompt'`. |
+| `runner_command` | `TEXT` | NOT NULL, DEFAULT `''` | Lệnh literal khi `step_type = 'runner'` hoặc `'terminal'`. |
+| `ai_account_id` | `INTEGER` | NULLABLE | Account AI (thư viện AI Usage cục bộ) cần active trước khi chạy step. |
+| `description` | `TEXT` | NOT NULL, DEFAULT `''` | Mô tả. |
+| `icon` | `VARCHAR(50)` | NOT NULL, DEFAULT `'pi pi-cog'` | Icon PrimeIcons. |
+| `step_order` | `INTEGER` | NOT NULL, DEFAULT `0` | Thứ tự hiển thị/chạy. |
+| `is_latest_step` | `BOOLEAN` | NOT NULL, DEFAULT `FALSE` | Đánh dấu step cuối cùng của workflow (chỉ 1 step/workflow — service tự gỡ cờ ở step khác khi set). |
+| `model_id` | `INTEGER` | FK → `ai_models(id)` ON DELETE SET NULL | Model AI dùng khi AI Cowork chạy step `skill` này. |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Thời điểm tạo. |
+
+Index: `idx_workflow_steps_workflow` trên (`workflow_id`).
+
+### `tasks`
+
+Một hạng mục công việc (task) có thể được xử lý qua nhiều workflow.
+
+| Column | Type | Constraints | Mô tả |
+|---|---|---|---|
+| `id` | `SERIAL` | PRIMARY KEY | Khóa chính tự tăng. |
+| `task_cd` | `VARCHAR(100)` | NOT NULL | Mã task (vd `SZTN_G_SC01`). |
+| `task_name` | `VARCHAR(300)` | NOT NULL, DEFAULT `''` | Tên task. |
+| `category_id` | `VARCHAR(30)` | NOT NULL, DEFAULT `''` | Loại task (`screen` \| `batch` \| `part` \| `other`). |
+| `is_complete` | `BOOLEAN` | NOT NULL, DEFAULT `FALSE` | Đã hoàn thành chưa. |
+| `completed_at` | `TIMESTAMPTZ` | NULLABLE | Thời điểm hoàn thành (auto set khi `is_complete` chuyển `TRUE`). |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Thời điểm tạo. |
+| `created_by` | `VARCHAR(100)` | NOT NULL | Username tạo. |
+| `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Thời điểm cập nhật (auto qua trigger). |
+| `updated_by` | `VARCHAR(100)` | NOT NULL, DEFAULT `''` | Username cập nhật gần nhất. |
+
+Index: `idx_tasks_task_cd` trên (`task_cd`).
+
+### `task_wf_proc`
+
+Một lượt "chạy" workflow cho 1 task — 1 bản ghi cho mỗi cặp (`task_id`, `wf_id`).
+
+| Column | Type | Constraints | Mô tả |
+|---|---|---|---|
+| `id` | `SERIAL` | PRIMARY KEY | Khóa chính tự tăng. |
+| `task_id` | `INTEGER` | NOT NULL, FK → `tasks(id)` ON DELETE CASCADE | Task. |
+| `wf_id` | `INTEGER` | NOT NULL, FK → `workflows(id)` ON DELETE CASCADE | Workflow đang áp dụng. |
+| `latest_step_id` | `INTEGER` | FK → `workflow_steps(id)` ON DELETE SET NULL | Step gần nhất task đã chạy tới. |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Thời điểm tạo. |
+| `created_by` | `VARCHAR(100)` | NOT NULL | Username tạo. |
+| `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Thời điểm cập nhật (auto qua trigger). |
+| `updated_by` | `VARCHAR(100)` | NOT NULL, DEFAULT `''` | Username cập nhật gần nhất. |
+
+Index: `idx_task_wf_proc_task` trên (`task_id`).
+
+### `task_wf_proc_step`
+
+Trạng thái của task tại từng step cụ thể trong 1 lượt chạy workflow.
+
+| Column | Type | Constraints | Mô tả |
+|---|---|---|---|
+| `id` | `SERIAL` | PRIMARY KEY | Khóa chính tự tăng. |
+| `wf_proc_id` | `INTEGER` | NOT NULL, FK → `task_wf_proc(id)` ON DELETE CASCADE | Lượt chạy workflow. |
+| `wf_step_id` | `INTEGER` | NOT NULL, FK → `workflow_steps(id)` ON DELETE CASCADE | Step. |
+| `status` | `VARCHAR(20)` | NOT NULL, DEFAULT `''` | `pending` \| `in_progress` \| `completed` \| `skipped`. |
+| `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Thời điểm tạo. |
+| `created_by` | `VARCHAR(100)` | NOT NULL | Username tạo. |
+| `updated_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Thời điểm cập nhật (auto qua trigger). |
+| `updated_by` | `VARCHAR(100)` | NOT NULL, DEFAULT `''` | Username cập nhật gần nhất. |
+
+Index: `idx_task_wf_proc_step_proc` trên (`wf_proc_id`).

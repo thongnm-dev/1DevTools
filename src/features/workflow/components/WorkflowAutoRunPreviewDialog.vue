@@ -56,7 +56,7 @@ onBeforeUnmount(() => cleanupResize?.());
         <i :class="[workflow?.icon, 'text-brand']" />
         <h3 class="section-title truncate">{{ workflow?.name }}</h3>
         <span v-if="workflow" class="shrink-0 text-xs text-muted">
-          {{ t("workflow.stepCount", { count: workflow.steps.length }) }}
+          {{ t("workflow.stepCount", { count: workflow.step_count }) }}
         </span>
       </div>
     </template>

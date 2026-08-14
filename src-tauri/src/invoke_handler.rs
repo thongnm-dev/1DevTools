@@ -17,10 +17,12 @@ use commands::menu_permission_commands::*;
 use commands::pagination_commands::*;
 use commands::role_commands::*;
 use commands::system_commands::*;
+use commands::task_commands::*;
 use commands::terminal_commands::*;
 use commands::user_commands::*;
 use commands::workflow_commands::*;
 use commands::workspace_commands::*;
+use commands::workspace_task_commands::*;
 use commands::skill_commands::*;
 use commands::prompt_commands::*;
 use commands::settings_commands::*;
@@ -197,19 +199,39 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         docker_update_project,
         docker_remove_project,
         docker_touch_project,
-        // === Workflow commands: CRUD + layout canvas (JSON cục bộ) ===
+        // === Workflow commands: CRUD workflow + step + layout canvas (PostgreSQL) ===
         workflow_list,
         workflow_create,
         workflow_update,
         workflow_delete,
         workflow_duplicate,
         workflow_save_layout,
+        workflow_step_list,
+        workflow_step_create,
+        workflow_step_update,
+        workflow_step_delete,
+        workflow_step_reorder,
+        ai_model_list,
+        // === AI Tasks / AI Cowork commands: tasks + task_wf_proc + task_wf_proc_step ===
+        task_create,
+        task_list,
+        task_update,
+        task_wf_proc_create,
+        task_wf_proc_list,
+        task_wf_proc_update,
+        task_wf_proc_step_create,
+        task_wf_proc_step_list,
+        task_wf_proc_step_update,
         // === Workspace commands: registry (đồng thời là tab bar), JSON cục bộ ===
         workspace_list,
         workspace_create,
         workspace_update,
         workspace_remove,
         workspace_touch,
+        // === Workspace<->Task link commands (JSON cục bộ) ===
+        workspace_task_list,
+        workspace_task_add,
+        workspace_task_remove,
         // === Skill commands: CRUD (JSON cục bộ) ===
         skill_list,
         skill_create,

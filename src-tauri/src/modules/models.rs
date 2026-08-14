@@ -29,8 +29,12 @@ mod models {
     pub mod dev_runner;
     /// Model cho màn hình Workflow (chuỗi step tự động hoá skill/prompt/runner/terminal).
     pub mod workflow;
+    /// Model cho AI Tasks / AI Cowork (task + task_wf_proc + task_wf_proc_step).
+    pub mod task;
     /// Model cho registry Workspace (mở nhiều project cùng lúc, đồng thời là tab bar).
     pub mod workspace;
+    /// Model cho liên kết Workspace <-> Task (JSON cục bộ).
+    pub mod workspace_task;
     /// Model cho thư viện Skill (chỉ dẫn tái sử dụng cho agent).
     pub mod skill;
     /// Model cho thư viện Prompt (snippet tái sử dụng, hỗ trợ placeholder).

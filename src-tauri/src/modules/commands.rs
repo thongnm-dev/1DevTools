@@ -31,10 +31,14 @@ mod commands {
     pub mod ai_usage_commands;
     /// Commands cho chức năng Dev Runner (phát hiện và chạy lệnh phát triển).
     pub mod dev_runner_commands;
-    /// Commands cho màn hình Workflow (CRUD + layout canvas).
+    /// Commands cho màn hình Workflow (CRUD workflow + step + layout canvas).
     pub mod workflow_commands;
+    /// Commands cho AI Tasks / AI Cowork (task + task_wf_proc + task_wf_proc_step).
+    pub mod task_commands;
     /// Commands cho registry Workspace (CRUD, đồng thời là tab bar).
     pub mod workspace_commands;
+    /// Commands cho liên kết Workspace <-> Task (JSON cục bộ).
+    pub mod workspace_task_commands;
     /// Commands cho thư viện Skill (CRUD).
     pub mod skill_commands;
     /// Commands cho thư viện Prompt (CRUD + đếm lượt dùng).

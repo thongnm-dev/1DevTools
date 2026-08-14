@@ -1,141 +1,89 @@
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import Select from "primevue/select";
+import Button from "primevue/button";
+import TaskPickerDialog from "@/features/task/components/TaskPickerDialog.vue";
 import type { Workspace } from "@/models/workspace";
-import { useWorkspaceTask } from "../composables/useWorkspaceTask";
-import { useWorkflow } from "../composables/useWorkflow";
-import { useWorkflowRunner } from "../composables/useWorkflowRunner";
+import { TASK_CATEGORY_META, STEP_STATUS_META } from "@/models/task";
+import type { Task } from "@/models/task";
+import { useWorkspaceTaskLinks } from "../composables/useWorkspaceTaskLinks";
 
 const props = defineProps<{ workspace: Workspace }>();
 const { t } = useI18n();
 
-const taskCtrl = useWorkspaceTask(props.workspace.id);
-const workflowCtrl = useWorkflow();
-const runner = useWorkflowRunner();
+const linksCtrl = useWorkspaceTaskLinks(props.workspace);
 
-const newTaskName = ref("");
-const selectedWorkflowId = ref<number | null>(null);
+const showPickerDialog = ref(false);
+const excludeIds = computed(() => linksCtrl.linkedTasks.value.map((task) => task.id));
 
-const selectedWorkflow = computed(() =>
-  workflowCtrl.workflows.value.find((w) => w.id === selectedWorkflowId.value) ?? null,
-);
-
-const workflowOptions = computed(() =>
-  workflowCtrl.workflows.value.map((w) => ({ label: w.name, value: w.id })),
-);
-
-function submitAdd() {
-  taskCtrl.addTask(newTaskName.value);
-  newTaskName.value = "";
+function categoryBadgeClass(category: string): string {
+  return TASK_CATEGORY_META[category as keyof typeof TASK_CATEGORY_META]?.badgeClass ?? "bg-canvas text-muted";
 }
 
-async function runForTask() {
-  if (!selectedWorkflow.value) return;
-  await runner.runWorkflow(selectedWorkflow.value, props.workspace);
+function stepStatusBadgeClass(status: string): string {
+  return STEP_STATUS_META[status as keyof typeof STEP_STATUS_META]?.badgeClass ?? "bg-canvas text-muted";
+}
+
+function pickTask(task: Task) {
+  void linksCtrl.addTask(task);
 }
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-hidden bg-sidebar text-sidebar-text">
+  <div class="flex h-full flex-col overflow-hidden bg-panel text-ink">
     <!-- Header -->
-    <div class="flex shrink-0 items-center border-b border-sidebar-border px-3 py-2">
-      <span class="flex-1 truncate text-[11px] font-semibold uppercase tracking-wide">
-        {{ t("workspaces.tasks.title") }}
-      </span>
-      <span class="text-[10px] text-sidebar-text/50">{{ taskCtrl.tasks.value.length }}</span>
-    </div>
-
-    <!-- Workflow selector -->
-    <div class="shrink-0 border-b border-sidebar-border px-3 py-2">
-      <Select
-        v-model="selectedWorkflowId"
-        :options="workflowOptions"
-        option-label="label"
-        option-value="value"
-        :placeholder="t('workspaces.tasks.selectWorkflow')"
-        :empty-message="t('workspaces.tasks.noWorkflows')"
-        class="w-full !text-xs"
-        size="small"
-      />
-    </div>
-
-    <!-- Add task input -->
-    <form class="shrink-0 border-b border-sidebar-border px-3 py-2" @submit.prevent="submitAdd">
-      <div class="flex gap-1.5">
-        <input
-          v-model="newTaskName"
-          type="text"
-          class="min-w-0 flex-1 rounded-md border border-sidebar-border bg-transparent px-2 py-1 text-xs text-sidebar-text placeholder:text-sidebar-text/40 focus:border-brand focus:outline-none"
-          :placeholder="t('workspaces.tasks.addPlaceholder')"
-        />
-        <button
-          type="submit"
-          :disabled="!newTaskName.trim()"
-          class="flex items-center justify-center rounded-md bg-brand px-2 py-1 text-xs text-white transition-colors hover:brightness-110 disabled:opacity-40"
-        >
-          <i class="pi pi-plus text-[10px]" />
-        </button>
+    <div class="flex shrink-0 items-center justify-between gap-2 border-b border-divider px-4 py-3">
+      <div class="flex items-center gap-2">
+        <h3 class="section-title">{{ t("workspaces.tasks.title") }}</h3>
+        <span class="text-xs text-muted">{{ linksCtrl.linkedTasks.value.length }}</span>
       </div>
-    </form>
+      <Button icon="pi pi-plus" size="small" :label="t('workspaces.tasks.addTask')" @click="showPickerDialog = true" />
+    </div>
+
+    <p v-if="linksCtrl.error.value" class="banner-danger mx-4 mt-3">{{ linksCtrl.error.value }}</p>
 
     <!-- Task list -->
-    <div class="min-h-0 flex-1 overflow-y-auto">
-      <p v-if="!taskCtrl.tasks.value.length" class="px-3 py-6 text-center text-xs text-sidebar-text/50">
+    <div class="min-h-0 flex-1 overflow-y-auto p-3">
+      <p v-if="!linksCtrl.linkedTasks.value.length" class="px-3 py-8 text-center text-xs text-muted">
         {{ t("workspaces.tasks.empty") }}
       </p>
 
       <div
-        v-for="task in taskCtrl.tasks.value"
+        v-for="task in linksCtrl.linkedTasks.value"
         :key="task.id"
-        class="group flex items-center gap-2 border-b border-sidebar-border/50 px-3 py-2 transition-colors hover:bg-sidebar-hover"
+        class="mb-2 flex items-center gap-2 rounded-md border border-divider bg-canvas px-3 py-2"
       >
-        <!-- Done checkbox -->
-        <input
-          type="checkbox"
-          :checked="task.done"
-          class="shrink-0 cursor-pointer accent-brand"
-          @change="taskCtrl.toggleDone(task.id)"
-        />
-
-        <!-- Task name -->
-        <span
-          class="min-w-0 flex-1 truncate text-xs"
-          :class="task.done ? 'line-through text-sidebar-text/40' : 'text-sidebar-text'"
-        >
-          {{ task.name }}
+        <span :class="['shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold', categoryBadgeClass(task.category_id)]">
+          {{ task.category_id || "—" }}
         </span>
 
-        <!-- Actions -->
-        <div class="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-          <button
-            v-if="selectedWorkflow"
-            class="flex items-center justify-center rounded p-1 text-sidebar-text/60 transition-colors hover:bg-sidebar-border hover:text-brand"
-            :title="t('workspaces.tasks.runFor', { workflow: selectedWorkflow.name })"
-            @click="runForTask"
-          >
-            <i class="pi pi-play text-[10px]" />
-          </button>
-          <button
-            class="flex items-center justify-center rounded p-1 text-sidebar-text/60 transition-colors hover:bg-sidebar-border hover:text-red-500"
-            :title="t('workspaces.tasks.deleteTask')"
-            @click="taskCtrl.removeTask(task.id)"
-          >
-            <i class="pi pi-trash text-[10px]" />
-          </button>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-xs text-ink">{{ task.task_cd }}</span>
+            <span class="min-w-0 truncate text-xs text-secondary">{{ task.task_name }}</span>
+          </div>
+          <div v-if="task.current_wf_name" class="mt-0.5 flex items-center gap-1.5 text-[11px]">
+            <span class="truncate text-muted">{{ task.current_wf_name }} › {{ task.current_step_name }}</span>
+            <span
+              :class="['shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold', stepStatusBadgeClass(task.current_step_status)]"
+            >
+              {{ task.current_step_status }}
+            </span>
+          </div>
         </div>
+
+        <Button
+          icon="pi pi-trash"
+          text
+          rounded
+          size="small"
+          severity="danger"
+          :title="t('workspaces.tasks.unlink')"
+          @click="linksCtrl.removeTask(task.id)"
+        />
       </div>
     </div>
 
-    <!-- Footer: Run all -->
-    <div v-if="taskCtrl.tasks.value.length && selectedWorkflow" class="shrink-0 border-t border-sidebar-border px-3 py-2">
-      <button
-        class="flex w-full items-center justify-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:brightness-110"
-        @click="runForTask"
-      >
-        <i class="pi pi-play text-[10px]" />
-        {{ t("workspaces.tasks.run") }} · {{ selectedWorkflow.name }}
-      </button>
-    </div>
+    <TaskPickerDialog v-model:visible="showPickerDialog" :exclude-ids="excludeIds" @pick="pickTask" />
   </div>
 </template>

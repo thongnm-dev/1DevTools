@@ -23,4 +23,11 @@ export interface UpdateWorkspaceRequest {
 
 /** Panel đang hiển thị trong vùng nội dung chính của 1 workspace — chuyển qua icon rail (`WorkspaceRightSidebar.vue`).
  * "ide" gộp cả Explorer (cột 1) + vùng xem file (cột 2), giống bố cục VSCode. */
-export type WorkspaceMainPanel = "git" | "terminal" | "agents" | "ide" | "tasks";
+export type WorkspaceMainPanel = "git" | "terminal" | "agents" | "ide" | "tasks" | "overview";
+
+/** Liên kết "task này được thêm vào workspace này" — lưu cục bộ (JSON), không phải Postgres. */
+export interface WorkspaceTaskLink {
+  id: number;
+  workspace_id: number;
+  task_id: number;
+}

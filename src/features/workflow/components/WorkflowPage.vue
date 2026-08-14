@@ -9,22 +9,13 @@ import Listbox from "primevue/listbox";
 import Select from "primevue/select";
 import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
-import Popover from "primevue/popover";
 import { useWorkflow } from "../composables/useWorkflow";
-import { useSkill } from "../composables/useSkill";
-import { usePrompt } from "../composables/usePrompt";
-import { useWorkspace } from "../composables/useWorkspace";
-import { useWorkflowRunner } from "../composables/useWorkflowRunner";
+import { usePrompt } from "@/features/prompt/composables/usePrompt";
 import type { NodePos, Workflow, WorkflowStepType } from "@/models/workflow";
-import { DEFAULT_WORKFLOW_ICON, STEP_TYPE_META } from "@/models/workflow";
-import { useToast } from "@/shared/composables/useToast";
+import { DEFAULT_WORKFLOW_ICON, STEP_TYPE_META, aiModelLabel } from "@/models/workflow";
 
 const { t } = useI18n();
-const toast = useToast();
 const ctrl = useWorkflow();
-const skillCtrl = useSkill();
-const workspaceCtrl = useWorkspace();
-const runner = useWorkflowRunner();
 const promptCtrl = usePrompt();
 
 // --- Sidebar resize (pattern from AiWorkflowPage.vue) ---
@@ -96,57 +87,29 @@ async function saveWorkflow() {
   showWorkflowDialog.value = false;
 }
 
-// --- Run workflow (chọn workspace đích tại thời điểm chạy — xem useWorkflowRunner.ts) ---
-const runPopover = ref<InstanceType<typeof Popover> | null>(null);
-const runTargetWorkspaceId = ref<number | null>(null);
-
-const runWorkspaceOptions = computed(() =>
-  workspaceCtrl.workspaces.value.map((w) => ({ label: w.name, value: w.id })),
-);
-
-async function onRunClick(e: Event) {
-  const wf = ctrl.activeWorkflow.value;
-  if (!wf) return;
-  const workspaces = workspaceCtrl.workspaces.value;
-  if (workspaces.length === 0) {
-    toast.error(t("workflow.run.noWorkspacesOpen"));
-    return;
-  }
-  if (workspaces.length === 1) {
-    await runner.runWorkflow(wf, workspaces[0]);
-    return;
-  }
-  runTargetWorkspaceId.value = workspaces[0].id;
-  runPopover.value?.toggle(e);
-}
-
-async function confirmRunInWorkspace() {
-  const wf = ctrl.activeWorkflow.value;
-  const ws = workspaceCtrl.workspaces.value.find((w) => w.id === runTargetWorkspaceId.value);
-  runPopover.value?.hide();
-  if (!wf || !ws) return;
-  await runner.runWorkflow(wf, ws);
-}
-
 // --- Step dialog ---
 const showStepDialog = ref(false);
-const editingStepId = ref<string | null>(null);
-const afterStepId = ref<string | null>(null);
+const editingStepId = ref<number | null>(null);
+const afterStepId = ref<number | null>(null);
 const stepName = ref("");
 const stepType = ref<WorkflowStepType>("custom");
 const stepDescription = ref("");
 const stepIcon = ref(STEP_TYPE_META.custom.icon);
 const stepIsLatest = ref(false);
 const stepAiAccountId = ref<number | null>(null);
-const stepSkillId = ref<number | null>(null);
+const stepSkillName = ref("");
+const stepModelId = ref<number | null>(null);
 const stepPromptId = ref<number | null>(null);
 const stepRunnerCommand = ref("");
 
-const skillOptions = computed(() => skillCtrl.skills.value.map((s) => ({ label: s.name, value: s.id })));
 const promptOptions = computed(() => promptCtrl.prompts.value.map((p) => ({ label: p.title, value: p.id })));
 
 const agentOptions = computed(() =>
   ctrl.aiAccounts.value.map((a) => ({ label: `${a.name} (${a.provider})`, value: a.id })),
+);
+
+const modelOptions = computed(() =>
+  ctrl.models.value.map((m) => ({ label: aiModelLabel(m), value: m.id })),
 );
 
 const stepTypeOptions = computed(() =>
@@ -157,7 +120,7 @@ const stepTypeOptions = computed(() =>
   })),
 );
 
-function openAddStepDialog(after: string | null) {
+function openAddStepDialog(after: number | null) {
   editingStepId.value = null;
   afterStepId.value = after;
   stepName.value = "";
@@ -166,13 +129,14 @@ function openAddStepDialog(after: string | null) {
   stepIcon.value = STEP_TYPE_META.custom.icon;
   stepIsLatest.value = false;
   stepAiAccountId.value = null;
-  stepSkillId.value = null;
+  stepSkillName.value = "";
+  stepModelId.value = null;
   stepPromptId.value = null;
   stepRunnerCommand.value = "";
   showStepDialog.value = true;
 }
 
-function openEditStepDialog(stepId: string) {
+function openEditStepDialog(stepId: number) {
   const step = ctrl.activeSteps.value.find((s) => s.id === stepId);
   if (!step) return;
   editingStepId.value = step.id;
@@ -183,7 +147,8 @@ function openEditStepDialog(stepId: string) {
   stepIcon.value = step.icon;
   stepIsLatest.value = step.is_latest_step;
   stepAiAccountId.value = step.ai_account_id;
-  stepSkillId.value = step.skill_id;
+  stepSkillName.value = step.skill_name;
+  stepModelId.value = step.model_id;
   stepPromptId.value = step.prompt_id;
   stepRunnerCommand.value = step.runner_command ?? "";
   showStepDialog.value = true;
@@ -204,9 +169,10 @@ async function saveStep() {
     description: stepDescription.value.trim(),
     is_latest_step: stepIsLatest.value,
     ai_account_id: stepAiAccountId.value,
-    skill_id: stepType.value === "skill" ? stepSkillId.value : null,
+    skill_name: stepType.value === "skill" ? stepSkillName.value.trim() : "",
+    model_id: stepType.value === "skill" ? stepModelId.value : null,
     prompt_id: stepType.value === "prompt" ? stepPromptId.value : null,
-    runner_command: isRunnerLike ? stepRunnerCommand.value.trim() || null : null,
+    runner_command: isRunnerLike ? stepRunnerCommand.value.trim() : "",
   };
   if (editingStepId.value) {
     await ctrl.updateStep(editingStepId.value, data);
@@ -218,7 +184,7 @@ async function saveStep() {
 
 // --- Delete confirmation ---
 const showDeleteDialog = ref(false);
-const deleteTarget = ref<{ type: "workflow" | "step"; id: number | string; name: string } | null>(null);
+const deleteTarget = ref<{ type: "workflow" | "step"; id: number; name: string } | null>(null);
 
 function confirmDeleteWorkflow(wf?: Workflow) {
   const target = wf ?? ctrl.activeWorkflow.value;
@@ -227,7 +193,7 @@ function confirmDeleteWorkflow(wf?: Workflow) {
   showDeleteDialog.value = true;
 }
 
-function confirmDeleteStep(stepId: string) {
+function confirmDeleteStep(stepId: number) {
   const step = ctrl.activeSteps.value.find((s) => s.id === stepId);
   if (!step) return;
   deleteTarget.value = { type: "step", id: step.id, name: step.name };
@@ -237,9 +203,9 @@ function confirmDeleteStep(stepId: string) {
 async function executeDelete() {
   if (!deleteTarget.value) return;
   if (deleteTarget.value.type === "workflow") {
-    await ctrl.deleteWorkflow(deleteTarget.value.id as number);
+    await ctrl.deleteWorkflow(deleteTarget.value.id);
   } else {
-    await ctrl.deleteStep(deleteTarget.value.id as string);
+    await ctrl.deleteStep(deleteTarget.value.id);
   }
   showDeleteDialog.value = false;
   deleteTarget.value = null;
@@ -351,7 +317,7 @@ const V_GAP = 100;
 const NODES_PER_ROW = 3;
 
 const nodePositions = ref<Record<string, NodePos>>({});
-const draggingNodeId = ref<string | null>(null);
+const draggingNodeId = ref<number | null>(null);
 let nodeDragStartX = 0;
 let nodeDragStartY = 0;
 let nodeDragOrigX = 0;
@@ -387,7 +353,7 @@ function autoLayout() {
   void nextTick(() => updateArrows());
 }
 
-function ensureStepPosition(stepId: string) {
+function ensureStepPosition(stepId: number) {
   if (nodePositions.value[stepId]) return;
   const steps = ctrl.activeSteps.value;
   const idx = steps.findIndex((s) => s.id === stepId);
@@ -416,7 +382,7 @@ const canvasSize = computed(() => {
   return { width: Math.max(maxX, 600), height: Math.max(maxY, 300) };
 });
 
-function startNodeDrag(stepId: string, event: MouseEvent) {
+function startNodeDrag(stepId: number, event: MouseEvent) {
   if ((event.target as HTMLElement).closest("button")) return;
   event.preventDefault();
   draggingNodeId.value = stepId;
@@ -535,7 +501,7 @@ const listboxPt = {
             <span class="min-w-0 flex-1">
               <span class="block truncate text-xs font-bold">{{ option.name }}</span>
               <span class="block truncate text-[10px] text-muted">
-                {{ formatDate(option.updated_at) }} · {{ t("workflow.stepCount", { count: option.steps.length }) }}
+                {{ formatDate(option.updated_at) }} · {{ t("workflow.stepCount", { count: option.step_count }) }}
               </span>
             </span>
             <Button
@@ -586,35 +552,12 @@ const listboxPt = {
               <p class="text-sm text-muted">{{ ctrl.activeWorkflow.value.description || t("workflow.noDescription") }}</p>
             </div>
             <div class="ml-auto flex shrink-0 items-center gap-2">
-              <Button icon="pi pi-play" :label="t('workflow.run.run')" size="small" @click="onRunClick($event)" />
               <Button icon="pi pi-objects-column" :label="t('workflow.autoLayout')" severity="secondary" size="small" @click="autoLayout" />
               <Button icon="pi pi-pencil" :label="t('workflow.edit')" severity="secondary" size="small" @click="openEditWorkflowDialog" />
               <Button icon="pi pi-copy" :label="t('workflow.duplicate')" severity="secondary" size="small" @click="ctrl.duplicateWorkflow(ctrl.activeId.value!)" />
               <Button icon="pi pi-trash" :label="t('workflow.delete')" severity="danger" text size="small" @click="confirmDeleteWorkflow()" />
             </div>
           </div>
-
-          <Popover ref="runPopover">
-            <div class="w-64 p-1">
-              <p class="mb-2 text-xs text-muted">{{ t("workflow.run.pickWorkspaceHint") }}</p>
-              <Select
-                v-model="runTargetWorkspaceId"
-                :options="runWorkspaceOptions"
-                optionLabel="label"
-                optionValue="value"
-                class="w-full"
-                :pt="selectPt"
-              />
-              <Button
-                class="mt-2 w-full"
-                icon="pi pi-play"
-                size="small"
-                :label="t('workflow.run.run')"
-                :disabled="runTargetWorkspaceId === null"
-                @click="confirmRunInWorkspace"
-              />
-            </div>
-          </Popover>
         </div>
 
         <!-- Diagram area -->
@@ -838,17 +781,21 @@ const listboxPt = {
         </label>
         <label v-if="stepType === 'skill'" class="block">
           <span class="text-xs font-bold text-muted">{{ t("workflow.step.skill") }}</span>
+          <InputText v-model="stepSkillName" class="mt-1 w-full" :placeholder="t('workflow.step.skillPlaceholder')" />
+          <span class="text-xs text-muted">{{ t("workflow.step.skillHint") }}</span>
+        </label>
+        <label v-if="stepType === 'skill'" class="block">
+          <span class="text-xs font-bold text-muted">{{ t("workflow.step.model") }}</span>
           <Select
-            v-model="stepSkillId"
-            :options="skillOptions"
+            v-model="stepModelId"
+            :options="modelOptions"
             optionLabel="label"
             optionValue="value"
-            :placeholder="t('workflow.step.skillPlaceholder')"
+            :placeholder="t('workflow.step.modelPlaceholder')"
             show-clear
             class="mt-1 w-full"
             :pt="selectPt"
           />
-          <span v-if="skillOptions.length === 0" class="text-xs text-muted">{{ t("workflow.step.skillHint") }}</span>
         </label>
         <label v-if="stepType === 'prompt'" class="block">
           <span class="text-xs font-bold text-muted">{{ t("workflow.step.prompt") }}</span>

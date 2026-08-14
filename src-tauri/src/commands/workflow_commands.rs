@@ -1,104 +1,101 @@
-//! Tauri IPC commands cho màn hình Workflow (CRUD + layout canvas).
+//! Tauri IPC commands cho màn hình Workflow (CRUD workflow + step + layout canvas).
 
 use std::collections::HashMap;
 
-use crate::app::error::{log_err, AppError, AppErrorPayload};
-use crate::database::workflow_store;
-use crate::models::workflow::{CreateWorkflowRequest, NodePos, UpdateWorkflowRequest, Workflow};
+use crate::app::error::{log_err, AppErrorPayload};
+use crate::models::workflow::{
+    AiModel, CreateWorkflowRequest, NodePos, StepRequest, UpdateWorkflowRequest, Workflow, WorkflowStep,
+};
+use crate::services::workflow_service;
 
-/// Danh sách toàn bộ workflow, mới cập nhật gần nhất lên đầu.
+/// Danh sách toàn bộ workflow của user, mới cập nhật gần nhất lên đầu.
 #[tauri::command]
-pub fn workflow_list() -> Result<Vec<Workflow>, AppErrorPayload> {
-    let data = workflow_store::load().map_err(log_err)?;
-    let mut workflows = data.workflows;
-    workflows.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
-    Ok(workflows)
+pub async fn workflow_list(username: String) -> Result<Vec<Workflow>, AppErrorPayload> {
+    workflow_service::list_workflows(&username).await.map_err(log_err)
 }
 
 /// Tạo workflow mới (chưa có step).
 #[tauri::command]
-pub fn workflow_create(request: CreateWorkflowRequest) -> Result<Workflow, AppErrorPayload> {
-    let mut data = workflow_store::load().map_err(log_err)?;
-    data.next_id += 1;
-    let now = chrono::Local::now().to_rfc3339();
-    let workflow = Workflow {
-        id: data.next_id,
-        name: request.name,
-        description: request.description,
-        icon: request.icon,
-        steps: Vec::new(),
-        layout: HashMap::new(),
-        created_at: now.clone(),
-        updated_at: now,
-    };
-    data.workflows.push(workflow.clone());
-    workflow_store::save(&data).map_err(log_err)?;
-    Ok(workflow)
+pub async fn workflow_create(
+    username: String,
+    request: CreateWorkflowRequest,
+) -> Result<Workflow, AppErrorPayload> {
+    workflow_service::create_workflow(&username, request).await.map_err(log_err)
 }
 
-/// Cập nhật workflow — ghi đè `name`/`description`/toàn bộ `steps`.
+/// Cập nhật tên/mô tả/icon workflow.
 #[tauri::command]
-pub fn workflow_update(id: i64, request: UpdateWorkflowRequest) -> Result<Workflow, AppErrorPayload> {
-    let mut data = workflow_store::load().map_err(log_err)?;
-    let workflow = data
-        .workflows
-        .iter_mut()
-        .find(|w| w.id == id)
-        .ok_or_else(|| log_err(AppError::new(format!("Workflow #{id} không tồn tại"))))?;
-    workflow.name = request.name;
-    workflow.description = request.description;
-    workflow.icon = request.icon;
-    workflow.steps = request.steps;
-    workflow.updated_at = chrono::Local::now().to_rfc3339();
-    let result = workflow.clone();
-    workflow_store::save(&data).map_err(log_err)?;
-    Ok(result)
+pub async fn workflow_update(
+    id: i32,
+    username: String,
+    request: UpdateWorkflowRequest,
+) -> Result<Workflow, AppErrorPayload> {
+    workflow_service::update_workflow(id, &username, request).await.map_err(log_err)
 }
 
-/// Xoá workflow.
+/// Xoá workflow (cascade xoá toàn bộ step).
 #[tauri::command]
-pub fn workflow_delete(id: i64) -> Result<(), AppErrorPayload> {
-    let mut data = workflow_store::load().map_err(log_err)?;
-    data.workflows.retain(|w| w.id != id);
-    workflow_store::save(&data).map_err(log_err)?;
-    Ok(())
+pub async fn workflow_delete(id: i32, username: String) -> Result<(), AppErrorPayload> {
+    workflow_service::delete_workflow(id, &username).await.map_err(log_err)
 }
 
 /// Nhân bản workflow (kèm steps, không kèm layout — auto layout lại ở frontend).
 #[tauri::command]
-pub fn workflow_duplicate(id: i64) -> Result<Workflow, AppErrorPayload> {
-    let mut data = workflow_store::load().map_err(log_err)?;
-    let source = data
-        .workflows
-        .iter()
-        .find(|w| w.id == id)
-        .ok_or_else(|| log_err(AppError::new(format!("Workflow #{id} không tồn tại"))))?
-        .clone();
-
-    data.next_id += 1;
-    let now = chrono::Local::now().to_rfc3339();
-    let copy = Workflow {
-        id: data.next_id,
-        name: format!("{} (copy)", source.name),
-        description: source.description,
-        icon: source.icon,
-        steps: source.steps,
-        layout: HashMap::new(),
-        created_at: now.clone(),
-        updated_at: now,
-    };
-    data.workflows.push(copy.clone());
-    workflow_store::save(&data).map_err(log_err)?;
-    Ok(copy)
+pub async fn workflow_duplicate(id: i32, username: String) -> Result<Workflow, AppErrorPayload> {
+    workflow_service::duplicate_workflow(id, &username).await.map_err(log_err)
 }
 
-/// Ghi lại vị trí node trên canvas (không đụng tới `steps`).
+/// Ghi lại vị trí node trên canvas (không đụng tới step).
 #[tauri::command]
-pub fn workflow_save_layout(id: i64, layout: HashMap<String, NodePos>) -> Result<(), AppErrorPayload> {
-    let mut data = workflow_store::load().map_err(log_err)?;
-    if let Some(workflow) = data.workflows.iter_mut().find(|w| w.id == id) {
-        workflow.layout = layout;
-        workflow_store::save(&data).map_err(log_err)?;
-    }
-    Ok(())
+pub async fn workflow_save_layout(
+    id: i32,
+    username: String,
+    layout: HashMap<String, NodePos>,
+) -> Result<(), AppErrorPayload> {
+    workflow_service::save_layout(id, &username, layout).await.map_err(log_err)
+}
+
+/// Danh sách step của 1 workflow, theo `step_order`.
+#[tauri::command]
+pub async fn workflow_step_list(workflow_id: i32) -> Result<Vec<WorkflowStep>, AppErrorPayload> {
+    workflow_service::list_steps(workflow_id).await.map_err(log_err)
+}
+
+/// Thêm 1 step mới vào workflow.
+#[tauri::command]
+pub async fn workflow_step_create(
+    workflow_id: i32,
+    request: StepRequest,
+) -> Result<WorkflowStep, AppErrorPayload> {
+    workflow_service::create_step(workflow_id, request).await.map_err(log_err)
+}
+
+/// Cập nhật 1 step.
+#[tauri::command]
+pub async fn workflow_step_update(
+    id: i32,
+    request: StepRequest,
+) -> Result<WorkflowStep, AppErrorPayload> {
+    workflow_service::update_step(id, request).await.map_err(log_err)
+}
+
+/// Xoá 1 step.
+#[tauri::command]
+pub async fn workflow_step_delete(id: i32) -> Result<(), AppErrorPayload> {
+    workflow_service::delete_step(id).await.map_err(log_err)
+}
+
+/// Sắp lại thứ tự step theo danh sách id truyền vào.
+#[tauri::command]
+pub async fn workflow_step_reorder(
+    workflow_id: i32,
+    step_ids: Vec<i32>,
+) -> Result<(), AppErrorPayload> {
+    workflow_service::reorder_steps(workflow_id, step_ids).await.map_err(log_err)
+}
+
+/// Danh mục model AI để chọn cho step (hiện chỉ đối ứng provider `claude`).
+#[tauri::command]
+pub async fn ai_model_list() -> Result<Vec<AiModel>, AppErrorPayload> {
+    workflow_service::list_models().await.map_err(log_err)
 }

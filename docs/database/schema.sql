@@ -113,6 +113,7 @@ CREATE TABLE IF NOT EXISTS workflows (
     id          SERIAL       PRIMARY KEY,
     name        VARCHAR(200) NOT NULL,
     description TEXT         NOT NULL DEFAULT '',
+    icon        VARCHAR(50)  NOT NULL DEFAULT 'pi pi-sitemap',
     layout      JSONB        NOT NULL DEFAULT '{}',
     created_by  VARCHAR(100) NOT NULL,
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
@@ -136,6 +137,9 @@ CREATE TABLE IF NOT EXISTS workflow_steps (
     name          VARCHAR(200) NOT NULL,
     step_type     VARCHAR(20)  NOT NULL DEFAULT '',
     skill_name    VARCHAR(200) NOT NULL DEFAULT '',
+    prompt_id     INTEGER,
+    runner_command TEXT        NOT NULL DEFAULT '',
+    ai_account_id INTEGER,
     description   TEXT         NOT NULL DEFAULT '',
     icon          VARCHAR(50)  NOT NULL DEFAULT 'pi pi-cog',
     step_order    INTEGER      NOT NULL DEFAULT 0,
@@ -207,3 +211,15 @@ CREATE OR REPLACE TRIGGER trg_user_settings_updated_at
 
 CREATE OR REPLACE TRIGGER trg_menu_configs_updated_at
     BEFORE UPDATE ON menu_configs FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE OR REPLACE TRIGGER trg_workflows_updated_at
+    BEFORE UPDATE ON workflows FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE OR REPLACE TRIGGER trg_tasks_updated_at
+    BEFORE UPDATE ON tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE OR REPLACE TRIGGER trg_task_wf_proc_updated_at
+    BEFORE UPDATE ON task_wf_proc FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+CREATE OR REPLACE TRIGGER trg_task_wf_proc_step_updated_at
+    BEFORE UPDATE ON task_wf_proc_step FOR EACH ROW EXECUTE FUNCTION update_updated_at();

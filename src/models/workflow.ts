@@ -3,16 +3,22 @@
 export type WorkflowStepType = "skill" | "prompt" | "runner" | "terminal" | "custom";
 
 export interface WorkflowStep {
-  id: string;
+  id: number;
+  workflow_id: number;
   name: string;
   step_type: WorkflowStepType;
   icon: string;
   description: string;
+  step_order: number;
   is_latest_step: boolean;
-  skill_id: number | null;
+  /** Slug skill dùng khi `step_type = "skill"` (vd `create-plan`) — nhập tự do. */
+  skill_name: string;
   prompt_id: number | null;
-  runner_command: string | null;
+  runner_command: string;
   ai_account_id: number | null;
+  /** Model AI dùng khi AI Cowork chạy step này (chỉ có ý nghĩa với `step_type = "skill"`). */
+  model_id: number | null;
+  created_at: string;
 }
 
 export interface NodePos {
@@ -25,10 +31,18 @@ export interface Workflow {
   name: string;
   description: string;
   icon: string;
-  steps: WorkflowStep[];
   layout: Record<string, NodePos>;
+  created_by: string;
+  step_count: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface AiModel {
+  id: number;
+  provider: string;
+  model: string;
+  version: string;
 }
 
 export const DEFAULT_WORKFLOW_ICON = "pi pi-sitemap";
@@ -43,7 +57,20 @@ export interface UpdateWorkflowRequest {
   name: string;
   description: string;
   icon: string;
-  steps: WorkflowStep[];
+}
+
+export interface StepRequest {
+  name: string;
+  step_type: WorkflowStepType;
+  skill_name: string;
+  prompt_id: number | null;
+  runner_command: string;
+  ai_account_id: number | null;
+  description: string;
+  icon: string;
+  step_order: number;
+  is_latest_step: boolean;
+  model_id: number | null;
 }
 
 export const STEP_TYPE_META: Record<WorkflowStepType, { icon: string; badgeClass: string }> = {
@@ -53,3 +80,14 @@ export const STEP_TYPE_META: Record<WorkflowStepType, { icon: string; badgeClass
   terminal: { icon: "pi pi-desktop", badgeClass: "bg-amber-100 text-amber-700" },
   custom: { icon: "pi pi-cog", badgeClass: "bg-canvas text-muted" },
 };
+
+/** Nhãn hiển thị cho 1 model AI, vd "Opus 4.8" / "Sonnet" (rỗng version = latest alias). */
+export function aiModelLabel(model: AiModel): string {
+  const name = model.model.charAt(0).toUpperCase() + model.model.slice(1);
+  return model.version ? `${name} ${model.version}` : name;
+}
+
+/** Flag `--model` truyền cho CLI `claude` — rỗng version = alias mới nhất (không truyền version). */
+export function aiModelFlag(model: AiModel): string {
+  return model.version ? `${model.model}-${model.version}` : model.model;
+}

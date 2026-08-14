@@ -23,10 +23,14 @@ mod database {
     pub mod ai_profile_store;
     /// Lưu trữ cục bộ (JSON file) custom dev commands per-repo.
     pub mod dev_runner_store;
-    /// Lưu trữ cục bộ (JSON file) danh sách Workflow (kèm steps + layout canvas).
+    /// Data access cho bảng `workflows` / `workflow_steps` / `ai_models` (PostgreSQL).
     pub mod workflow_store;
+    /// Data access cho bảng `tasks` / `task_wf_proc` / `task_wf_proc_step` (PostgreSQL).
+    pub mod task_store;
     /// Lưu trữ cục bộ (JSON file) registry Workspace (đồng thời là tab bar).
     pub mod workspace_store;
+    /// Lưu trữ cục bộ (JSON file) liên kết Workspace <-> Task.
+    pub mod workspace_task_store;
     /// Lưu trữ cục bộ (JSON file) thư viện Skill.
     pub mod skill_store;
     /// Lưu trữ cục bộ (JSON file) thư viện Prompt.

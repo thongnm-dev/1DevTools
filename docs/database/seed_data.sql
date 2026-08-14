@@ -36,6 +36,16 @@ FROM users u, roles r
 WHERE u.username IN ('admin', 'thongnm') AND r.name = 'admin'
 ON CONFLICT (user_id, role_id) DO NOTHING;
 
+-- ── Danh mục model AI cho workflow step (hiện chỉ đối ứng provider 'claude') ─
+-- Version rỗng = chạy model latest (alias); có version = pin cụ thể (model-version).
+INSERT INTO ai_models (provider, model, version) VALUES
+    ('claude', 'opus',   ''),
+    ('claude', 'opus',   '4.8'),
+    ('claude', 'sonnet', ''),
+    ('claude', 'sonnet', '4.6'),
+    ('claude', 'haiku',  '4.5')
+ON CONFLICT (provider, model, version) DO NOTHING;
+
 -- ── Menu configuration (khớp route của app) ────────────────────────────────
 INSERT INTO menu_configs (key, title, path, icon, menu_group, is_visible, display_order) VALUES
     ('overview',        'Overview',    '/overview',               'pi-home',       '—',          TRUE, 1),
@@ -47,6 +57,8 @@ INSERT INTO menu_configs (key, title, path, icon, menu_group, is_visible, displa
     ('workflow',        'Workflow',    '/workflow',               'pi-sitemap',    '—',          TRUE, 32),
     ('skill',           'Skill',       '/skill',                  'pi-book',       '—',          TRUE, 33),
     ('prompt',          'Prompt',      '/prompt',                 'pi-comment',    '—',          TRUE, 34),
+    ('ai-tasks',        'AI Tasks',    '/ai/tasks',               'pi-check-square', '—',        TRUE, 37),
+    ('ai-cowork',       'AI Cowork',   '/ai/cowork',              'pi-objects-column', '—',      TRUE, 38),
     ('gov-users',       'Users',       '/governance/users',       'pi-users',      'Governance', TRUE, 40),
     ('gov-roles',       'Roles',       '/governance/roles',       'pi-shield',     'Governance', TRUE, 41),
     ('gov-menus',       'Menus',       '/governance/menus',       'pi-list',       'Governance', TRUE, 42),

@@ -66,4 +66,10 @@ mod services {
     pub mod dev_runner_service;
     /// Service cho module cài đặt người dùng (profile + theme/language/tab_mode).
     pub mod settings_service;
+    /// Service cho màn hình Workflow (CRUD workflow + step + layout canvas).
+    pub mod workflow_service;
+    /// Service cho AI Tasks / AI Cowork (task + task_wf_proc + task_wf_proc_step).
+    pub mod task_service;
+    /// Service cho liên kết Workspace <-> Task (JSON cục bộ).
+    pub mod workspace_task_service;
 }
