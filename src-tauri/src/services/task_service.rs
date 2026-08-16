@@ -63,6 +63,11 @@ pub async fn update_wf_proc(id: i32, latest_step_id: i32, updated_by: &str) -> A
         .ok_or_else(|| AppError::new(format!("Task workflow process '{id}' not found.")))
 }
 
+pub async fn delete_wf_proc(id: i32) -> AppResult<()> {
+    task_store::wf_proc_delete(id).await?;
+    Ok(())
+}
+
 pub async fn create_wf_proc_step(created_by: &str, request: CreateWfProcStepRequest) -> AppResult<TaskWfProcStep> {
     let status = if request.status.trim().is_empty() {
         "pending".to_string()

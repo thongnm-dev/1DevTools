@@ -127,6 +127,16 @@ pub async fn wf_proc_update(id: i32, latest_step_id: i32, updated_by: &str) -> A
     Ok(row.as_ref().map(map_wf_proc))
 }
 
+pub async fn wf_proc_delete(id: i32) -> AppResult<bool> {
+    let client = pgsql_connect::connect().await?;
+    let row = client
+        .query_one("SELECT sp_task_wf_proc_delete($1)", &[&id])
+        .await
+        .map_err(|e| AppError::new(format!("Failed to delete task workflow process: {e}")))?;
+    let deleted: i32 = row.get(0);
+    Ok(deleted > 0)
+}
+
 pub async fn wf_proc_step_insert(
     wf_proc_id: i32,
     wf_step_id: i32,

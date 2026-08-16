@@ -112,9 +112,9 @@ watch(
       <AppSidebar :active-menu="activeMenu" :is-collapsed="shell.isSidebarCollapsed.value"
         @menu-change="handleMenuChange" @toggle-collapse="shell.toggleSidebar()" />
 
-      <section class="min-h-0 overflow-hidden pl-6 pr-2 pt-6 pb-2">
+      <section class="min-h-0 overflow-hidden pl-6 pr-2 pt-3 pb-2">
         <div class="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
-          <AppHeader :route="currentAppRoute" :username="auth.user?.username" @logout="handleLogout" />
+          <AppHeader :route="currentAppRoute" />
 
           <AppTabBar v-if="tabNav.tabMode.value && tabNav.tabs.value.length > 0" :tabs="tabNav.tabs.value"
             :active-key="tabNav.activeTabKey.value" class="-mt-1 -mb-1" @activate="tabNav.activateTab"
@@ -129,7 +129,7 @@ watch(
       </section>
     </section>
 
-    <AppBottomBar :info="shell.systemInfo.value" />
+    <AppBottomBar :info="shell.systemInfo.value" @logout="handleLogout" />
 
     <!-- Floating toggle bubble -->
     <button :style="{

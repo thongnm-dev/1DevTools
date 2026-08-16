@@ -8,6 +8,7 @@ import WorkspaceAgentsPanel from "./WorkspaceAgentsPanel.vue";
 import WorkspaceTerminalPanel from "./WorkspaceTerminalPanel.vue";
 import WorkspaceTasksPanel from "./WorkspaceTasksPanel.vue";
 import WorkspaceOverviewPanel from "./WorkspaceOverviewPanel.vue";
+import WorkspacePlanPanel from "./WorkspacePlanPanel.vue";
 import type { GitRepo } from "@/models/git";
 import type { Workspace, WorkspaceMainPanel } from "@/models/workspace";
 
@@ -67,6 +68,8 @@ watch(
       <WorkspaceTasksPanel v-show="activePanel === 'tasks'" :workspace="workspace" class="h-full" />
 
       <WorkspaceOverviewPanel v-show="activePanel === 'overview'" :workspace="workspace" :repo="repo" class="h-full" />
+
+      <WorkspacePlanPanel v-show="activePanel === 'plan'" :workspace="workspace" class="h-full" />
     </div>
 
     <WorkspaceRightSidebar

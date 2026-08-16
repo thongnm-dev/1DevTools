@@ -219,6 +219,7 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         task_wf_proc_create,
         task_wf_proc_list,
         task_wf_proc_update,
+        task_wf_proc_delete,
         task_wf_proc_step_create,
         task_wf_proc_step_list,
         task_wf_proc_step_update,

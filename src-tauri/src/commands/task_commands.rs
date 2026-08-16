@@ -58,6 +58,11 @@ pub async fn task_wf_proc_update(
 // ── task_wf_proc_step ────────────────────────────────────────────────────
 
 #[tauri::command]
+pub async fn task_wf_proc_delete(id: i32) -> Result<(), AppErrorPayload> {
+    task_service::delete_wf_proc(id).await.map_err(log_err)
+}
+
+#[tauri::command]
 pub async fn task_wf_proc_step_create(
     username: String,
     request: CreateWfProcStepRequest,

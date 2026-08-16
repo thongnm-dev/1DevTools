@@ -8,6 +8,7 @@ type AuthUser = {
   username: string;
   full_name: string;
   email: string;
+  phone?: string;
   roles: string[];
 };
 
@@ -27,6 +28,7 @@ export const useAuthStore = defineStore("auth", () => {
       username: response.username,
       full_name: response.full_name,
       email: response.email,
+      phone: response.phone,
       roles: response.roles,
     };
     if (rememberMe) {

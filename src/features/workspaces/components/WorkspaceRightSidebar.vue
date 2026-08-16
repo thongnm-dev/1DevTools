@@ -109,6 +109,14 @@ watch(cogOpen, (val) => {
     >
       <i class="pi pi-list-check text-sm" />
     </button>
+    <button
+      class="flex items-center justify-center rounded-md p-2 transition-colors"
+      :class="itemClass('plan', activePanel)"
+      :title="t('workspaces.sidebar.plan')"
+      @click="emit('select', 'plan')"
+    >
+      <i class="pi pi-sitemap text-sm" />
+    </button>
 
     <!-- Cog button pinned to bottom -->
     <div class="mt-auto">

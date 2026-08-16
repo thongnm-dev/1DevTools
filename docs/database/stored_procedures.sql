@@ -1710,6 +1710,29 @@ $$;
 -- completed/skipped).
 -- ============================================================================
 
+-- ============================================================================
+-- sp_task_wf_proc_delete
+-- Delete a task workflow process by ID. Cascades to task_wf_proc_step.
+-- Returns the count of deleted rows.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION sp_task_wf_proc_delete(p_id INTEGER)
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_count INTEGER;
+BEGIN
+    DELETE FROM task_wf_proc WHERE id = p_id;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RETURN v_count;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_task_wf_proc_step_update
+-- ----------------------------------------------------------------------------
+-- ============================================================================
 CREATE OR REPLACE FUNCTION sp_task_wf_proc_step_update(
     p_id         INTEGER,
     p_status     VARCHAR(20),

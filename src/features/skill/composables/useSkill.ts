@@ -14,13 +14,24 @@ export function useSkill() {
   const isLoading = ref(false);
   const error = ref("");
   const searchQuery = ref("");
+  const sortBy = ref<"name" | "category" | "created_at">("created_at");
+  const sortDir = ref<"asc" | "desc">("desc");
 
   const filteredSkills = computed(() => {
     const q = searchQuery.value.trim().toLowerCase();
-    if (!q) return skills.value;
-    return skills.value.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || s.tags.some((tag) => tag.toLowerCase().includes(q)),
-    );
+    const list = q
+      ? skills.value.filter(
+          (s) => s.name.toLowerCase().includes(q) || s.description.toLowerCase().includes(q) || s.tags.some((tag) => tag.toLowerCase().includes(q)),
+        )
+      : [...skills.value];
+
+    const dir = sortDir.value === "asc" ? 1 : -1;
+    list.sort((a, b) => {
+      if (sortBy.value === "name") return dir * a.name.localeCompare(b.name);
+      if (sortBy.value === "category") return dir * a.category.localeCompare(b.category);
+      return dir * (new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    });
+    return list;
   });
 
   async function loadSkills() {
@@ -75,6 +86,8 @@ export function useSkill() {
     isLoading,
     error,
     searchQuery,
+    sortBy,
+    sortDir,
     filteredSkills,
     createSkill,
     updateSkill,

@@ -36,6 +36,10 @@ export function taskWfProcUpdate(id: number, latestStepId: number, username: str
   return safeInvoke<TaskWfProc>("task_wf_proc_update", { id, latestStepId, username });
 }
 
+export function taskWfProcDelete(id: number) {
+  return safeInvoke<void>("task_wf_proc_delete", { id });
+}
+
 export function taskWfProcStepCreate(username: string, request: CreateWfProcStepRequest) {
   return safeInvoke<TaskWfProcStep>("task_wf_proc_step_create", { username, request });
 }

@@ -38,8 +38,8 @@ export function useWorkspaceTerminal() {
   }
 
   /** Mở tab terminal mới cho workspace và đưa nó thành active. */
-  function addTab(workspaceId: number, title: string, startDir: string): string | null {
-    const key = term.addTab({ title, startDir });
+  function addTab(workspaceId: number, title: string, startDir: string, autoCommand?: string): string | null {
+    const key = term.addTab({ title, startDir, autoCommand });
     if (key) {
       workspaceOfTab.set(key, workspaceId);
       setActive(workspaceId, key);
