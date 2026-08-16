@@ -7,22 +7,40 @@ fn default_skill_icon() -> String {
     "pi pi-book".to_string()
 }
 
-/// Nhóm skill — giúp UI phân loại/hiển thị badge màu.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub enum SkillCategory {
-    #[serde(rename = "implement")]
-    Implement,
-    #[serde(rename = "review")]
-    Review,
-    #[serde(rename = "test")]
-    Test,
-    #[serde(rename = "release")]
-    Release,
-    #[serde(rename = "docs")]
-    Docs,
-    #[serde(rename = "custom")]
+fn default_string() -> String {
+    String::new()
+}
+
+/// Loại skill — phân theo domain/mục đích sử dụng.
+/// Các giá trị cũ (implement, review, test, release, docs) sẽ fallback về Custom.
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
+pub enum SkillType {
+    #[serde(rename = "general")]
+    General,
+    #[serde(rename = "frontend")]
+    Frontend,
+    #[serde(rename = "backend")]
+    Backend,
+    #[serde(rename = "mobile")]
+    Mobile,
+    #[serde(rename = "devops")]
+    DevOps,
+    #[serde(rename = "translation")]
+    Translation,
+    #[serde(rename = "design")]
+    Design,
+    #[serde(rename = "writing")]
+    Writing,
+    #[serde(rename = "data")]
+    Data,
+    /// Catch-all cho giá trị cũ và loại tùy chỉnh
+    #[serde(other)]
+    #[default]
     Custom,
 }
+
+// Backward compat alias
+pub type SkillCategory = SkillType;
 
 /// Một skill — thư viện global, tái sử dụng cho mọi workspace/workflow.
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -33,7 +51,10 @@ pub struct Skill {
     pub description: String,
     #[serde(default = "default_skill_icon")]
     pub icon: String,
-    pub category: SkillCategory,
+    pub category: SkillType,
+    /// Tech stack cụ thể, VD: "Vue 3", "FastAPI", "Flutter" ...
+    #[serde(default = "default_string")]
+    pub stack: String,
     /// Nội dung chỉ dẫn (markdown) — tương đương SKILL.md.
     #[serde(default)]
     pub instructions: String,
@@ -43,7 +64,7 @@ pub struct Skill {
     pub updated_at: String,
 }
 
-/// Request tạo/cập nhật skill — dùng chung field cho cả 2 (không cần request riêng).
+/// Request tạo/cập nhật skill.
 #[derive(Debug, Deserialize)]
 pub struct SkillRequest {
     pub name: String,
@@ -51,7 +72,9 @@ pub struct SkillRequest {
     pub description: String,
     #[serde(default = "default_skill_icon")]
     pub icon: String,
-    pub category: SkillCategory,
+    pub category: SkillType,
+    #[serde(default = "default_string")]
+    pub stack: String,
     #[serde(default)]
     pub instructions: String,
     #[serde(default)]

@@ -25,6 +25,7 @@ pub fn skill_create(request: SkillRequest) -> Result<Skill, AppErrorPayload> {
         description: request.description,
         icon: request.icon,
         category: request.category,
+        stack: request.stack,
         instructions: request.instructions,
         tags: request.tags,
         created_at: now.clone(),
@@ -48,6 +49,7 @@ pub fn skill_update(id: i64, request: SkillRequest) -> Result<Skill, AppErrorPay
     skill.description = request.description;
     skill.icon = request.icon;
     skill.category = request.category;
+    skill.stack = request.stack;
     skill.instructions = request.instructions;
     skill.tags = request.tags;
     skill.updated_at = chrono::Local::now().to_rfc3339();

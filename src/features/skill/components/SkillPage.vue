@@ -8,8 +8,8 @@ import SkillDeleteDialog from "./SkillDeleteDialog.vue";
 import { useSkill } from "../composables/useSkill";
 import { useToast } from "@/shared/composables/useToast";
 import { friendlyError } from "@/tauri/commands/_base";
-import type { Skill, SkillCategory, SkillRequest } from "@/models/skill";
-import { SKILL_CATEGORY_META } from "@/models/skill";
+import type { Skill, SkillType, SkillRequest } from "@/models/skill";
+import { SKILL_TYPE_META } from "@/models/skill";
 
 type ViewMode = "grid" | "list";
 const viewMode = ref<ViewMode>("grid");
@@ -18,11 +18,11 @@ const { t } = useI18n();
 const toast = useToast();
 const ctrl = useSkill();
 
-function categoryBadgeClass(category: SkillCategory): string {
-  return SKILL_CATEGORY_META[category]?.badgeClass ?? "bg-canvas text-muted";
+function categoryBadgeClass(category: SkillType): string {
+  return SKILL_TYPE_META[category]?.badgeClass ?? "bg-canvas text-muted";
 }
 
-function categoryLabel(category: SkillCategory): string {
+function categoryLabel(category: SkillType): string {
   return t(`skill.category.${category}`);
 }
 
@@ -161,9 +161,14 @@ async function executeDelete() {
               <i :class="[skill.icon, 'text-xl text-brand']" />
               <div class="min-w-0 flex-1">
                 <h3 class="section-title truncate">{{ skill.name }}</h3>
-                <span :class="['mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold', categoryBadgeClass(skill.category)]">
-                  {{ categoryLabel(skill.category) }}
-                </span>
+                <div class="mt-1 flex flex-wrap items-center gap-1">
+                  <span :class="['inline-block rounded-full px-2 py-0.5 text-[10px] font-bold', categoryBadgeClass(skill.category)]">
+                    {{ categoryLabel(skill.category) }}
+                  </span>
+                  <span v-if="skill.stack" class="inline-block rounded-full bg-panel px-2 py-0.5 text-[10px] text-secondary border border-divider">
+                    {{ skill.stack }}
+                  </span>
+                </div>
               </div>
               <div class="flex shrink-0 items-center gap-0.5">
                 <Button icon="pi pi-copy" text rounded size="small" :title="t('skill.copyInstructions')" @click="copyInstructions(skill)" />
@@ -187,6 +192,9 @@ async function executeDelete() {
                 <h3 class="section-title truncate">{{ skill.name }}</h3>
                 <span :class="['shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold', categoryBadgeClass(skill.category)]">
                   {{ categoryLabel(skill.category) }}
+                </span>
+                <span v-if="skill.stack" class="shrink-0 rounded-full bg-panel px-2 py-0.5 text-[10px] text-secondary border border-divider">
+                  {{ skill.stack }}
                 </span>
               </div>
               <p class="truncate text-xs text-muted">{{ skill.description || t("skill.noDescription") }}</p>

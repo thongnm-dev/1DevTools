@@ -38,7 +38,6 @@ import GitGraphDialog from "./GitGraphDialog.vue";
 import GitCommitBrowserDialog from "./GitCommitBrowserDialog.vue";
 import GitBlameDialog from "./GitBlameDialog.vue";
 import GitLogDialog from "./GitLogDialog.vue";
-import GitAgentTerminalDialog from "./GitAgentTerminalDialog.vue";
 import GitRightSidebar from "./GitRightSidebar.vue";
 import GitMoreActionsMenu from "./GitMoreActionsMenu.vue";
 
@@ -402,12 +401,6 @@ function openGraphDialog() {
   graphDialogVisible.value = true;
 }
 
-// === Mở terminal với AI Agent ===
-const agentTerminalDialogVisible = ref(false);
-function openAgentTerminalDialog() {
-  agentTerminalDialogVisible.value = true;
-}
-
 // === More actions menu handler ===
 function handleMoreAction(name: string) {
   switch (name) {
@@ -725,13 +718,6 @@ onUnmounted(closeCommitMenu);
 
         <div class="ml-auto flex items-center gap-0.5">
           <template v-if="git.activeRepo.value">
-            <button
-              class="flex h-7 items-center gap-1 rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand"
-              :title="t('git.page.openAgentTerminal')"
-              @click="openAgentTerminalDialog"
-            >
-              <i class="pi pi-microchip-ai text-[11px]" /> {{ t("git.page.agent") }}
-            </button>
             <button
               class="flex h-7 items-center rounded-md px-2 text-secondary transition-colors hover:bg-canvas hover:text-brand"
               :title="t('git.page.openInVscode')"
@@ -1325,7 +1311,6 @@ onUnmounted(closeCommitMenu);
     <GitGraphDialog v-model:visible="graphDialogVisible" :git="git" :on-file-context="openFileMenu" />
     <GitCommitBrowserDialog v-model:visible="browserDialogVisible" :git="git" :on-file-context="openFileMenu" />
     <GitLogDialog v-model:visible="logDialogVisible" :git="git" />
-    <GitAgentTerminalDialog v-model:visible="agentTerminalDialogVisible" :git="git" />
     <GitBlameDialog
       v-model:visible="blameDialogVisible"
       :git="git"

@@ -4,12 +4,11 @@ import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
-import Select from "primevue/select";
 import Textarea from "primevue/textarea";
 import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
-import type { Skill, SkillCategory, SkillRequest } from "@/models/skill";
-import { DEFAULT_SKILL_ICON, SKILL_CATEGORY_META } from "@/models/skill";
+import type { Skill, SkillType, SkillRequest } from "@/models/skill";
+import { DEFAULT_SKILL_ICON, SKILL_TYPE_META, STACK_SUGGESTIONS } from "@/models/skill";
 
 const props = defineProps<{
   visible: boolean;
@@ -23,24 +22,36 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const categoryOptions = computed(() =>
-  (Object.keys(SKILL_CATEGORY_META) as SkillCategory[]).map((value) => ({ label: t(`skill.category.${value}`), value })),
+const SKILL_TYPES: SkillType[] = [
+  "general", "frontend", "backend", "mobile", "devops",
+  "translation", "design", "writing", "data", "custom",
+];
+
+const typeOptions = computed(() =>
+  SKILL_TYPES.map((value) => ({
+    value,
+    label: t(`skill.category.${value}`),
+    icon: SKILL_TYPE_META[value].icon,
+  })),
 );
+
+const stackSuggestions = computed(() => STACK_SUGGESTIONS[skillType.value] ?? []);
 
 const name = ref("");
 const description = ref("");
 const icon = ref(DEFAULT_SKILL_ICON);
-const category = ref<SkillCategory>("custom");
+const skillType = ref<SkillType>("general");
+const stack = ref("");
 const instructions = ref("");
 const tagsText = ref("");
 const showIconPicker = ref(false);
 const fullscreen = ref(false);
 
 // Resize (giữ kích thước giữa các lần mở)
-const dialogWidth = ref(512);
-const dialogHeight = ref(540);
-const MIN_WIDTH = 380;
-const MIN_HEIGHT = 300;
+const dialogWidth = ref(560);
+const dialogHeight = ref(600);
+const MIN_WIDTH = 400;
+const MIN_HEIGHT = 340;
 let cleanupResize: (() => void) | null = null;
 
 function startResize(event: MouseEvent) {
@@ -88,14 +99,16 @@ watch(
       name.value = props.skill.name;
       description.value = props.skill.description;
       icon.value = props.skill.icon;
-      category.value = props.skill.category;
+      skillType.value = props.skill.category ?? "general";
+      stack.value = props.skill.stack ?? "";
       instructions.value = props.skill.instructions;
       tagsText.value = props.skill.tags.join(", ");
     } else {
       name.value = "";
       description.value = "";
       icon.value = DEFAULT_SKILL_ICON;
-      category.value = "custom";
+      skillType.value = "general";
+      stack.value = "";
       instructions.value = "";
       tagsText.value = "";
     }
@@ -109,17 +122,12 @@ function save() {
     name: trimmedName,
     description: description.value.trim(),
     icon: icon.value,
-    category: category.value,
+    category: skillType.value,
+    stack: stack.value.trim(),
     instructions: instructions.value,
     tags: tagsText.value.split(",").map((s) => s.trim()).filter(Boolean),
   });
 }
-
-const selectPt = {
-  root: { class: "!bg-panel !border-divider" },
-  label: { class: "!flex !items-center !text-xs !py-1.5 !text-ink" },
-  option: { class: "!text-xs" },
-};
 </script>
 
 <template>
@@ -146,7 +154,8 @@ const selectPt = {
       </div>
     </template>
 
-    <div :class="fullscreen ? 'flex flex-col gap-4' : 'space-y-4'">
+    <div :class="fullscreen ? 'flex flex-col gap-4' : 'space-y-3'">
+      <!-- Name + Icon -->
       <div class="flex items-end gap-3">
         <label class="block min-w-0 flex-1">
           <span class="text-xs font-bold text-muted">{{ t("skill.dialog.name") }} <span class="text-red-500">*</span></span>
@@ -164,26 +173,72 @@ const selectPt = {
         </div>
       </div>
 
-      <label class="block">
-        <span class="text-xs font-bold text-muted">{{ t("skill.dialog.category") }}</span>
-        <Select v-model="category" :options="categoryOptions" optionLabel="label" optionValue="value" class="mt-1 w-full" :pt="selectPt" />
-      </label>
+      <!-- Skill Type selector -->
+      <div>
+        <span class="text-xs font-bold text-muted">{{ t("skill.dialog.type") }}</span>
+        <div class="mt-1.5 flex flex-wrap gap-1.5">
+          <button
+            v-for="opt in typeOptions"
+            :key="opt.value"
+            type="button"
+            :class="[
+              'flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
+              skillType === opt.value
+                ? 'border-brand bg-brand/10 text-brand'
+                : 'border-divider bg-canvas text-muted hover:border-brand/40 hover:text-default',
+            ]"
+            @click="skillType = opt.value; stack = ''"
+          >
+            <i :class="[opt.icon, 'text-[11px]']" />
+            {{ opt.label }}
+          </button>
+        </div>
+      </div>
 
+      <!-- Stack field (hiện khi có suggestions hoặc luôn hiện cho các loại tech) -->
+      <div>
+        <span class="text-xs font-bold text-muted">{{ t("skill.dialog.stack") }}</span>
+        <InputText
+          v-model="stack"
+          class="mt-1 w-full"
+          :placeholder="t('skill.dialog.stackPlaceholder')"
+        />
+        <div v-if="stackSuggestions.length" class="mt-1.5 flex flex-wrap gap-1">
+          <button
+            v-for="s in stackSuggestions"
+            :key="s"
+            type="button"
+            :class="[
+              'rounded-full border px-2 py-0.5 text-[10px] transition-colors',
+              stack === s
+                ? 'border-brand bg-brand/10 text-brand'
+                : 'border-divider text-muted hover:border-brand/40 hover:text-default',
+            ]"
+            @click="stack = stack === s ? '' : s"
+          >
+            {{ s }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Description -->
       <label class="block">
         <span class="text-xs font-bold text-muted">{{ t("skill.dialog.description") }}</span>
         <InputText v-model="description" class="mt-1 w-full" :placeholder="t('skill.dialog.descriptionPlaceholder')" />
       </label>
 
+      <!-- Instructions -->
       <label :class="['block', fullscreen && 'flex flex-1 flex-col']">
         <span class="text-xs font-bold text-muted">{{ t("skill.dialog.instructions") }}</span>
         <Textarea
           v-model="instructions"
-          :rows="fullscreen ? 20 : 8"
+          :rows="fullscreen ? 20 : 6"
           :class="['mt-1 w-full !text-xs', fullscreen && 'flex-1 resize-none']"
           :placeholder="t('skill.dialog.instructionsPlaceholder')"
         />
       </label>
 
+      <!-- Tags -->
       <label class="block">
         <span class="text-xs font-bold text-muted">{{ t("skill.dialog.tags") }}</span>
         <InputText v-model="tagsText" class="mt-1 w-full" :placeholder="t('skill.dialog.tagsPlaceholder')" />
