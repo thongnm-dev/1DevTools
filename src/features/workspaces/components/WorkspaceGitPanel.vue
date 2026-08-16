@@ -356,7 +356,7 @@ function lineClass(kind: string): string {
     @create-tag="tagListDialogVisible = false; tagTarget = { hash: '', label: 'HEAD' }; tagDialogVisible = true"
   />
   <GitMergeDialog v-model:visible="mergeDialogVisible" :git="git" />
-  <GitCompareDialog v-model:visible="compareDialogVisible" :git="git" :pr="null" />
+  <GitCompareDialog v-model:visible="compareDialogVisible" :git="git" :pr="null" :on-file-context="() => {}" />
   <GitPullRequestsDialog
     v-model:visible="prDialogVisible"
     :git="git"
@@ -365,7 +365,7 @@ function lineClass(kind: string): string {
   <GitUpdateFromMainDialog v-model:visible="updateDialogVisible" :git="git" />
   <GitResetHeadDialog v-model:visible="resetHeadDialogVisible" :git="git" />
   <GitCleanupDialog v-model:visible="cleanupDialogVisible" :git="git" />
-  <GitCommitBrowserDialog v-model:visible="browserDialogVisible" :git="git" />
+  <GitCommitBrowserDialog v-model:visible="browserDialogVisible" :git="git" :on-file-context="() => {}" />
   <GitLogDialog v-model:visible="logDialogVisible" :git="git" />
-  <GitGraphDialog v-model:visible="graphDialogVisible" :git="git" />
+  <GitGraphDialog v-model:visible="graphDialogVisible" :git="git" :on-file-context="() => {}" />
 </template>

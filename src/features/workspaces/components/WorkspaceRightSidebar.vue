@@ -38,7 +38,8 @@ function toggleCog() {
 
 function cogAction(name: "edit" | "delete") {
   cogOpen.value = false;
-  emit(name);
+  if (name === "edit") emit("edit");
+  else emit("delete");
 }
 
 function onClickAway(e: MouseEvent) {
