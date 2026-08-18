@@ -61,7 +61,12 @@ watch(
         class="h-full"
       />
 
-      <WorkspaceAgentsPanel v-show="activePanel === 'agents'" :workspace="workspace" class="h-full" />
+      <WorkspaceAgentsPanel
+        v-show="activePanel === 'agents'"
+        :workspace="workspace"
+        class="h-full"
+        @open-terminal="activePanel = 'terminal'"
+      />
 
       <WorkspaceIdePanel v-show="activePanel === 'ide'" :root="workspace.project_path" class="h-full" />
 

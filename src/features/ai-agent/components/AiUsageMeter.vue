@@ -25,14 +25,18 @@ function usageBarClass(usedPercentValue: number): string {
   return "bg-brand";
 }
 
-/** Diễn giải reset_at (`YYYY-MM-DD HH:MM:SS`) thành chuỗi ngắn, vd "còn 2h 15m · 11:10". */
+/** Diễn giải reset_at (`YYYY-MM-DD HH:MM:SS`) thành chuỗi ngắn — cùng ngày chỉ hiện giờ
+ * (vd "sẽ reset sau 2h 15m ・ 11:10"), khác ngày (thường gặp ở giới hạn tuần) hiện thêm
+ * ngày dạng yyyy/MM/dd để không mơ hồ (vd "sẽ reset sau 3d ・ 2026/08/21 11:10"). */
 function resetHint(resetAt: string): string {
   const raw = resetAt?.trim();
   if (!raw) return "—";
   const target = new Date(raw.replace(" ", "T"));
   if (Number.isNaN(target.getTime())) return raw;
   const diffMs = target.getTime() - Date.now();
-  const clock = raw.slice(11, 16) || "";
+  const sameDay = target.toDateString() === new Date().toDateString();
+  const time = raw.slice(11, 16) || "";
+  const clock = sameDay ? time : `${raw.slice(0, 4)}/${raw.slice(5, 7)}/${raw.slice(8, 10)} ${time}`;
   if (diffMs <= 0) return t("aiUsage.meter.resetSoon", { clock });
   const mins = Math.round(diffMs / 60000);
   const days = Math.floor(mins / 1440);
@@ -50,8 +54,8 @@ function resetHint(resetAt: string): string {
 <template>
   <div>
     <div class="flex items-center justify-between" :class="size === 'md' ? 'text-xs' : 'text-[11px]'">
-      <span class="font-bold text-muted">{{ label }}</span>
-      <span class="font-bold text-ink">{{ Math.round(usedPercent(remainingPercent)) }}%</span>
+      <span class="min-w-0 truncate font-bold text-muted">{{ label }} <template v-if="resetAt !== undefined"> {{ resetHint(resetAt) }}</template></span>
+      <span class="shrink-0 font-bold text-ink">{{ Math.round(usedPercent(remainingPercent)) }}%</span>
     </div>
     <div class="overflow-hidden rounded-full bg-canvas" :class="size === 'md' ? 'mt-1.5 h-2' : 'mt-1 h-1.5'">
       <div
@@ -59,9 +63,5 @@ function resetHint(resetAt: string): string {
         :style="{ width: `${usedPercent(remainingPercent)}%` }"
       />
     </div>
-    <p v-if="resetAt !== undefined" class="mt-1 flex items-center gap-1 text-[11px] text-muted">
-      <i class="pi pi-clock" />{{ t("aiUsage.meter.resetPrefix") }} {{ resetHint(resetAt) }}
-      <slot name="tag" />
-    </p>
   </div>
 </template>

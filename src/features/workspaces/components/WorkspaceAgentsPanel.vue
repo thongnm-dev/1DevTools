@@ -1,15 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
-import { useRouter } from "vue-router";
-import Select from "primevue/select";
-import InputText from "primevue/inputtext";
 import { useAiUsage } from "@/features/ai-agent/composables/useAiUsage";
-import { useTerminal } from "@/features/terminal/composables/useTerminal";
-import { AI_PROVIDER_LABEL } from "@/models/ai-usage";
+import AiAgentProfile from "@/features/ai-agent/components/AiAgentProfile.vue";
+import { useWorkspaceTerminal } from "../composables/useWorkspaceTerminal";
+import type { AiAccount, AiProvider } from "@/models/ai-usage";
 import type { Workspace } from "@/models/workspace";
-
-const CUSTOM_PRESET = "__custom__";
 
 const AGENT_OPTIONS = [
   {
@@ -17,6 +13,7 @@ const AGENT_OPTIONS = [
     title: "Claude",
     command: "claude",
     icon: "pi pi-sparkles",
+    provider: "claude" as AiProvider | null,
     presets: ["--dangerously-skip-permissions", "--resume", ""],
   },
   {
@@ -24,6 +21,7 @@ const AGENT_OPTIONS = [
     title: "Codex",
     command: "codex",
     icon: "pi pi-microchip-ai",
+    provider: "codex" as AiProvider | null,
     presets: ["--full-auto", "--dangerously-bypass-approvals-and-sandbox", ""],
   },
   {
@@ -31,53 +29,51 @@ const AGENT_OPTIONS = [
     title: "Copilot",
     command: "copilot",
     icon: "pi pi-github",
+    provider: null as AiProvider | null,
     presets: ["--allow-all-tools", ""],
   },
 ] as const;
 
 const props = defineProps<{ workspace: Workspace }>();
+const emit = defineEmits<{ "open-terminal": [] }>();
 
 const { t } = useI18n();
-const router = useRouter();
 const ctrl = useAiUsage();
-const term = useTerminal();
+const wsTerm = useWorkspaceTerminal();
 
 const selectedKey = ref<(typeof AGENT_OPTIONS)[number]["key"]>(AGENT_OPTIONS[0].key);
-const selectedPreset = ref<string>(AGENT_OPTIONS[0].presets[0]);
-const customArgs = ref("");
 
 const currentAgent = computed(
   () => AGENT_OPTIONS.find((a) => a.key === selectedKey.value) ?? AGENT_OPTIONS[0],
 );
 
-const presetOptions = computed(() => [
-  ...currentAgent.value.presets.map((p) => ({
-    label: p || t("git.dialogs.agentTerminal.noArgs"),
-    value: p,
-  })),
-  { label: t("git.dialogs.agentTerminal.customPreset"), value: CUSTOM_PRESET },
-]);
-
-const isCustomPreset = computed(() => selectedPreset.value === CUSTOM_PRESET);
-
-const finalArgs = computed(() =>
-  isCustomPreset.value ? customArgs.value.trim() : selectedPreset.value,
-);
+// Chỉ hiển thị account đúng provider của agent đang chọn — chọn agent nào thì
+// load/active account (profile) của agent đó, thay vì luôn hiện toàn bộ danh sách.
+const accountsForAgent = computed(() => {
+  const provider = currentAgent.value.provider;
+  if (!provider) return [];
+  return ctrl.accounts.value.filter((a) => a.provider === provider);
+});
 
 function selectAgent(agent: (typeof AGENT_OPTIONS)[number]) {
   selectedKey.value = agent.key;
-  selectedPreset.value = agent.presets[0];
-  customArgs.value = "";
 }
 
-function doLaunch() {
+// Panel này trước đây không gọi start() nên danh sách account luôn rỗng —
+// cần load account (profile) mỗi khi panel mount để có cái mà active theo agent.
+onMounted(() => {
+  void ctrl.start();
+});
+
+/** Mở terminal cho một account cụ thể: kích hoạt profile rồi mở tab terminal của workspace
+ * với command (agent + preset) mà box của account đó đã chọn sẵn. */
+function openTerminalForAccount(account: AiAccount, command?: string) {
+  if (!account.is_active) void ctrl.setActive(account.id);
+  if (!command) return;
   const path = props.workspace.project_path;
   if (!path) return;
-  const agent = currentAgent.value;
-  const args = finalArgs.value;
-  const command = args ? `${agent.command} ${args}` : agent.command;
-  term.addTab({ title: `${agent.title} · ${props.workspace.name}`, startDir: path, autoCommand: command });
-  void router.push("/terminal");
+  wsTerm.addTab(props.workspace.id, `${currentAgent.value.title} · ${props.workspace.name}`, path, command);
+  emit("open-terminal");
 }
 </script>
 
@@ -88,32 +84,8 @@ function doLaunch() {
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
-      <!-- AI accounts list -->
-      <div class="p-2">
-        <div v-if="ctrl.isLoading.value" class="flex items-center gap-2 px-1 py-2 text-xs text-sidebar-text">
-          <i class="pi pi-spinner pi-spin" /> {{ t("common.loading") }}
-        </div>
-        <p v-else-if="!ctrl.accounts.value.length" class="px-1 py-2 text-xs text-sidebar-text">
-          {{ t("workspaces.sidebar.agentsEmpty") }}
-        </p>
-        <button
-          v-for="account in ctrl.accounts.value"
-          :key="account.id"
-          type="button"
-          class="mb-1 flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-sidebar-hover"
-          :class="account.is_active ? 'bg-sidebar-active text-sidebar-text-active' : 'text-sidebar-text'"
-          :disabled="account.is_active"
-          :title="AI_PROVIDER_LABEL[account.provider]"
-          @click="ctrl.setActive(account.id)"
-        >
-          <i class="pi pi-sparkles shrink-0" />
-          <span class="min-w-0 flex-1 truncate">{{ account.name }}</span>
-          <i v-if="account.is_active" class="pi pi-check-circle shrink-0 text-brand" />
-        </button>
-      </div>
-
       <!-- Launch in terminal -->
-      <div class="border-t border-sidebar-border px-3 py-3">
+      <div class="px-3 py-3">
         <p class="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted">{{ t("git.dialogs.agentTerminal.title") }}</p>
 
         <div class="mb-2 grid grid-cols-3 gap-1.5">
@@ -132,31 +104,31 @@ function doLaunch() {
           </button>
         </div>
 
-        <Select
-          v-model="selectedPreset"
-          :options="presetOptions"
-          option-label="label"
-          option-value="value"
-          class="mb-2 w-full font-mono text-xs"
-        />
-
-        <InputText
-          v-if="isCustomPreset"
-          v-model="customArgs"
-          :placeholder="t('git.dialogs.agentTerminal.argsPlaceholder')"
-          class="mb-2 w-full font-mono text-xs"
-          @keydown.enter="doLaunch"
-        />
-
-        <button
-          type="button"
-          class="flex w-full items-center justify-center gap-1.5 rounded-md bg-brand px-3 py-1.5 text-xs font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-          :disabled="!workspace.project_path"
-          @click="doLaunch"
-        >
-          <i class="pi pi-play text-[10px]" />
-          {{ t("git.dialogs.agentTerminal.confirm") }}
-        </button>
+        <!-- Accounts (profiles) available for the currently selected agent -->
+        <p class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
+          {{ t("workspaces.sidebar.agents") }} · {{ currentAgent.title }}
+        </p>
+        <div class="mb-3">
+          <div v-if="ctrl.isLoading.value" class="flex items-center gap-2 px-1 py-2 text-xs text-sidebar-text">
+            <i class="pi pi-spinner pi-spin" /> {{ t("common.loading") }}
+          </div>
+          <p v-else-if="!currentAgent.provider" class="px-1 py-2 text-xs text-sidebar-text">
+            {{ t("workspaces.sidebar.agentsNotSupported", { agent: currentAgent.title }) }}
+          </p>
+          <p v-else-if="!accountsForAgent.length" class="px-1 py-2 text-xs text-sidebar-text">
+            {{ t("workspaces.sidebar.agentsEmptyForAgent", { agent: currentAgent.title }) }}
+          </p>
+          <div v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <AiAgentProfile
+              v-for="account in accountsForAgent"
+              :key="account.id"
+              :account="account"
+              :ctrl="ctrl"
+              :agent="currentAgent"
+              @open-terminal="openTerminalForAccount"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>
