@@ -2,11 +2,23 @@
 
 use std::net::{IpAddr, TcpStream, ToSocketAddrs, UdpSocket};
 use std::str::FromStr;
+use std::sync::OnceLock;
 use std::time::Duration;
 
 use ini::Ini;
 
 use crate::utils::app_config;
+
+fn shared_client() -> &'static reqwest::Client {
+    static CLIENT: OnceLock<reqwest::Client> = OnceLock::new();
+    CLIENT.get_or_init(|| {
+        reqwest::Client::builder()
+            .timeout(Duration::from_secs(3))
+            .pool_max_idle_per_host(2)
+            .build()
+            .expect("failed to build HTTP client")
+    })
+}
 
 /// Lấy địa chỉ IP local của máy bằng cách mở UDP socket tới Google DNS.
 ///
@@ -31,24 +43,18 @@ const CONNECTIVITY_PROBES: [&str; 2] = [
 
 /// Kiểm tra máy có thể kết nối internet hay không.
 ///
-/// Thử gửi GET request tới các probe. Nếu bất kỳ probe nào phản hồi
-/// (kể cả lỗi HTTP), coi như mạng hoạt động. Timeout: 5 giây.
+/// Gửi GET request đồng thời tới tất cả probe. Nếu bất kỳ probe nào
+/// phản hồi trước (kể cả lỗi HTTP), coi như mạng hoạt động. Timeout: 3 giây.
 pub async fn is_internet_reachable() -> bool {
-    let client = match reqwest::Client::builder()
-        .timeout(Duration::from_secs(5))
-        .build()
-    {
-        Ok(client) => client,
-        Err(_) => return false,
-    };
+    let client = shared_client();
 
-    for url in CONNECTIVITY_PROBES {
-        if client.get(url).send().await.is_ok() {
-            return true;
-        }
-    }
+    let futures: Vec<_> = CONNECTIVITY_PROBES
+        .iter()
+        .map(|url| client.get(*url).send())
+        .collect();
 
-    false
+    let (result, _, _) = futures::future::select_all(futures).await;
+    result.is_ok()
 }
 
 /// Đọc danh sách IP public công ty từ `[IPADRESS].IPADRESS_LIST` trong `config.ini`.
@@ -88,13 +94,10 @@ const PUBLIC_IP_PROBES: [&str; 2] = [
 
 /// Lấy địa chỉ IP public (egress) hiện tại của máy — tức IP mà internet nhìn thấy.
 ///
-/// Thử lần lượt các endpoint, trả về IP đầu tiên parse được. Timeout: 5 giây.
+/// Thử lần lượt các endpoint, trả về IP đầu tiên parse được. Timeout: 3 giây.
 /// Trả `None` nếu không truy vấn được (mất mạng / timeout / phản hồi không hợp lệ).
 pub async fn public_ip() -> Option<IpAddr> {
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(5))
-        .build()
-        .ok()?;
+    let client = shared_client();
 
     for url in PUBLIC_IP_PROBES {
         if let Ok(resp) = client.get(url).send().await {

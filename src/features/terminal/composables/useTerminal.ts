@@ -32,6 +32,8 @@ export interface TerminalTab {
   git: TerminalGitInfo | null;
   /** Lệnh CLI agent (claude/codex/copilot) sẽ tự gõ vào shell ngay sau khi spawn lần đầu. */
   autoCommand?: string;
+  /** Biến môi trường bổ sung cho phiên PTY (vd. CLAUDE_CONFIG_DIR). */
+  env?: Record<string, string>;
 }
 
 /** Tùy chọn khi tạo tab mới: tiêu đề tùy chỉnh, lệnh agent tự chạy, thư mục làm việc ban đầu. */
@@ -39,6 +41,7 @@ export interface AddTabOptions {
   title?: string;
   autoCommand?: string;
   startDir?: string;
+  env?: Record<string, string>;
 }
 
 /**
@@ -125,6 +128,7 @@ export function useTerminal() {
       startDir,
       git: null,
       autoCommand: opts?.autoCommand,
+      env: opts?.env,
     };
     tabs.value.push(tab);
     activeKey.value = key;
@@ -196,7 +200,7 @@ export function useTerminal() {
     entry.ro = ro;
 
     const tab = tabs.value.find((t) => t.key === key);
-    await spawnSession(key, tab?.startDir || undefined);
+    await spawnSession(key, tab?.startDir || undefined, tab?.env);
 
     // Lệnh agent (nếu có) chỉ tự chạy một lần, ngay sau khi shell của tab spawn lần đầu.
     const autoCommand = tab?.autoCommand;
@@ -210,7 +214,7 @@ export function useTerminal() {
   }
 
   /** Spawn phiên PTY cho một tab đã có sẵn xterm entry, gắn callback output/exit. */
-  async function spawnSession(key: string, dir: string | undefined) {
+  async function spawnSession(key: string, dir: string | undefined, env?: Record<string, string>) {
     const entry = entries.get(key);
     if (!entry) return;
     const { term } = entry;
@@ -219,7 +223,6 @@ export function useTerminal() {
       const sessionId = await terminalSpawn(
         term.rows,
         term.cols,
-        // Output đến qua Channel riêng của phiên → nạp thẳng vào đúng terminal.
         (dataBase64) => term.write(base64ToBytes(dataBase64)),
         (code) => {
           const tab = tabs.value.find((t) => t.key === key);
@@ -230,6 +233,8 @@ export function useTerminal() {
           term.writeln(`\r\n\x1b[90m[process exited${code === null ? "" : ` with code ${code}`}]\x1b[0m`);
         },
         dir,
+        undefined,
+        env,
       );
       entry.sessionId = sessionId;
       const tab = tabs.value.find((t) => t.key === key);
@@ -317,7 +322,7 @@ export function useTerminal() {
     entry.sessionId = null;
     tab.sessionId = null;
     entry.term.writeln(`\x1b[90m[restarting shell in ${dir}]\x1b[0m`);
-    await spawnSession(key, dir || undefined);
+    await spawnSession(key, dir || undefined, tab.env);
   }
 
   /** Kiểm tra `tab.startDir` có phải Git repo không; nếu có, nạp branch + số file thay đổi. */

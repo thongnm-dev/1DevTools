@@ -2,26 +2,20 @@ import { readonly, ref } from "vue";
 import { canUseTauriRuntime } from "@/tauri/commands/_base";
 import { checkInternetConnection } from "@/tauri/commands/system";
 
-// Interval between background reachability probes while the app is running.
 const POLL_INTERVAL_MS = 15000;
 
-// Module-level singleton state so the startup screen, the app shell and the
-// offline banner all observe the same connectivity status.
 const isOnline = ref(true);
 const isChecking = ref(false);
-// Becomes true the first time we confirm connectivity. Used to distinguish
-// "never connected since launch" (full-screen error) from "lost connection
-// mid-session" (banner while keeping the current screen).
 const hasConnectedOnce = ref(false);
+
+// Consecutive probe failures required before declaring offline.
+// Prevents a single transient timeout from flashing the offline banner.
+let consecutiveFailures = 0;
+const OFFLINE_THRESHOLD = 2;
 
 let pollTimer: number | undefined;
 let started = false;
 
-/**
- * Performs a single reachability probe. Uses the Rust backend when available
- * (real internet check), otherwise falls back to the browser's own signal so
- * the Vite dev server keeps working.
- */
 async function runProbe(): Promise<boolean> {
   if (canUseTauriRuntime()) {
     try {
@@ -37,11 +31,19 @@ async function check(): Promise<boolean> {
   isChecking.value = true;
   try {
     const online = await runProbe();
-    isOnline.value = online;
+
     if (online) {
+      consecutiveFailures = 0;
+      isOnline.value = true;
       hasConnectedOnce.value = true;
+    } else {
+      consecutiveFailures++;
+      if (!hasConnectedOnce.value || consecutiveFailures >= OFFLINE_THRESHOLD) {
+        isOnline.value = false;
+      }
     }
-    return online;
+
+    return isOnline.value;
   } finally {
     isChecking.value = false;
   }

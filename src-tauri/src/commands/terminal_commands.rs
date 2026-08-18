@@ -3,6 +3,8 @@
 //! Tầng mỏng — chỉ nhận request từ frontend và uỷ quyền xuống
 //! `services::terminal_service`.
 
+use std::collections::HashMap;
+
 use tauri::ipc::Channel;
 
 use crate::services::terminal_service;
@@ -17,10 +19,11 @@ pub fn terminal_spawn(
     shell: Option<String>,
     rows: u16,
     cols: u16,
+    env: Option<HashMap<String, String>>,
     output_channel: Channel<String>,
     exit_channel: Channel<Option<i32>>,
 ) -> Result<String, String> {
-    terminal_service::spawn(cwd, shell, rows, cols, output_channel, exit_channel)
+    terminal_service::spawn(cwd, shell, rows, cols, env, output_channel, exit_channel)
 }
 
 /// Gửi dữ liệu người dùng gõ vào shell của phiên `id`.

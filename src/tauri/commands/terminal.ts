@@ -22,6 +22,7 @@ export function terminalSpawn(
   onExit: (code: number | null) => void,
   cwd?: string,
   shell?: string,
+  env?: Record<string, string>,
 ) {
   const outputChannel = new Channel<string>();
   outputChannel.onmessage = onOutput;
@@ -32,6 +33,7 @@ export function terminalSpawn(
     cols,
     cwd,
     shell,
+    env,
     outputChannel,
     exitChannel,
   });

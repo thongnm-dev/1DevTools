@@ -92,6 +92,7 @@ pub fn spawn(
     shell: Option<String>,
     rows: u16,
     cols: u16,
+    env: Option<HashMap<String, String>>,
     output_channel: Channel<String>,
     exit_channel: Channel<Option<i32>>,
 ) -> Result<String, String> {
@@ -108,8 +109,13 @@ pub fn spawn(
         .filter(|s| !s.trim().is_empty())
         .unwrap_or_else(default_shell);
     let mut cmd = CommandBuilder::new(shell_path);
-    // Báo cho chương trình biết terminal hỗ trợ màu để render đẹp.
     cmd.env("TERM", "xterm-256color");
+
+    if let Some(vars) = env {
+        for (key, value) in vars {
+            cmd.env(key, value);
+        }
+    }
 
     let work_dir = cwd
         .filter(|d| !d.trim().is_empty())

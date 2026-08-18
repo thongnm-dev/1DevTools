@@ -65,6 +65,18 @@ onMounted(() => {
   void ctrl.start();
 });
 
+/** Xây env vars cho phiên terminal dựa trên provider + account config. */
+function buildEnvForAccount(account: AiAccount): Record<string, string> | undefined {
+  const provider = currentAgent.value.provider;
+  if (!provider || !account.config_dir) return undefined;
+
+  const envMap: Record<string, string> = {};
+  if (provider === "claude") {
+    envMap["CLAUDE_CONFIG_DIR"] = account.config_dir;
+  }
+  return Object.keys(envMap).length > 0 ? envMap : undefined;
+}
+
 /** Mở terminal cho một account cụ thể: kích hoạt profile rồi mở tab terminal của workspace
  * với command (agent + preset) mà box của account đó đã chọn sẵn. */
 function openTerminalForAccount(account: AiAccount, command?: string) {
@@ -72,7 +84,8 @@ function openTerminalForAccount(account: AiAccount, command?: string) {
   if (!command) return;
   const path = props.workspace.project_path;
   if (!path) return;
-  wsTerm.addTab(props.workspace.id, `${currentAgent.value.title} · ${props.workspace.name}`, path, command);
+  const env = buildEnvForAccount(account);
+  wsTerm.addTab(props.workspace.id, `${currentAgent.value.title} · ${props.workspace.name}`, path, command, env);
   emit("open-terminal");
 }
 </script>
