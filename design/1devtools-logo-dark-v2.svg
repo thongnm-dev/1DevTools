@@ -1,0 +1,37 @@
+<svg viewBox="0 0 620 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B0B16"/>
+      <stop offset="100%" stop-color="#191A3A"/>
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B6BFF"/>
+      <stop offset="100%" stop-color="#22D3EE"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="42%" r="60%">
+      <stop offset="0%" stop-color="#7C5CFF" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#7C5CFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- icon -->
+  <g>
+    <rect x="8" y="8" width="184" height="184" rx="42" fill="url(#bgGrad)"/>
+    <circle cx="100" cy="88" r="80" fill="url(#glow)"/>
+    <path d="M52 55 L108 100 L52 145" fill="none" stroke="url(#accentGrad)" stroke-width="20"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M148 55 L126 70" fill="none" stroke="url(#accentGrad)" stroke-width="18" stroke-linecap="round"/>
+    <rect x="139" y="45" width="22" height="110" rx="11" fill="url(#accentGrad)"/>
+    <rect x="52" y="160" width="109" height="16" rx="8" fill="url(#accentGrad)"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="228" y="132" font-family="'Space Grotesk','Inter',system-ui,sans-serif" font-weight="800"
+        font-size="96" fill="url(#accentGrad)">1</text>
+  <text x="284" y="132" font-family="'Space Grotesk','Inter',system-ui,sans-serif" font-weight="700"
+        font-size="74" letter-spacing="-1" fill="#F5F5FA">Devtools</text>
+
+  <!-- profession tagline -->
+  <text x="230" y="168" font-family="'Inter',system-ui,sans-serif" font-weight="500"
+        font-size="20" letter-spacing="4" fill="#8B8CA8">FOR DEVELOPERS</text>
+</svg>
