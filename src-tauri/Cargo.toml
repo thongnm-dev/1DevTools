@@ -1,6 +1,6 @@
 [package]
 name = "Devtools"
-version = "1.0.3"
+version = "1.0.4"
 description = "1Devtools"
 authors = ["ThongnmDev"]
 edition = "2021"
