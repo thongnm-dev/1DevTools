@@ -2,11 +2,13 @@ import { computed, ref, watch } from "vue";
 import { useAuthStore } from "@/app/stores/auth";
 import { friendlyError } from "@/tauri/commands/_base";
 import { aiUsageOpenTerminal } from "@/tauri/commands/ai-usage";
-import { aiModelList, workflowList, workflowStepList } from "@/tauri/commands/workflow";
+import { workflowList, workflowStepList } from "@/tauri/commands/workflow";
+import { agentProviderModelListEnabled } from "@/tauri/commands/agent-provider-model";
 import { taskWfProcList } from "@/tauri/commands/task";
 import { useTaskWorkflowProgress } from "@/features/task/composables/useTaskWorkflowProgress";
-import { aiModelFlag } from "@/models/workflow";
-import type { AiModel, Workflow, WorkflowStep } from "@/models/workflow";
+import { agentProviderModelFlag } from "@/models/agent-provider-model";
+import type { AgentProviderModel } from "@/models/agent-provider-model";
+import type { Workflow, WorkflowStep } from "@/models/workflow";
 import type { Task } from "@/models/task";
 import { useToast } from "@/shared/composables/useToast";
 
@@ -21,7 +23,7 @@ export function useCowork() {
   const workDir = ref("");
 
   const workflows = ref<Workflow[]>([]);
-  const models = ref<AiModel[]>([]);
+  const models = ref<AgentProviderModel[]>([]);
   const selectedWorkflowId = ref<number | null>(null);
   const appliedWorkflowId = ref<number | null>(null);
   const steps = ref<WorkflowStep[]>([]);
@@ -47,7 +49,7 @@ export function useCowork() {
 
   async function loadModels() {
     try {
-      models.value = await aiModelList();
+      models.value = await agentProviderModelListEnabled();
     } catch (e) {
       error.value = friendlyError(e);
     }
@@ -109,7 +111,7 @@ export function useCowork() {
   function resolveModelFlag(modelId: number | null): string | undefined {
     if (modelId === null) return undefined;
     const model = models.value.find((m) => m.id === modelId);
-    return model ? aiModelFlag(model) : undefined;
+    return model ? agentProviderModelFlag(model) : undefined;
   }
 
   /**

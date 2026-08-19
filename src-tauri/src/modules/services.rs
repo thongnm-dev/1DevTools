@@ -72,4 +72,8 @@ mod services {
     pub mod task_service;
     /// Service cho liên kết Workspace <-> Task (JSON cục bộ).
     pub mod workspace_task_service;
+    /// Service cho registry AI Agent Provider (CRUD + bật/tắt, PostgreSQL).
+    pub mod agent_provider_service;
+    /// Service cho AI Agent Provider Model (CRUD + bật/tắt, PostgreSQL).
+    pub mod agent_provider_model_service;
 }

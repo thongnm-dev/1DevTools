@@ -1,7 +1,7 @@
 //! Model cho màn hình Workflow — chuỗi step tự động hoá (skill/prompt/runner/terminal)
 //! có thể áp dụng lên một workspace. Lưu ở PostgreSQL (bảng `workflows` +
-//! `workflow_steps` + `ai_models`), mỗi user chỉ thấy workflow của mình
-//! (`created_by`).
+//! `workflow_steps`; danh mục model lấy từ `agent_provider_models`), mỗi user
+//! chỉ thấy workflow của mình (`created_by`).
 
 use std::collections::HashMap;
 
@@ -115,15 +115,6 @@ pub struct Workflow {
     pub step_count: i64,
     pub created_at: String,
     pub updated_at: String,
-}
-
-/// Danh mục model AI để chọn cho từng workflow step (bảng `ai_models`).
-#[derive(Clone, Debug, Serialize)]
-pub struct AiModel {
-    pub id: i32,
-    pub provider: String,
-    pub model: String,
-    pub version: String,
 }
 
 /// Request tạo workflow mới (chưa có step).

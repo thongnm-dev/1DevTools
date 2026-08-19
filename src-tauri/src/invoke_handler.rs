@@ -24,6 +24,8 @@ use commands::workflow_commands::*;
 use commands::workspace_commands::*;
 use commands::workspace_task_commands::*;
 use commands::skill_commands::*;
+use commands::agent_provider_commands::*;
+use commands::agent_provider_model_commands::*;
 use commands::prompt_commands::*;
 use commands::settings_commands::*;
 
@@ -211,7 +213,6 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         workflow_step_update,
         workflow_step_delete,
         workflow_step_reorder,
-        ai_model_list,
         // === AI Tasks / AI Cowork commands: tasks + task_wf_proc + task_wf_proc_step ===
         task_create,
         task_list,
@@ -238,6 +239,19 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         skill_create,
         skill_update,
         skill_delete,
+        // === AI Agent Provider commands: CRUD + bật/tắt (JSON cục bộ) ===
+        agent_provider_list,
+        agent_provider_create,
+        agent_provider_update,
+        agent_provider_set_enabled,
+        agent_provider_delete,
+        // === AI Agent Provider Model commands: CRUD + bật/tắt (PostgreSQL) ===
+        agent_provider_model_list,
+        agent_provider_model_list_enabled,
+        agent_provider_model_create,
+        agent_provider_model_update,
+        agent_provider_model_set_enabled,
+        agent_provider_model_delete,
         // === Prompt commands: CRUD + đếm lượt dùng (JSON cục bộ) ===
         prompt_list,
         prompt_create,

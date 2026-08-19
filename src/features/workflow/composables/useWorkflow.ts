@@ -3,7 +3,6 @@ import { useI18n } from "vue-i18n";
 
 import { friendlyError } from "@/tauri/commands/_base";
 import {
-  aiModelList,
   workflowCreate,
   workflowDelete,
   workflowDuplicate,
@@ -16,10 +15,12 @@ import {
   workflowStepUpdate,
   workflowUpdate,
 } from "@/tauri/commands/workflow";
+import { agentProviderModelListEnabled } from "@/tauri/commands/agent-provider-model";
 import { aiUsageListAccounts } from "@/tauri/commands/ai-usage";
 import { useAuthStore } from "@/app/stores/auth";
 import type { AiAccount } from "@/models/ai-usage";
-import type { AiModel, NodePos, StepRequest, Workflow, WorkflowStep, WorkflowStepType } from "@/models/workflow";
+import type { AgentProviderModel } from "@/models/agent-provider-model";
+import type { NodePos, StepRequest, Workflow, WorkflowStep, WorkflowStepType } from "@/models/workflow";
 import { DEFAULT_WORKFLOW_ICON, STEP_TYPE_META } from "@/models/workflow";
 import { useToast } from "@/shared/composables/useToast";
 
@@ -33,7 +34,7 @@ export function useWorkflow() {
 
   const workflows = ref<Workflow[]>([]);
   const aiAccounts = ref<AiAccount[]>([]);
-  const models = ref<AiModel[]>([]);
+  const models = ref<AgentProviderModel[]>([]);
   const activeId = ref<number | null>(null);
   const activeSteps = ref<WorkflowStep[]>([]);
   const selectedStepId = ref<number | null>(null);
@@ -79,7 +80,7 @@ export function useWorkflow() {
 
   async function loadModels() {
     try {
-      models.value = await aiModelList();
+      models.value = await agentProviderModelListEnabled();
     } catch (e) {
       error.value = friendlyError(e);
     }

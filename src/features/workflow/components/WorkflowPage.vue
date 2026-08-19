@@ -12,7 +12,8 @@ import DialogFooter from "@/shared/components/DialogFooter.vue";
 import { useWorkflow } from "../composables/useWorkflow";
 import { usePrompt } from "@/features/prompt/composables/usePrompt";
 import type { NodePos, Workflow, WorkflowStepType } from "@/models/workflow";
-import { DEFAULT_WORKFLOW_ICON, STEP_TYPE_META, aiModelLabel } from "@/models/workflow";
+import { DEFAULT_WORKFLOW_ICON, STEP_TYPE_META } from "@/models/workflow";
+import { agentProviderModelLabel } from "@/models/agent-provider-model";
 
 const { t } = useI18n();
 const ctrl = useWorkflow();
@@ -109,7 +110,7 @@ const agentOptions = computed(() =>
 );
 
 const modelOptions = computed(() =>
-  ctrl.models.value.map((m) => ({ label: aiModelLabel(m), value: m.id })),
+  ctrl.models.value.map((m) => ({ label: agentProviderModelLabel(m), value: m.id })),
 );
 
 const stepTypeOptions = computed(() =>

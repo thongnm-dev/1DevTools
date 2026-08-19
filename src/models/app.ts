@@ -9,6 +9,8 @@ export type MenuKey =
   | "gov-permissions"
   | "app-config"
   | "ai-usage"
+  | "ai-providers"
+  | "ai-provider-models"
   | "ai-tasks"
   | "ai-cowork"
   | "workflow"

@@ -36,35 +36,26 @@ FROM users u, roles r
 WHERE u.username IN ('admin', 'thongnm') AND r.name = 'admin'
 ON CONFLICT (user_id, role_id) DO NOTHING;
 
--- ── Danh mục model AI cho workflow step (hiện chỉ đối ứng provider 'claude') ─
--- Version rỗng = chạy model latest (alias); có version = pin cụ thể (model-version).
-INSERT INTO ai_models (provider, model, version) VALUES
-    ('claude', 'opus',   ''),
-    ('claude', 'opus',   '4.8'),
-    ('claude', 'sonnet', ''),
-    ('claude', 'sonnet', '4.6'),
-    ('claude', 'haiku',  '4.5')
-ON CONFLICT (provider, model, version) DO NOTHING;
-
 -- ── Menu configuration (khớp route của app) ────────────────────────────────
 INSERT INTO menu_configs (key, title, path, icon, menu_group, is_visible, display_order) VALUES
     ('overview',        'Overview',    '/overview',               'pi-home',       '—',          TRUE, 1),
-    ('workspaces',      'Workspaces',  '/workspaces',             'pi-th-large',   '—',          TRUE, 5),
-    ('git',             'Git',         '/git',                    'pi-github',     '—',          TRUE, 10),
-    ('terminal',        'Terminal',    '/terminal',               'pi-desktop',    '—',          TRUE, 11),
-    ('docker',          'Docker',      '/docker',                 'pi-server',     '—',          TRUE, 12),
-    ('ai-usage',        'AI Usage',    '/ai/usage',               'pi-chart-bar',  '—',          TRUE, 31),
-    ('workflow',        'Workflow',    '/workflow',               'pi-sitemap',    '—',          TRUE, 32),
-    ('skill',           'Skill',       '/skill',                  'pi-book',       '—',          TRUE, 33),
-    ('prompt',          'Prompt',      '/prompt',                 'pi-comment',    '—',          TRUE, 34),
-    ('ai-tasks',        'AI Tasks',    '/ai/tasks',               'pi-check-square', '—',        TRUE, 37),
-    ('ai-cowork',       'AI Cowork',   '/ai/cowork',              'pi-objects-column', '—',      TRUE, 38),
-    ('gov-users',       'Users',       '/governance/users',       'pi-users',      'Governance', TRUE, 40),
-    ('gov-roles',       'Roles',       '/governance/roles',       'pi-shield',     'Governance', TRUE, 41),
-    ('gov-menus',       'Menus',       '/governance/menus',       'pi-list',       'Governance', TRUE, 42),
-    ('gov-permissions', 'Permissions', '/governance/permissions', 'pi-key',        'Governance', TRUE, 43),
-    ('app-config',      'App Config',  '/governance/app-config',  'pi-sliders-h',  'Governance', TRUE, 44),
-    ('settings',        'Settings',    '/settings',               'pi-cog',        '—',          TRUE, 100)
+    ('workspaces',      'Workspaces',  '/workspaces',             'pi-th-large',   '—',          TRUE, 2),
+    ('git',             'Git',         '/git',                    'pi-github',     '—',          TRUE, 3),
+    ('terminal',        'Terminal',    '/terminal',               'pi-desktop',    '—',          TRUE, 4),
+    ('docker',          'Docker',      '/docker',                 'pi-server',     '—',          TRUE, 5),
+    ('ai-usage',        'AI Usage',    '/ai/usage',               'pi-chart-bar',  '—',          TRUE, 6),
+    ('workflow',        'Workflow',    '/workflow',               'pi-sitemap',    '—',          TRUE, 7),
+    ('skill',           'Skill',       '/skill',                  'pi-book',       '—',          TRUE, 8),
+    ('prompt',          'Prompt',      '/prompt',                 'pi-comment',    '—',          TRUE, 9),
+    ('ai-tasks',        'AI Tasks',    '/ai/tasks',               'pi-check-square', '—',        TRUE, 10),
+    ('ai-cowork',       'AI Cowork',   '/ai/cowork',              'pi-objects-column', '—',      TRUE, 11),
+    ('ai-providers',    'AI Providers','/governance/providers',           'pi-android',    'Governance', TRUE, 12),
+    ('ai-provider-models','Provider Models','/governance/provider-models', 'pi-box',        'Governance',TRUE, 13),
+    ('gov-users',       'Users',       '/governance/users',       'pi-users',      'Governance', TRUE, 14),
+    ('gov-roles',       'Roles',       '/governance/roles',       'pi-shield',     'Governance', TRUE, 15),
+    ('gov-menus',       'Menus',       '/governance/menus',       'pi-list',       'Governance', TRUE, 16),
+    ('gov-permissions', 'Permissions', '/governance/permissions', 'pi-key',        'Governance', TRUE, 17),
+    ('app-config',      'App Config',  '/governance/app-config',  'pi-sliders-h',  'Governance', TRUE, 18)
 ON CONFLICT (key) DO NOTHING;
 
 -- ── Cấp toàn bộ menu cho role admin ────────────────────────────────────────
@@ -74,3 +65,26 @@ FROM roles r
 CROSS JOIN menu_configs m
 WHERE r.name = 'admin'
 ON CONFLICT (role_id, menu_key) DO NOTHING;
+
+-- ── AI Agent Provider mặc định (chỉ seed khi bảng còn rỗng) ─────────────────
+INSERT INTO agent_providers (name, code, provider_type, icon, command, website, description)
+SELECT v.name, v.code, v.provider_type, v.icon, v.command, v.website, v.description
+FROM (VALUES
+    ('Claude Code', 'claude-code', 'claude', 'pi pi-android',  'claude', 'https://claude.com/claude-code', 'Anthropic Claude Code CLI agent.'),
+    ('Codex',       'codex',       'codex',  'pi pi-code',     'codex',  'https://openai.com/codex',      'OpenAI Codex CLI agent.'),
+    ('Gemini CLI',  'gemini-cli',  'gemini', 'pi pi-sparkles', 'gemini', 'https://ai.google.dev',         'Google Gemini command-line agent.')
+) AS v(name, code, provider_type, icon, command, website, description)
+WHERE NOT EXISTS (SELECT 1 FROM agent_providers);
+
+-- ── Model mặc định cho provider đã seed (chỉ seed khi bảng còn rỗng) ─────────
+INSERT INTO agent_provider_models (provider_id, name, code, version, description)
+SELECT ap.id, v.name, v.code, v.version, v.description
+FROM (VALUES
+    ('claude-code', 'Claude Opus 4.8',   'claude-opus-4-8',   '4.8', 'Most capable Claude model.'),
+    ('claude-code', 'Claude Sonnet 4.6', 'claude-sonnet-4-6', '4.6', 'Balanced Claude model.'),
+    ('claude-code', 'Claude Haiku 4.5',  'claude-haiku-4-5',  '4.5', 'Fast, lightweight Claude model.'),
+    ('codex',       'GPT-5 Codex',       'gpt-5-codex',       '',    'OpenAI Codex model.'),
+    ('gemini-cli',  'Gemini 2.5 Pro',    'gemini-2.5-pro',    '2.5', 'Google Gemini Pro model.')
+) AS v(provider_code, name, code, version, description)
+JOIN agent_providers ap ON ap.code = v.provider_code
+WHERE NOT EXISTS (SELECT 1 FROM agent_provider_models);

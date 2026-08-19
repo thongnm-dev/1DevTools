@@ -167,17 +167,9 @@ Thư viện workflow — không gắn cố định vào 1 workspace, chọn work
 
 Index: `idx_workflows_created_by` trên (`created_by`).
 
-### `ai_models`
-
-Danh mục model AI để chọn cho từng workflow step. Hiện chỉ đối ứng provider `claude`.
-
-| Column | Type | Constraints | Mô tả |
-|---|---|---|---|
-| `id` | `SERIAL` | PRIMARY KEY | Khóa chính tự tăng. |
-| `provider` | `VARCHAR(50)` | NOT NULL, DEFAULT `'claude'` | Nhà cung cấp. |
-| `model` | `VARCHAR(100)` | NOT NULL | Tên model (`opus` / `sonnet` / `haiku`). |
-| `version` | `VARCHAR(50)` | NOT NULL, DEFAULT `''` | Version pin cụ thể; rỗng = chạy alias mới nhất. |
-| | | UNIQUE (`provider`, `model`, `version`) | Không trùng bộ 3 provider/model/version. |
+> **Lưu ý:** Bảng `ai_models` cũ đã bị loại bỏ. Danh mục model cho workflow
+> step "Model" picker giờ lấy từ `agent_provider_models` (chỉ model `enabled`),
+> qua `sp_agent_provider_model_select_enabled`. Xem `agent_providers` / `agent_provider_models`.
 
 ### `workflow_steps`
 
@@ -197,7 +189,7 @@ Một step trong workflow, theo thứ tự `step_order`.
 | `icon` | `VARCHAR(50)` | NOT NULL, DEFAULT `'pi pi-cog'` | Icon PrimeIcons. |
 | `step_order` | `INTEGER` | NOT NULL, DEFAULT `0` | Thứ tự hiển thị/chạy. |
 | `is_latest_step` | `BOOLEAN` | NOT NULL, DEFAULT `FALSE` | Đánh dấu step cuối cùng của workflow (chỉ 1 step/workflow — service tự gỡ cờ ở step khác khi set). |
-| `model_id` | `INTEGER` | FK → `ai_models(id)` ON DELETE SET NULL | Model AI dùng khi AI Cowork chạy step `skill` này. |
+| `model_id` | `INTEGER` | FK → `agent_provider_models(id)` ON DELETE SET NULL | Model AI dùng khi AI Cowork chạy step `skill` này. |
 | `created_at` | `TIMESTAMPTZ` | NOT NULL, DEFAULT `NOW()` | Thời điểm tạo. |
 
 Index: `idx_workflow_steps_workflow` trên (`workflow_id`).

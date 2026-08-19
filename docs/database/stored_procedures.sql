@@ -1356,22 +1356,36 @@ END;
 $$;
 
 -- ----------------------------------------------------------------------------
--- sp_ai_model_select_list
+-- sp_agent_provider_model_select_enabled
+-- List only the ENABLED provider models (kèm tên provider) — dùng cho workflow
+-- step "Model" picker. Cùng shape với `sp_agent_provider_model_select_list`.
 -- ----------------------------------------------------------------------------
--- ============================================================================
--- sp_ai_model_select_list
--- List the AI model catalog used by the workflow step "Model" picker.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION sp_ai_model_select_list()
-RETURNS TABLE (id INTEGER, provider VARCHAR(50), model VARCHAR(100), version VARCHAR(50))
+CREATE OR REPLACE FUNCTION sp_agent_provider_model_select_enabled()
+RETURNS TABLE (
+    id            INTEGER,
+    provider_id   INTEGER,
+    provider_name VARCHAR(100),
+    name          VARCHAR(150),
+    code          VARCHAR(150),
+    version       VARCHAR(50),
+    description   TEXT,
+    enabled       BOOLEAN,
+    created_at    TEXT,
+    updated_at    TEXT
+)
 LANGUAGE plpgsql
 AS $$
 BEGIN
     RETURN QUERY
-    SELECT m.id, m.provider, m.model, m.version
-    FROM ai_models m
-    ORDER BY m.provider ASC, m.id ASC;
+    SELECT
+        m.id, m.provider_id, ap.name, m.name, m.code, m.version,
+        m.description, m.enabled,
+        to_char(m.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(m.updated_at, 'YYYY-MM-DD HH24:MI:SS')
+    FROM agent_provider_models m
+    JOIN agent_providers ap ON ap.id = m.provider_id
+    WHERE m.enabled = TRUE
+    ORDER BY ap.name ASC, m.name ASC;
 END;
 $$;
 
@@ -1761,3 +1775,431 @@ BEGIN
 END;
 $$;
 
+
+-- ============================================================================
+-- AI Agent Provider registry — CRUD + bật/tắt cho phép sử dụng
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_select_list
+-- List all providers, most-recently updated first.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_select_list()
+RETURNS TABLE (
+    id            INTEGER,
+    name          VARCHAR(100),
+    code          VARCHAR(100),
+    provider_type VARCHAR(30),
+    description   TEXT,
+    icon          VARCHAR(100),
+    command       VARCHAR(255),
+    website       VARCHAR(255),
+    models        TEXT[],
+    enabled       BOOLEAN,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        p.id, p.name, p.code, p.provider_type, p.description, p.icon,
+        p.command, p.website, p.models, p.enabled,
+        to_char(p.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(p.updated_at, 'YYYY-MM-DD HH24:MI:SS')
+    FROM agent_providers p
+    ORDER BY p.updated_at DESC, p.id DESC;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_insert
+-- Insert a new provider and return the created row.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_insert(
+    p_name          VARCHAR(100),
+    p_code          VARCHAR(100),
+    p_provider_type VARCHAR(30),
+    p_description   TEXT,
+    p_icon          VARCHAR(100),
+    p_command       VARCHAR(255),
+    p_website       VARCHAR(255),
+    p_models        TEXT[],
+    p_enabled       BOOLEAN
+)
+RETURNS TABLE (
+    id            INTEGER,
+    name          VARCHAR(100),
+    code          VARCHAR(100),
+    provider_type VARCHAR(30),
+    description   TEXT,
+    icon          VARCHAR(100),
+    command       VARCHAR(255),
+    website       VARCHAR(255),
+    models        TEXT[],
+    enabled       BOOLEAN,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    INSERT INTO agent_providers
+        (name, code, provider_type, description, icon, command, website, models, enabled)
+    VALUES
+        (p_name, p_code, p_provider_type, p_description, p_icon, p_command, p_website,
+         COALESCE(p_models, '{}'), p_enabled)
+    RETURNING
+        agent_providers.id, agent_providers.name, agent_providers.code,
+        agent_providers.provider_type, agent_providers.description, agent_providers.icon,
+        agent_providers.command, agent_providers.website, agent_providers.models,
+        agent_providers.enabled,
+        to_char(agent_providers.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(agent_providers.updated_at, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_update
+-- Update an existing provider. Returns the updated row (NULL if not found).
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_update(
+    p_id            INTEGER,
+    p_name          VARCHAR(100),
+    p_code          VARCHAR(100),
+    p_provider_type VARCHAR(30),
+    p_description   TEXT,
+    p_icon          VARCHAR(100),
+    p_command       VARCHAR(255),
+    p_website       VARCHAR(255),
+    p_models        TEXT[],
+    p_enabled       BOOLEAN
+)
+RETURNS TABLE (
+    id            INTEGER,
+    name          VARCHAR(100),
+    code          VARCHAR(100),
+    provider_type VARCHAR(30),
+    description   TEXT,
+    icon          VARCHAR(100),
+    command       VARCHAR(255),
+    website       VARCHAR(255),
+    models        TEXT[],
+    enabled       BOOLEAN,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    UPDATE agent_providers p
+    SET name = p_name,
+        code = p_code,
+        provider_type = p_provider_type,
+        description = p_description,
+        icon = p_icon,
+        command = p_command,
+        website = p_website,
+        models = COALESCE(p_models, '{}'),
+        enabled = p_enabled
+    WHERE p.id = p_id
+    RETURNING
+        p.id, p.name, p.code, p.provider_type, p.description, p.icon,
+        p.command, p.website, p.models, p.enabled,
+        to_char(p.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(p.updated_at, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_set_enabled
+-- Toggle whether a provider may be used. Returns the updated row.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_set_enabled(
+    p_id      INTEGER,
+    p_enabled BOOLEAN
+)
+RETURNS TABLE (
+    id            INTEGER,
+    name          VARCHAR(100),
+    code          VARCHAR(100),
+    provider_type VARCHAR(30),
+    description   TEXT,
+    icon          VARCHAR(100),
+    command       VARCHAR(255),
+    website       VARCHAR(255),
+    models        TEXT[],
+    enabled       BOOLEAN,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    UPDATE agent_providers p
+    SET enabled = p_enabled
+    WHERE p.id = p_id
+    RETURNING
+        p.id, p.name, p.code, p.provider_type, p.description, p.icon,
+        p.command, p.website, p.models, p.enabled,
+        to_char(p.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(p.updated_at, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_delete
+-- Delete a provider by ID. Returns the count of deleted rows.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_delete(
+    p_id INTEGER
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_count INTEGER;
+BEGIN
+    DELETE FROM agent_providers WHERE id = p_id;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RETURN v_count;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_code_exists
+-- Check if a (non-empty) code exists, optionally excluding a specific ID.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_code_exists(
+    p_code       VARCHAR(100),
+    p_exclude_id INTEGER DEFAULT NULL
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_code IS NULL OR p_code = '' THEN
+        RETURN FALSE;
+    END IF;
+    RETURN EXISTS (
+        SELECT 1
+        FROM agent_providers p
+        WHERE LOWER(p.code) = LOWER(p_code)
+          AND (p_exclude_id IS NULL OR p.id <> p_exclude_id)
+    );
+END;
+$$;
+
+-- ============================================================================
+-- AI Agent Provider Model — CRUD + bật/tắt cho phép sử dụng
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_model_select_list
+-- List all models joined with their provider name, newest-updated first.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_model_select_list()
+RETURNS TABLE (
+    id            INTEGER,
+    provider_id   INTEGER,
+    provider_name VARCHAR(100),
+    name          VARCHAR(150),
+    code          VARCHAR(150),
+    version       VARCHAR(50),
+    description   TEXT,
+    enabled       BOOLEAN,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        m.id, m.provider_id, ap.name, m.name, m.code, m.version,
+        m.description, m.enabled,
+        to_char(m.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(m.updated_at, 'YYYY-MM-DD HH24:MI:SS')
+    FROM agent_provider_models m
+    JOIN agent_providers ap ON ap.id = m.provider_id
+    ORDER BY m.updated_at DESC, m.id DESC;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_model_insert
+-- Insert a new model and return the created row (with provider name).
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_model_insert(
+    p_provider_id INTEGER,
+    p_name        VARCHAR(150),
+    p_code        VARCHAR(150),
+    p_version     VARCHAR(50),
+    p_description TEXT,
+    p_enabled     BOOLEAN
+)
+RETURNS TABLE (
+    id            INTEGER,
+    provider_id   INTEGER,
+    provider_name VARCHAR(100),
+    name          VARCHAR(150),
+    code          VARCHAR(150),
+    version       VARCHAR(50),
+    description   TEXT,
+    enabled       BOOLEAN,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    INSERT INTO agent_provider_models
+        (provider_id, name, code, version, description, enabled)
+    VALUES
+        (p_provider_id, p_name, p_code, p_version, p_description, p_enabled)
+    RETURNING
+        agent_provider_models.id,
+        agent_provider_models.provider_id,
+        (SELECT ap.name FROM agent_providers ap WHERE ap.id = agent_provider_models.provider_id),
+        agent_provider_models.name,
+        agent_provider_models.code,
+        agent_provider_models.version,
+        agent_provider_models.description,
+        agent_provider_models.enabled,
+        to_char(agent_provider_models.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(agent_provider_models.updated_at, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_model_update
+-- Update an existing model. Returns the updated row (NULL if not found).
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_model_update(
+    p_id          INTEGER,
+    p_provider_id INTEGER,
+    p_name        VARCHAR(150),
+    p_code        VARCHAR(150),
+    p_version     VARCHAR(50),
+    p_description TEXT,
+    p_enabled     BOOLEAN
+)
+RETURNS TABLE (
+    id            INTEGER,
+    provider_id   INTEGER,
+    provider_name VARCHAR(100),
+    name          VARCHAR(150),
+    code          VARCHAR(150),
+    version       VARCHAR(50),
+    description   TEXT,
+    enabled       BOOLEAN,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    UPDATE agent_provider_models m
+    SET provider_id = p_provider_id,
+        name = p_name,
+        code = p_code,
+        version = p_version,
+        description = p_description,
+        enabled = p_enabled
+    WHERE m.id = p_id
+    RETURNING
+        m.id, m.provider_id,
+        (SELECT ap.name FROM agent_providers ap WHERE ap.id = m.provider_id),
+        m.name, m.code, m.version, m.description, m.enabled,
+        to_char(m.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(m.updated_at, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_model_set_enabled
+-- Toggle whether a model may be used. Returns the updated row.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_model_set_enabled(
+    p_id      INTEGER,
+    p_enabled BOOLEAN
+)
+RETURNS TABLE (
+    id            INTEGER,
+    provider_id   INTEGER,
+    provider_name VARCHAR(100),
+    name          VARCHAR(150),
+    code          VARCHAR(150),
+    version       VARCHAR(50),
+    description   TEXT,
+    enabled       BOOLEAN,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    UPDATE agent_provider_models m
+    SET enabled = p_enabled
+    WHERE m.id = p_id
+    RETURNING
+        m.id, m.provider_id,
+        (SELECT ap.name FROM agent_providers ap WHERE ap.id = m.provider_id),
+        m.name, m.code, m.version, m.description, m.enabled,
+        to_char(m.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(m.updated_at, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_model_delete
+-- Delete a model by ID. Returns the count of deleted rows.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_model_delete(
+    p_id INTEGER
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_count INTEGER;
+BEGIN
+    DELETE FROM agent_provider_models WHERE id = p_id;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RETURN v_count;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_agent_provider_model_code_exists
+-- Check if a (non-empty) model code exists within a provider, optionally
+-- excluding a specific model ID.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_agent_provider_model_code_exists(
+    p_provider_id INTEGER,
+    p_code        VARCHAR(150),
+    p_exclude_id  INTEGER DEFAULT NULL
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_code IS NULL OR p_code = '' THEN
+        RETURN FALSE;
+    END IF;
+    RETURN EXISTS (
+        SELECT 1
+        FROM agent_provider_models m
+        WHERE m.provider_id = p_provider_id
+          AND LOWER(m.code) = LOWER(p_code)
+          AND (p_exclude_id IS NULL OR m.id <> p_exclude_id)
+    );
+END;
+$$;

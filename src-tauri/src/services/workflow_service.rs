@@ -6,7 +6,7 @@ use crate::app::error::AppError;
 use crate::app::result::AppResult;
 use crate::database::workflow_store;
 use crate::models::workflow::{
-    AiModel, CreateWorkflowRequest, NodePos, StepRequest, UpdateWorkflowRequest, Workflow, WorkflowStep,
+    CreateWorkflowRequest, NodePos, StepRequest, UpdateWorkflowRequest, Workflow, WorkflowStep,
 };
 
 pub async fn list_workflows(created_by: &str) -> AppResult<Vec<Workflow>> {
@@ -111,8 +111,4 @@ pub async fn delete_step(id: i32) -> AppResult<()> {
 
 pub async fn reorder_steps(workflow_id: i32, step_ids: Vec<i32>) -> AppResult<()> {
     workflow_store::reorder_steps(workflow_id, &step_ids).await
-}
-
-pub async fn list_models() -> AppResult<Vec<AiModel>> {
-    workflow_store::list_models().await
 }

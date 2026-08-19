@@ -38,13 +38,6 @@ export interface Workflow {
   updated_at: string;
 }
 
-export interface AiModel {
-  id: number;
-  provider: string;
-  model: string;
-  version: string;
-}
-
 export const DEFAULT_WORKFLOW_ICON = "pi pi-sitemap";
 
 export interface CreateWorkflowRequest {
@@ -80,14 +73,3 @@ export const STEP_TYPE_META: Record<WorkflowStepType, { icon: string; badgeClass
   terminal: { icon: "pi pi-desktop", badgeClass: "bg-amber-100 text-amber-700" },
   custom: { icon: "pi pi-cog", badgeClass: "bg-canvas text-muted" },
 };
-
-/** Nhãn hiển thị cho 1 model AI, vd "Opus 4.8" / "Sonnet" (rỗng version = latest alias). */
-export function aiModelLabel(model: AiModel): string {
-  const name = model.model.charAt(0).toUpperCase() + model.model.slice(1);
-  return model.version ? `${name} ${model.version}` : name;
-}
-
-/** Flag `--model` truyền cho CLI `claude` — rỗng version = alias mới nhất (không truyền version). */
-export function aiModelFlag(model: AiModel): string {
-  return model.version ? `${model.model}-${model.version}` : model.model;
-}

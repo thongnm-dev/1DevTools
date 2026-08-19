@@ -7,6 +7,7 @@ export type AppRoute = {
   requiresAuth?: boolean;
   title: string;
   subtitle: string;
+  /** i18n keys (resolved via `t()` in AppHeader), e.g. "shell.breadcrumbs.governance". */
   breadcrumbs?: string[];
 };
 
@@ -40,56 +41,70 @@ export const appRoutes: AppRoute[] = [
     path: "/governance/users",
     title: "Users",
     subtitle: "Manage user accounts, roles, and access.",
-    breadcrumbs: ["Governance", "Users"],
+    breadcrumbs: ["shell.breadcrumbs.governance", "shell.breadcrumbs.users"],
   },
   {
     key: "gov-roles",
     path: "/governance/roles",
     title: "Roles",
     subtitle: "Define roles and the users assigned to them.",
-    breadcrumbs: ["Governance", "Roles"],
+    breadcrumbs: ["shell.breadcrumbs.governance", "shell.breadcrumbs.roles"],
   },
   {
     key: "gov-menus",
     path: "/governance/menus",
     title: "Menus",
     subtitle: "Configure sidebar menu items, groups, and ordering.",
-    breadcrumbs: ["Governance", "Menus"],
+    breadcrumbs: ["shell.breadcrumbs.governance", "shell.breadcrumbs.menus"],
   },
   {
     key: "gov-permissions",
     path: "/governance/permissions",
     title: "Permissions",
     subtitle: "Grant menu access per role, with per-user overrides.",
-    breadcrumbs: ["Governance", "Permissions"],
+    breadcrumbs: ["shell.breadcrumbs.governance", "shell.breadcrumbs.permissions"],
   },
   {
     key: "app-config",
     path: "/governance/app-config",
     title: "App Config",
     subtitle: "Edit the application configuration file (config.ini).",
-    breadcrumbs: ["Governance", "App Config"],
+    breadcrumbs: ["shell.breadcrumbs.governance", "shell.breadcrumbs.appConfig"],
   },
   {
     key: "ai-usage",
     path: "/ai/usage",
     title: "AI Usage",
     subtitle: "Manage AI accounts, monitor usage limits, and auto-switch providers.",
-    breadcrumbs: ["AI", "Usage"],
+    breadcrumbs: ["shell.breadcrumbs.ai", "shell.breadcrumbs.usage"],
+  },
+  {
+    key: "ai-providers",
+    path: "/governance/providers",
+    title: "AI Agent Providers",
+    subtitle: "Register and enable which AI agents can be used across the system.",
+    breadcrumbs: ["shell.breadcrumbs.governance", "shell.breadcrumbs.providers"],
+  },
+  {
+    key: "ai-provider-models",
+    path: "/governance/provider-models",
+    title: "AI Provider Models",
+    subtitle: "Register and enable which provider models can be used across the system.",
+    breadcrumbs: ["shell.breadcrumbs.governance", "shell.breadcrumbs.providerModels"],
   },
   {
     key: "ai-tasks",
     path: "/ai/tasks",
     title: "AI Tasks",
     subtitle: "Track tasks and the workflow step they are currently on.",
-    breadcrumbs: ["AI", "Tasks"],
+    breadcrumbs: ["shell.breadcrumbs.ai", "shell.breadcrumbs.tasks"],
   },
   {
     key: "ai-cowork",
     path: "/ai/cowork",
     title: "AI Cowork",
     subtitle: "Run tasks through a workflow's steps, one terminal per step.",
-    breadcrumbs: ["AI", "Cowork"],
+    breadcrumbs: ["shell.breadcrumbs.ai", "shell.breadcrumbs.cowork"],
   },
   {
     key: "workspaces",
@@ -198,6 +213,16 @@ export const vueRoutes: RouteRecordRaw[] = [
     path: "/ai/usage",
     component: () => import("@/features/ai-agent/components/AiUsagePage.vue"),
     meta: { key: "ai-usage" as MenuKey },
+  },
+  {
+    path: "/governance/providers",
+    component: () => import("@/features/ai-agent/components/AgentProviderPage.vue"),
+    meta: { key: "ai-providers" as MenuKey },
+  },
+  {
+    path: "/governance/provider-models",
+    component: () => import("@/features/ai-agent/components/AgentProviderModelPage.vue"),
+    meta: { key: "ai-provider-models" as MenuKey },
   },
   {
     path: "/ai/tasks",

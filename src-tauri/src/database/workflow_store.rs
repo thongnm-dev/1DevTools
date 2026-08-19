@@ -1,10 +1,11 @@
-//! Data access cho bảng `workflows` / `workflow_steps` / `ai_models` (PostgreSQL).
+//! Data access cho bảng `workflows` / `workflow_steps` (PostgreSQL). Danh mục
+//! model cho step picker do domain `agent_provider_model` cung cấp (model enabled).
 
 use std::collections::HashMap;
 
 use crate::app::error::AppError;
 use crate::app::result::AppResult;
-use crate::models::workflow::{AiModel, NodePos, Workflow, WorkflowStep, WorkflowStepType};
+use crate::models::workflow::{NodePos, Workflow, WorkflowStep, WorkflowStepType};
 use crate::utils::pgsql_connect;
 
 fn map_workflow(row: &tokio_postgres::Row) -> Workflow {
@@ -42,14 +43,6 @@ fn map_step(row: &tokio_postgres::Row) -> WorkflowStep {
     }
 }
 
-fn map_model(row: &tokio_postgres::Row) -> AiModel {
-    AiModel {
-        id: row.get("id"),
-        provider: row.get("provider"),
-        model: row.get("model"),
-        version: row.get("version"),
-    }
-}
 
 pub async fn list_all(created_by: &str) -> AppResult<Vec<Workflow>> {
     let client = pgsql_connect::connect().await?;
@@ -231,13 +224,4 @@ pub async fn reorder_steps(workflow_id: i32, step_ids: &[i32]) -> AppResult<()> 
         .await
         .map_err(|e| AppError::new(format!("Failed to reorder workflow steps: {e}")))?;
     Ok(())
-}
-
-pub async fn list_models() -> AppResult<Vec<AiModel>> {
-    let client = pgsql_connect::connect().await?;
-    let rows = client
-        .query("SELECT * FROM sp_ai_model_select_list()", &[])
-        .await
-        .map_err(|e| AppError::new(format!("Failed to list AI models: {e}")))?;
-    Ok(rows.iter().map(map_model).collect())
 }

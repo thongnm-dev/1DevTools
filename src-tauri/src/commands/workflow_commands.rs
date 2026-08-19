@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::app::error::{log_err, AppErrorPayload};
 use crate::models::workflow::{
-    AiModel, CreateWorkflowRequest, NodePos, StepRequest, UpdateWorkflowRequest, Workflow, WorkflowStep,
+    CreateWorkflowRequest, NodePos, StepRequest, UpdateWorkflowRequest, Workflow, WorkflowStep,
 };
 use crate::services::workflow_service;
 
@@ -92,10 +92,4 @@ pub async fn workflow_step_reorder(
     step_ids: Vec<i32>,
 ) -> Result<(), AppErrorPayload> {
     workflow_service::reorder_steps(workflow_id, step_ids).await.map_err(log_err)
-}
-
-/// Danh mục model AI để chọn cho step (hiện chỉ đối ứng provider `claude`).
-#[tauri::command]
-pub async fn ai_model_list() -> Result<Vec<AiModel>, AppErrorPayload> {
-    workflow_service::list_models().await.map_err(log_err)
 }

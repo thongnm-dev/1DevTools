@@ -1,6 +1,5 @@
 import { safeInvoke } from "./_base";
 import type {
-  AiModel,
   CreateWorkflowRequest,
   NodePos,
   StepRequest,
@@ -51,8 +50,4 @@ export function workflowStepDelete(id: number) {
 
 export function workflowStepReorder(workflowId: number, stepIds: number[]) {
   return safeInvoke<void>("workflow_step_reorder", { workflowId, stepIds });
-}
-
-export function aiModelList() {
-  return safeInvoke<AiModel[]>("ai_model_list");
 }

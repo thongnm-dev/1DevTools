@@ -24,7 +24,7 @@ const { t } = useI18n();
         <template v-if="route.breadcrumbs?.length">
           <template v-for="(crumb, i) in route.breadcrumbs" :key="i">
             <span class="text-divider">/</span>
-            <span :class="i === route.breadcrumbs.length - 1 ? 'text-brand' : ''">{{ crumb }}</span>
+            <span :class="i === route.breadcrumbs.length - 1 ? 'text-brand' : ''">{{ t(crumb) }}</span>
           </template>
         </template>
         <template v-else>

@@ -129,7 +129,8 @@ watch(
       </section>
     </section>
 
-    <AppBottomBar :info="shell.systemInfo.value" @logout="handleLogout" />
+    <AppBottomBar :info="shell.systemInfo.value" @logout="handleLogout"
+      @profile="handleMenuChange('settings')" />
 
     <!-- Floating toggle bubble -->
     <button :style="{

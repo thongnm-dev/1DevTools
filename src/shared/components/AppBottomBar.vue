@@ -14,6 +14,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   logout: [];
+  profile: [];
 }>();
 
 const { t } = useI18n();
@@ -49,6 +50,11 @@ function toggleTheme() {
 
 function togglePopover(event: Event) {
   popoverRef.value?.toggle(event);
+}
+
+function openProfile() {
+  popoverRef.value?.hide();
+  emit("profile");
 }
 
 onMounted(() => {
@@ -164,6 +170,18 @@ function formatDateTime(value: string): string {
 
   <Popover ref="popoverRef">
     <div class="flex min-w-[180px] flex-col py-1">
+      <button
+        type="button"
+        class="flex w-full items-center gap-3 rounded px-3 py-2 text-sm transition-colors hover:bg-surface-hover"
+        :title="t('common.profile')"
+        @click="openProfile"
+      >
+        <i class="pi pi-cog text-brand" />
+        <span>{{ t('common.profile') }}</span>
+      </button>
+
+      <div class="my-1 border-t border-divider" />
+
       <button
         type="button"
         class="flex w-full items-center gap-3 rounded px-3 py-2 text-sm transition-colors hover:bg-surface-hover"

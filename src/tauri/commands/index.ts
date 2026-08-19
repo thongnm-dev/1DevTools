@@ -14,3 +14,5 @@ export * from "./explorer";
 export * from "./terminal";
 export * from "./docker";
 export * from "./settings";
+export * from "./agent-provider";
+export * from "./agent-provider-model";

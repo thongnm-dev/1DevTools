@@ -43,6 +43,10 @@ mod commands {
     pub mod skill_commands;
     /// Commands cho thư viện Prompt (CRUD + đếm lượt dùng).
     pub mod prompt_commands;
+    /// Commands cho registry AI Agent Provider (CRUD + bật/tắt cho phép sử dụng).
+    pub mod agent_provider_commands;
+    /// Commands cho AI Agent Provider Model (CRUD + bật/tắt cho phép sử dụng).
+    pub mod agent_provider_model_commands;
     /// Commands cho module cài đặt người dùng (get/save profile + preferences).
     pub mod settings_commands;
 }

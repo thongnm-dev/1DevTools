@@ -7,8 +7,6 @@ import type { MenuConfig } from "@/models/menu-config";
 
 /** Menu key dùng cho các mục top-level không thuộc nhóm nào. */
 const UNGROUPED = "—";
-/** Key của mục Settings — luôn render riêng ở chân sidebar. */
-const SETTINGS_KEY = "settings";
 
 /** Một mục menu đã sẵn sàng để render trên sidebar. */
 export type MenuItem = {
@@ -57,9 +55,9 @@ export const useMenuStore = defineStore("menu", () => {
       .map(toItem),
   );
 
-  /** Mục top-level (không nhóm), trừ Settings vì render riêng ở chân sidebar. */
+  /** Mục top-level (không thuộc nhóm nào). */
   const topLevelItems = computed(() =>
-    accessibleMenus.value.filter((m) => m.group === UNGROUPED && m.key !== SETTINGS_KEY),
+    accessibleMenus.value.filter((m) => m.group === UNGROUPED),
   );
 
   /** Các nhóm menu, giữ thứ tự xuất hiện theo `order` của mục đầu tiên. */
@@ -73,11 +71,6 @@ export const useMenuStore = defineStore("menu", () => {
     }
     return Array.from(map, ([label, items]) => ({ label, items }));
   });
-
-  /** Mục Settings nếu user được phép truy cập (dùng cho chân sidebar). */
-  const settingsMenu = computed(
-    () => accessibleMenus.value.find((m) => m.key === SETTINGS_KEY) ?? null,
-  );
 
   /**
    * User có được vào một menu không. Trước khi load hoặc với key không nằm
@@ -124,7 +117,6 @@ export const useMenuStore = defineStore("menu", () => {
     accessibleMenus,
     topLevelItems,
     groups,
-    settingsMenu,
     canAccess,
     load,
     clear,
