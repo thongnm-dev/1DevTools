@@ -37,6 +37,9 @@ const emptyDraft = (): AgentProviderRequest => ({
   command: "",
   website: "",
   models: [],
+  presets: [],
+  model_flag: "",
+  config_env: "",
   enabled: true,
 });
 
@@ -118,6 +121,9 @@ export function useAgentProvider() {
       command: p.command,
       website: p.website,
       models: [...p.models],
+      presets: [...p.presets],
+      model_flag: p.model_flag,
+      config_env: p.config_env,
       enabled: p.enabled,
     };
   }

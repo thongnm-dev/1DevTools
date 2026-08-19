@@ -8,6 +8,7 @@ export type MenuKey =
   | "gov-menus"
   | "gov-permissions"
   | "app-config"
+  | "master-data"
   | "ai-usage"
   | "ai-providers"
   | "ai-provider-models"

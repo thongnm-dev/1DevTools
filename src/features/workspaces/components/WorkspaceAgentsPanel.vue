@@ -4,35 +4,23 @@ import { useI18n } from "vue-i18n";
 import { useAiUsage } from "@/features/ai-agent/composables/useAiUsage";
 import AiAgentProfile from "@/features/ai-agent/components/AiAgentProfile.vue";
 import { useWorkspaceTerminal } from "../composables/useWorkspaceTerminal";
+import { agentProviderList } from "@/tauri/commands/agent-provider";
 import type { AiAccount, AiProvider } from "@/models/ai-usage";
+import type { AgentProvider } from "@/models/agent-provider";
 import type { Workspace } from "@/models/workspace";
 
-const AGENT_OPTIONS = [
-  {
-    key: "claude",
-    title: "Claude",
-    command: "claude",
-    icon: "pi pi-sparkles",
-    provider: "claude" as AiProvider | null,
-    presets: ["--dangerously-skip-permissions", "--resume", ""],
-  },
-  {
-    key: "codex",
-    title: "Codex",
-    command: "codex",
-    icon: "pi pi-microchip-ai",
-    provider: "codex" as AiProvider | null,
-    presets: ["--full-auto", "--dangerously-bypass-approvals-and-sandbox", ""],
-  },
-  {
-    key: "copilot",
-    title: "Copilot",
-    command: "copilot",
-    icon: "pi pi-github",
-    provider: null as AiProvider | null,
-    presets: ["--allow-all-tools", ""],
-  },
-] as const;
+/** Agent để launch terminal — dựng từ 1 bản ghi `agent_providers` (DB). */
+type AgentOption = {
+  key: string;
+  title: string;
+  command: string;
+  icon: string;
+  /** Provider tương ứng của account (chỉ claude/codex có account); null = không map account. */
+  provider: AiProvider | null;
+  presets: string[];
+  /** Biến môi trường trỏ config dir (VD "CLAUDE_CONFIG_DIR"); rỗng = không set. */
+  configEnv: string;
+};
 
 const props = defineProps<{ workspace: Workspace }>();
 const emit = defineEmits<{ "open-terminal": [] }>();
@@ -41,40 +29,69 @@ const { t } = useI18n();
 const ctrl = useAiUsage();
 const wsTerm = useWorkspaceTerminal();
 
-const selectedKey = ref<(typeof AGENT_OPTIONS)[number]["key"]>(AGENT_OPTIONS[0].key);
+const agents = ref<AgentOption[]>([]);
+const selectedKey = ref<string>("");
 
-const currentAgent = computed(
-  () => AGENT_OPTIONS.find((a) => a.key === selectedKey.value) ?? AGENT_OPTIONS[0],
+/** Chỉ claude/codex có hệ thống account (AI Usage); các provider khác → null. */
+function toAccountProvider(providerType: string): AiProvider | null {
+  return providerType === "claude" || providerType === "codex" ? providerType : null;
+}
+
+function toAgentOption(p: AgentProvider): AgentOption {
+  return {
+    key: p.code || p.provider_type || String(p.id),
+    title: p.name,
+    command: p.command,
+    icon: p.icon || "pi pi-android",
+    provider: toAccountProvider(p.provider_type),
+    presets: p.presets,
+    configEnv: p.config_env,
+  };
+}
+
+const currentAgent = computed<AgentOption | null>(
+  () => agents.value.find((a) => a.key === selectedKey.value) ?? agents.value[0] ?? null,
 );
 
 // Chỉ hiển thị account đúng provider của agent đang chọn — chọn agent nào thì
 // load/active account (profile) của agent đó, thay vì luôn hiện toàn bộ danh sách.
 const accountsForAgent = computed(() => {
-  const provider = currentAgent.value.provider;
+  const provider = currentAgent.value?.provider;
   if (!provider) return [];
   return ctrl.accounts.value.filter((a) => a.provider === provider);
 });
 
-function selectAgent(agent: (typeof AGENT_OPTIONS)[number]) {
+function selectAgent(agent: AgentOption) {
   selectedKey.value = agent.key;
 }
 
+async function loadAgents() {
+  try {
+    const list = await agentProviderList();
+    agents.value = list
+      .filter((p) => p.enabled)
+      .sort((a, b) => a.id - b.id)
+      .map(toAgentOption);
+    if (!agents.value.some((a) => a.key === selectedKey.value)) {
+      selectedKey.value = agents.value[0]?.key ?? "";
+    }
+  } catch {
+    agents.value = [];
+  }
+}
+
 // Panel này trước đây không gọi start() nên danh sách account luôn rỗng —
-// cần load account (profile) mỗi khi panel mount để có cái mà active theo agent.
+// cần load account (profile) + danh sách agent (DB) mỗi khi panel mount.
 onMounted(() => {
   void ctrl.start();
+  void loadAgents();
 });
 
 /** Xây env vars cho phiên terminal dựa trên provider + account config. */
 function buildEnvForAccount(account: AiAccount): Record<string, string> | undefined {
-  const provider = currentAgent.value.provider;
-  if (!provider || !account.config_dir) return undefined;
-
-  const envMap: Record<string, string> = {};
-  if (provider === "claude") {
-    envMap["CLAUDE_CONFIG_DIR"] = account.config_dir;
-  }
-  return Object.keys(envMap).length > 0 ? envMap : undefined;
+  const agent = currentAgent.value;
+  if (!agent?.provider || !agent.configEnv || !account.config_dir) return undefined;
+  return { [agent.configEnv]: account.config_dir };
 }
 
 /** Mở terminal cho một account cụ thể: kích hoạt profile rồi mở tab terminal của workspace
@@ -85,7 +102,8 @@ function openTerminalForAccount(account: AiAccount, command?: string) {
   const path = props.workspace.project_path;
   if (!path) return;
   const env = buildEnvForAccount(account);
-  wsTerm.addTab(props.workspace.id, `${currentAgent.value.title} · ${props.workspace.name}`, path, command, env);
+  const title = `${currentAgent.value?.title ?? ""} · ${props.workspace.name}`;
+  wsTerm.addTab(props.workspace.id, title, path, command, env);
   emit("open-terminal");
 }
 </script>
@@ -103,7 +121,7 @@ function openTerminalForAccount(account: AiAccount, command?: string) {
 
         <div class="mb-2 grid grid-cols-3 gap-1.5">
           <button
-            v-for="agent in AGENT_OPTIONS"
+            v-for="agent in agents"
             :key="agent.key"
             type="button"
             class="flex flex-col items-center gap-1 rounded-md border py-2 text-[11px] font-medium transition-colors"
@@ -119,14 +137,14 @@ function openTerminalForAccount(account: AiAccount, command?: string) {
 
         <!-- Accounts (profiles) available for the currently selected agent -->
         <p class="mb-1 text-[11px] font-semibold uppercase tracking-wide text-muted">
-          {{ t("workspaces.sidebar.agents") }} · {{ currentAgent.title }}
+          {{ t("workspaces.sidebar.agents") }} · {{ currentAgent?.title ?? "" }}
         </p>
         <div class="mb-3">
           <div v-if="ctrl.isLoading.value" class="flex items-center gap-2 px-1 py-2 text-xs text-sidebar-text">
             <i class="pi pi-spinner pi-spin" /> {{ t("common.loading") }}
           </div>
-          <p v-else-if="!currentAgent.provider" class="px-1 py-2 text-xs text-sidebar-text">
-            {{ t("workspaces.sidebar.agentsNotSupported", { agent: currentAgent.title }) }}
+          <p v-else-if="!currentAgent?.provider" class="px-1 py-2 text-xs text-sidebar-text">
+            {{ t("workspaces.sidebar.agentsNotSupported", { agent: currentAgent?.title ?? "" }) }}
           </p>
           <p v-else-if="!accountsForAgent.length" class="px-1 py-2 text-xs text-sidebar-text">
             {{ t("workspaces.sidebar.agentsEmptyForAgent", { agent: currentAgent.title }) }}
@@ -137,7 +155,7 @@ function openTerminalForAccount(account: AiAccount, command?: string) {
               :key="account.id"
               :account="account"
               :ctrl="ctrl"
-              :agent="currentAgent"
+              :agent="currentAgent ?? undefined"
               @open-terminal="openTerminalForAccount"
             />
           </div>

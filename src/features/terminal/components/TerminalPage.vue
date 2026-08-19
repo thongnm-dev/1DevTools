@@ -9,13 +9,24 @@ import { useTerminal } from "../composables/useTerminal";
 import FileTreePanel from "@/shared/components/FileTreePanel.vue";
 import { useToast } from "@/shared/composables/useToast";
 import { canUseTauriRuntime, friendlyError } from "@/tauri/commands/_base";
+import { agentProviderList } from "@/tauri/commands/agent-provider";
 
-/** Các CLI agent có thể khởi chạy trực tiếp trong một tab terminal mới. */
-const AGENT_OPTIONS = [
-  { title: "Claude", command: "claude", icon: "pi pi-sparkles" },
-  { title: "Codex", command: "codex", icon: "pi pi-microchip-ai" },
-  { title: "Copilot", command: "copilot", icon: "pi pi-github" },
-] as const;
+/** Agent CLI (từ `agent_providers` DB) có thể khởi chạy trong một tab terminal. */
+type TerminalAgent = { title: string; command: string; icon: string };
+
+const agents = ref<TerminalAgent[]>([]);
+
+async function loadAgents() {
+  try {
+    const list = await agentProviderList();
+    agents.value = list
+      .filter((p) => p.enabled && p.command.trim())
+      .sort((a, b) => a.id - b.id)
+      .map((p) => ({ title: p.name, command: p.command, icon: p.icon || "pi pi-android" }));
+  } catch {
+    agents.value = [];
+  }
+}
 
 const { t } = useI18n();
 const term = useTerminal();
@@ -57,7 +68,7 @@ function endResizeTree() {
 const agentMenuBottom = ref<InstanceType<typeof Menu> | null>(null);
 
 /** Khởi chạy agent ngay trong tab đang active (gõ lệnh vào shell hiện có), không mở tab mới. */
-function launchAgent(agent: (typeof AGENT_OPTIONS)[number]) {
+function launchAgent(agent: TerminalAgent) {
   const tab = activeTab.value;
   if (!tab) {
     // Chưa có tab nào — tạo mới để có chỗ chạy agent.
@@ -67,11 +78,13 @@ function launchAgent(agent: (typeof AGENT_OPTIONS)[number]) {
   term.runCommand(tab.key, agent.command);
 }
 
-const agentMenuItems: MenuItem[] = AGENT_OPTIONS.map((agent) => ({
-  label: agent.title,
-  icon: agent.icon,
-  command: () => launchAgent(agent),
-}));
+const agentMenuItems = computed<MenuItem[]>(() =>
+  agents.value.map((agent) => ({
+    label: agent.title,
+    icon: agent.icon,
+    command: () => launchAgent(agent),
+  })),
+);
 
 function toggleAgentMenuBottom(event: Event) {
   agentMenuBottom.value?.toggle(event);
@@ -99,6 +112,7 @@ async function pickDir() {
 
 onMounted(() => {
   void term.init();
+  void loadAgents();
 });
 
 onBeforeUnmount(() => {

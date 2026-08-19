@@ -76,4 +76,6 @@ mod services {
     pub mod agent_provider_service;
     /// Service cho AI Agent Provider Model (CRUD + bật/tắt, PostgreSQL).
     pub mod agent_provider_model_service;
+    /// Service cho Master Data (CRUD danh mục dùng chung, PostgreSQL).
+    pub mod master_data_service;
 }

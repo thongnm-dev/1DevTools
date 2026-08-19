@@ -82,6 +82,15 @@ pub struct AgentProvider {
     /// Danh sách model được hỗ trợ.
     #[serde(default)]
     pub models: Vec<String>,
+    /// Các cờ CLI dựng sẵn (preset); phần tử đầu là mặc định khi launch.
+    #[serde(default)]
+    pub presets: Vec<String>,
+    /// Cờ chỉ định model khi chạy CLI, VD: "--model". Rỗng = không truyền model.
+    #[serde(default = "default_string")]
+    pub model_flag: String,
+    /// Tên biến môi trường trỏ config dir, VD: "CLAUDE_CONFIG_DIR". Rỗng = không set.
+    #[serde(default = "default_string")]
+    pub config_env: String,
     /// Có cho phép sử dụng trong hệ thống hay không.
     #[serde(default = "default_true")]
     pub enabled: bool,
@@ -106,6 +115,12 @@ pub struct AgentProviderRequest {
     pub website: String,
     #[serde(default)]
     pub models: Vec<String>,
+    #[serde(default)]
+    pub presets: Vec<String>,
+    #[serde(default = "default_string")]
+    pub model_flag: String,
+    #[serde(default = "default_string")]
+    pub config_env: String,
     #[serde(default = "default_true")]
     pub enabled: bool,
 }

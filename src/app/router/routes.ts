@@ -72,6 +72,13 @@ export const appRoutes: AppRoute[] = [
     breadcrumbs: ["shell.breadcrumbs.governance", "shell.breadcrumbs.appConfig"],
   },
   {
+    key: "master-data",
+    path: "/governance/master-data",
+    title: "Master Data",
+    subtitle: "Manage shared categories used across the app.",
+    breadcrumbs: ["shell.breadcrumbs.governance", "shell.breadcrumbs.masterData"],
+  },
+  {
     key: "ai-usage",
     path: "/ai/usage",
     title: "AI Usage",
@@ -208,6 +215,11 @@ export const vueRoutes: RouteRecordRaw[] = [
     path: "/governance/app-config",
     component: () => import("@/features/governance/components/AppConfigPage.vue"),
     meta: { key: "app-config" as MenuKey },
+  },
+  {
+    path: "/governance/master-data",
+    component: () => import("@/features/master-data/components/MasterDataPage.vue"),
+    meta: { key: "master-data" as MenuKey },
   },
   {
     path: "/ai/usage",

@@ -18,6 +18,9 @@ fn map_row(row: &tokio_postgres::Row) -> AgentProvider {
         command: row.get("command"),
         website: row.get("website"),
         models: row.get("models"),
+        presets: row.get("presets"),
+        model_flag: row.get("model_flag"),
+        config_env: row.get("config_env"),
         enabled: row.get("enabled"),
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
@@ -49,13 +52,16 @@ pub async fn insert(
     command: &str,
     website: &str,
     models: &[String],
+    presets: &[String],
+    model_flag: &str,
+    config_env: &str,
     enabled: bool,
 ) -> AppResult<AgentProvider> {
     let client = pgsql_connect::connect().await?;
 
     let row = client
         .query_one(
-            "SELECT * FROM sp_agent_provider_insert($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+            "SELECT * FROM sp_agent_provider_insert($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
             &[
                 &name,
                 &code,
@@ -65,6 +71,9 @@ pub async fn insert(
                 &command,
                 &website,
                 &models,
+                &presets,
+                &model_flag,
+                &config_env,
                 &enabled,
             ],
         )
@@ -85,13 +94,16 @@ pub async fn update(
     command: &str,
     website: &str,
     models: &[String],
+    presets: &[String],
+    model_flag: &str,
+    config_env: &str,
     enabled: bool,
 ) -> AppResult<AgentProvider> {
     let client = pgsql_connect::connect().await?;
 
     let row = client
         .query_opt(
-            "SELECT * FROM sp_agent_provider_update($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
+            "SELECT * FROM sp_agent_provider_update($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
             &[
                 &id,
                 &name,
@@ -102,6 +114,9 @@ pub async fn update(
                 &command,
                 &website,
                 &models,
+                &presets,
+                &model_flag,
+                &config_env,
                 &enabled,
             ],
         )

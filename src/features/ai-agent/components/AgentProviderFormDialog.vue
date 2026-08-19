@@ -26,6 +26,14 @@ const modelsText = computed({
   set: (val: string) => props.ctrl.updateDraft("models", val.split(",").map((s) => s.trim()).filter(Boolean)),
 });
 
+// presets[] <-> one-per-line text. Giữ dòng trống (preset "chạy không cờ") nhưng
+// bỏ khoảng trắng thừa; chỉ loại các dòng chỉ chứa whitespace ở cuối.
+const presetsText = computed({
+  get: () => props.ctrl.draft.value.presets.join("\n"),
+  set: (val: string) =>
+    props.ctrl.updateDraft("presets", val.split("\n").map((s) => s.trim())),
+});
+
 function onTypeChange(type: AgentProviderType) {
   props.ctrl.updateDraft("provider_type", type);
   // Gợi ý icon theo loại nếu icon còn để mặc định.
@@ -131,6 +139,35 @@ async function saveAndClose() {
         <span class="text-xs font-bold text-muted">{{ t("agentProvider.form.models") }}</span>
         <InputText v-model="modelsText" class="mt-1 w-full" :placeholder="t('agentProvider.form.modelsPlaceholder')" />
         <span class="mt-1 block text-[11px] text-muted">{{ t("agentProvider.form.modelsHint") }}</span>
+      </label>
+
+      <div class="grid gap-4 md:grid-cols-2">
+        <label class="block">
+          <span class="text-xs font-bold text-muted">{{ t("agentProvider.form.modelFlag") }}</span>
+          <InputText
+            class="mt-1 w-full font-mono"
+            :model-value="ctrl.draft.value.model_flag"
+            :placeholder="t('agentProvider.form.modelFlagPlaceholder')"
+            @update:model-value="ctrl.updateDraft('model_flag', ($event as string) ?? '')"
+          />
+          <span class="mt-1 block text-[11px] text-muted">{{ t("agentProvider.form.modelFlagHint") }}</span>
+        </label>
+        <label class="block">
+          <span class="text-xs font-bold text-muted">{{ t("agentProvider.form.configEnv") }}</span>
+          <InputText
+            class="mt-1 w-full font-mono"
+            :model-value="ctrl.draft.value.config_env"
+            :placeholder="t('agentProvider.form.configEnvPlaceholder')"
+            @update:model-value="ctrl.updateDraft('config_env', ($event as string) ?? '')"
+          />
+          <span class="mt-1 block text-[11px] text-muted">{{ t("agentProvider.form.configEnvHint") }}</span>
+        </label>
+      </div>
+
+      <label class="block">
+        <span class="text-xs font-bold text-muted">{{ t("agentProvider.form.presets") }}</span>
+        <Textarea v-model="presetsText" :rows="3" class="mt-1 w-full font-mono !text-xs" :placeholder="t('agentProvider.form.presetsPlaceholder')" />
+        <span class="mt-1 block text-[11px] text-muted">{{ t("agentProvider.form.presetsHint") }}</span>
       </label>
 
       <label class="block">

@@ -16,14 +16,20 @@ impl TerminalPlatform for MacosTerminal {
         "command"
     }
 
-    fn script_content(expanded_wd: &str, is_default: bool, expanded_dir: &str, command: Option<&str>) -> String {
+    fn script_content(
+        expanded_wd: &str,
+        is_default: bool,
+        expanded_dir: &str,
+        config_env: &str,
+        command: Option<&str>,
+    ) -> String {
         // Ghi câu lệnh ra 1 file `.command` tạm rồi mở bằng Terminal, thay vì nhồi cả câu lệnh
         // (có dấu `"` bọc quanh prompt) vào chuỗi AppleScript `do script "..."` — dấu `"` đó cắt
         // sớm chuỗi literal của AppleScript và gây lỗi cú pháp (-2740). Trong file script, dấu `"`
         // chỉ là quoting shell bình thường.
         let mut script = format!("#!/bin/bash\ncd '{expanded_wd}'\n");
-        if !is_default {
-            script.push_str(&format!("export CLAUDE_CONFIG_DIR='{expanded_dir}'\n"));
+        if !is_default && !config_env.trim().is_empty() {
+            script.push_str(&format!("export {config_env}='{expanded_dir}'\n"));
         }
         if let Some(cmd) = command {
             script.push_str(&format!("{cmd}\n"));

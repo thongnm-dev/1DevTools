@@ -1784,6 +1784,14 @@ $$;
 -- sp_agent_provider_select_list
 -- List all providers, most-recently updated first.
 -- ----------------------------------------------------------------------------
+-- CREATE OR REPLACE không đổi được return type của function đã tồn tại → DROP các
+-- function agent_provider có return type/chữ ký cũ trước khi tạo lại (migrate cho
+-- DB đã chạy bản cũ; an toàn no-op trên DB mới nhờ IF EXISTS).
+DROP FUNCTION IF EXISTS sp_agent_provider_select_list();
+DROP FUNCTION IF EXISTS sp_agent_provider_set_enabled(INTEGER, BOOLEAN);
+DROP FUNCTION IF EXISTS sp_agent_provider_insert(VARCHAR, VARCHAR, VARCHAR, TEXT, VARCHAR, VARCHAR, VARCHAR, TEXT[], BOOLEAN);
+DROP FUNCTION IF EXISTS sp_agent_provider_update(INTEGER, VARCHAR, VARCHAR, VARCHAR, TEXT, VARCHAR, VARCHAR, VARCHAR, TEXT[], BOOLEAN);
+
 CREATE OR REPLACE FUNCTION sp_agent_provider_select_list()
 RETURNS TABLE (
     id            INTEGER,
@@ -1795,6 +1803,9 @@ RETURNS TABLE (
     command       VARCHAR(255),
     website       VARCHAR(255),
     models        TEXT[],
+    presets       TEXT[],
+    model_flag    VARCHAR(50),
+    config_env    VARCHAR(100),
     enabled       BOOLEAN,
     created_at    TEXT,
     updated_at    TEXT
@@ -1805,7 +1816,7 @@ BEGIN
     RETURN QUERY
     SELECT
         p.id, p.name, p.code, p.provider_type, p.description, p.icon,
-        p.command, p.website, p.models, p.enabled,
+        p.command, p.website, p.models, p.presets, p.model_flag, p.config_env, p.enabled,
         to_char(p.created_at, 'YYYY-MM-DD HH24:MI:SS'),
         to_char(p.updated_at, 'YYYY-MM-DD HH24:MI:SS')
     FROM agent_providers p
@@ -1826,6 +1837,9 @@ CREATE OR REPLACE FUNCTION sp_agent_provider_insert(
     p_command       VARCHAR(255),
     p_website       VARCHAR(255),
     p_models        TEXT[],
+    p_presets       TEXT[],
+    p_model_flag    VARCHAR(50),
+    p_config_env    VARCHAR(100),
     p_enabled       BOOLEAN
 )
 RETURNS TABLE (
@@ -1838,6 +1852,9 @@ RETURNS TABLE (
     command       VARCHAR(255),
     website       VARCHAR(255),
     models        TEXT[],
+    presets       TEXT[],
+    model_flag    VARCHAR(50),
+    config_env    VARCHAR(100),
     enabled       BOOLEAN,
     created_at    TEXT,
     updated_at    TEXT
@@ -1847,14 +1864,16 @@ AS $$
 BEGIN
     RETURN QUERY
     INSERT INTO agent_providers
-        (name, code, provider_type, description, icon, command, website, models, enabled)
+        (name, code, provider_type, description, icon, command, website, models,
+         presets, model_flag, config_env, enabled)
     VALUES
         (p_name, p_code, p_provider_type, p_description, p_icon, p_command, p_website,
-         COALESCE(p_models, '{}'), p_enabled)
+         COALESCE(p_models, '{}'), COALESCE(p_presets, '{}'), p_model_flag, p_config_env, p_enabled)
     RETURNING
         agent_providers.id, agent_providers.name, agent_providers.code,
         agent_providers.provider_type, agent_providers.description, agent_providers.icon,
         agent_providers.command, agent_providers.website, agent_providers.models,
+        agent_providers.presets, agent_providers.model_flag, agent_providers.config_env,
         agent_providers.enabled,
         to_char(agent_providers.created_at, 'YYYY-MM-DD HH24:MI:SS'),
         to_char(agent_providers.updated_at, 'YYYY-MM-DD HH24:MI:SS');
@@ -1875,6 +1894,9 @@ CREATE OR REPLACE FUNCTION sp_agent_provider_update(
     p_command       VARCHAR(255),
     p_website       VARCHAR(255),
     p_models        TEXT[],
+    p_presets       TEXT[],
+    p_model_flag    VARCHAR(50),
+    p_config_env    VARCHAR(100),
     p_enabled       BOOLEAN
 )
 RETURNS TABLE (
@@ -1887,6 +1909,9 @@ RETURNS TABLE (
     command       VARCHAR(255),
     website       VARCHAR(255),
     models        TEXT[],
+    presets       TEXT[],
+    model_flag    VARCHAR(50),
+    config_env    VARCHAR(100),
     enabled       BOOLEAN,
     created_at    TEXT,
     updated_at    TEXT
@@ -1904,11 +1929,14 @@ BEGIN
         command = p_command,
         website = p_website,
         models = COALESCE(p_models, '{}'),
+        presets = COALESCE(p_presets, '{}'),
+        model_flag = p_model_flag,
+        config_env = p_config_env,
         enabled = p_enabled
     WHERE p.id = p_id
     RETURNING
         p.id, p.name, p.code, p.provider_type, p.description, p.icon,
-        p.command, p.website, p.models, p.enabled,
+        p.command, p.website, p.models, p.presets, p.model_flag, p.config_env, p.enabled,
         to_char(p.created_at, 'YYYY-MM-DD HH24:MI:SS'),
         to_char(p.updated_at, 'YYYY-MM-DD HH24:MI:SS');
 END;
@@ -1932,6 +1960,9 @@ RETURNS TABLE (
     command       VARCHAR(255),
     website       VARCHAR(255),
     models        TEXT[],
+    presets       TEXT[],
+    model_flag    VARCHAR(50),
+    config_env    VARCHAR(100),
     enabled       BOOLEAN,
     created_at    TEXT,
     updated_at    TEXT
@@ -1945,7 +1976,7 @@ BEGIN
     WHERE p.id = p_id
     RETURNING
         p.id, p.name, p.code, p.provider_type, p.description, p.icon,
-        p.command, p.website, p.models, p.enabled,
+        p.command, p.website, p.models, p.presets, p.model_flag, p.config_env, p.enabled,
         to_char(p.created_at, 'YYYY-MM-DD HH24:MI:SS'),
         to_char(p.updated_at, 'YYYY-MM-DD HH24:MI:SS');
 END;
@@ -2199,6 +2230,156 @@ BEGIN
         FROM agent_provider_models m
         WHERE m.provider_id = p_provider_id
           AND LOWER(m.code) = LOWER(p_code)
+          AND (p_exclude_id IS NULL OR m.id <> p_exclude_id)
+    );
+END;
+$$;
+
+-- ============================================================================
+-- Master Data — CRUD danh mục dùng chung (bảng `master_data`)
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- sp_master_data_select_list
+-- Liệt kê toàn bộ danh mục, sắp theo keygroup rồi display_order.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_master_data_select_list()
+RETURNS TABLE (
+    id            INTEGER,
+    name          VARCHAR(100),
+    icon          VARCHAR(50),
+    keygroup      VARCHAR(50),
+    display_order INTEGER,
+    description   TEXT,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    SELECT
+        m.id, m.name, m.icon, m.keygroup, m.display_order, m.description,
+        to_char(m.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(m.updated_at, 'YYYY-MM-DD HH24:MI:SS')
+    FROM master_data m
+    ORDER BY m.keygroup ASC, m.display_order ASC, m.id ASC;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_master_data_insert
+-- Thêm một danh mục mới và trả về bản ghi vừa tạo.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_master_data_insert(
+    p_name          VARCHAR(100),
+    p_icon          VARCHAR(50),
+    p_keygroup      VARCHAR(50),
+    p_display_order INTEGER,
+    p_description   TEXT
+)
+RETURNS TABLE (
+    id            INTEGER,
+    name          VARCHAR(100),
+    icon          VARCHAR(50),
+    keygroup      VARCHAR(50),
+    display_order INTEGER,
+    description   TEXT,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    INSERT INTO master_data (name, icon, keygroup, display_order, description)
+    VALUES (p_name, p_icon, p_keygroup, COALESCE(p_display_order, 0), p_description)
+    RETURNING
+        master_data.id, master_data.name, master_data.icon, master_data.keygroup,
+        master_data.display_order, master_data.description,
+        to_char(master_data.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(master_data.updated_at, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_master_data_update
+-- Cập nhật một danh mục. Trả về bản ghi đã cập nhật (NULL nếu không tồn tại).
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_master_data_update(
+    p_id            INTEGER,
+    p_name          VARCHAR(100),
+    p_icon          VARCHAR(50),
+    p_keygroup      VARCHAR(50),
+    p_display_order INTEGER,
+    p_description   TEXT
+)
+RETURNS TABLE (
+    id            INTEGER,
+    name          VARCHAR(100),
+    icon          VARCHAR(50),
+    keygroup      VARCHAR(50),
+    display_order INTEGER,
+    description   TEXT,
+    created_at    TEXT,
+    updated_at    TEXT
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+    UPDATE master_data m
+    SET name = p_name,
+        icon = p_icon,
+        keygroup = p_keygroup,
+        display_order = COALESCE(p_display_order, 0),
+        description = p_description
+    WHERE m.id = p_id
+    RETURNING
+        m.id, m.name, m.icon, m.keygroup, m.display_order, m.description,
+        to_char(m.created_at, 'YYYY-MM-DD HH24:MI:SS'),
+        to_char(m.updated_at, 'YYYY-MM-DD HH24:MI:SS');
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_master_data_delete
+-- Xoá một danh mục theo ID. Trả về số bản ghi đã xoá.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_master_data_delete(
+    p_id INTEGER
+)
+RETURNS INTEGER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_count INTEGER;
+BEGIN
+    DELETE FROM master_data WHERE id = p_id;
+    GET DIAGNOSTICS v_count = ROW_COUNT;
+    RETURN v_count;
+END;
+$$;
+
+-- ----------------------------------------------------------------------------
+-- sp_master_data_name_exists
+-- Kiểm tra tên (name) đã tồn tại chưa, có thể loại trừ một ID cụ thể.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION sp_master_data_name_exists(
+    p_name       VARCHAR(100),
+    p_exclude_id INTEGER DEFAULT NULL
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_name IS NULL OR p_name = '' THEN
+        RETURN FALSE;
+    END IF;
+    RETURN EXISTS (
+        SELECT 1
+        FROM master_data m
+        WHERE LOWER(m.name) = LOWER(p_name)
           AND (p_exclude_id IS NULL OR m.id <> p_exclude_id)
     );
 END;

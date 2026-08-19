@@ -26,6 +26,7 @@ use commands::workspace_task_commands::*;
 use commands::skill_commands::*;
 use commands::agent_provider_commands::*;
 use commands::agent_provider_model_commands::*;
+use commands::master_data_commands::*;
 use commands::prompt_commands::*;
 use commands::settings_commands::*;
 
@@ -252,6 +253,11 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         agent_provider_model_update,
         agent_provider_model_set_enabled,
         agent_provider_model_delete,
+        // === Master Data commands: CRUD danh mục dùng chung (PostgreSQL) ===
+        master_data_list,
+        master_data_create,
+        master_data_update,
+        master_data_delete,
         // === Prompt commands: CRUD + đếm lượt dùng (JSON cục bộ) ===
         prompt_list,
         prompt_create,

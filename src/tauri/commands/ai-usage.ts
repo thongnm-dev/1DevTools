@@ -77,17 +77,34 @@ export function aiUsageSaveSettings(settings: AiUsageSettings) {
   return safeInvoke<void>("ai_usage_save_settings", { settings });
 }
 
+/** Cấu hình agent lấy từ `agent_providers` (DB); bỏ trống → backend dùng mặc định Claude. */
+export interface OpenTerminalAgent {
+  /** Lệnh CLI, VD "claude". */
+  command?: string;
+  /** Preset cờ mặc định, VD "--dangerously-skip-permissions". */
+  args?: string;
+  /** Cờ chỉ định model, VD "--model". */
+  modelFlag?: string;
+  /** Biến môi trường config dir, VD "CLAUDE_CONFIG_DIR". */
+  configEnv?: string;
+}
+
 export function aiUsageOpenTerminal(
   configDir: string,
   workDir: string,
   prompt?: string,
   model?: string,
+  agent?: OpenTerminalAgent,
 ) {
   return safeInvoke<void>("ai_usage_open_terminal", {
     configDir,
     workDir,
     prompt: prompt ?? null,
     model: model ?? null,
+    command: agent?.command ?? null,
+    args: agent?.args ?? null,
+    modelFlag: agent?.modelFlag ?? null,
+    configEnv: agent?.configEnv ?? null,
   });
 }
 

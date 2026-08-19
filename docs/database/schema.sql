@@ -63,7 +63,9 @@ CREATE TABLE IF NOT EXISTS user_settings (
 CREATE TABLE IF NOT EXISTS master_data (
     id          SERIAL       PRIMARY KEY,
     name        VARCHAR(100) NOT NULL UNIQUE,
+    icon          VARCHAR(50)  NOT NULL DEFAULT '',
     keygroup       VARCHAR(50)  NOT NULL DEFAULT '',
+    display_order INTEGER      NOT NULL DEFAULT 0,
     description TEXT         NOT NULL DEFAULT '',
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
@@ -124,10 +126,22 @@ CREATE TABLE IF NOT EXISTS agent_providers (
     command       VARCHAR(255) NOT NULL DEFAULT '',
     website       VARCHAR(255) NOT NULL DEFAULT '',
     models        TEXT[]       NOT NULL DEFAULT '{}',
+    -- Các cờ CLI dựng sẵn (preset) cho agent, VD: '{--dangerously-skip-permissions}'.
+    -- Phần tử đầu tiên được coi là mặc định khi launch (AI Cowork / Workspace panel).
+    presets       TEXT[]       NOT NULL DEFAULT '{}',
+    -- Cờ chỉ định model khi chạy CLI, VD: '--model' (Claude). Rỗng = không truyền model.
+    model_flag    VARCHAR(50)  NOT NULL DEFAULT '',
+    -- Tên biến môi trường trỏ config dir của agent, VD: 'CLAUDE_CONFIG_DIR'. Rỗng = không set.
+    config_env    VARCHAR(100) NOT NULL DEFAULT '',
     enabled       BOOLEAN      NOT NULL DEFAULT TRUE,
     created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
     updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+
+-- Migration cho DB đã tồn tại: thêm cột mới nếu chưa có (an toàn chạy lại).
+ALTER TABLE agent_providers ADD COLUMN IF NOT EXISTS presets    TEXT[]       NOT NULL DEFAULT '{}';
+ALTER TABLE agent_providers ADD COLUMN IF NOT EXISTS model_flag VARCHAR(50)  NOT NULL DEFAULT '';
+ALTER TABLE agent_providers ADD COLUMN IF NOT EXISTS config_env VARCHAR(100) NOT NULL DEFAULT '';
 
 -- Mã (code) là duy nhất khi khác rỗng — cho phép nhiều bản ghi bỏ trống code.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_agent_providers_code

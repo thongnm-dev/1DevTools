@@ -39,4 +39,6 @@ mod database {
     pub mod agent_provider_store;
     /// Data access cho bảng `agent_provider_models` (PostgreSQL).
     pub mod agent_provider_model_store;
+    /// Data access cho bảng `master_data` (PostgreSQL).
+    pub mod master_data_store;
 }

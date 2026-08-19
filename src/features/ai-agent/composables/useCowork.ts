@@ -1,13 +1,15 @@
 import { computed, ref, watch } from "vue";
 import { useAuthStore } from "@/app/stores/auth";
 import { friendlyError } from "@/tauri/commands/_base";
-import { aiUsageOpenTerminal } from "@/tauri/commands/ai-usage";
+import { aiUsageOpenTerminal, type OpenTerminalAgent } from "@/tauri/commands/ai-usage";
 import { workflowList, workflowStepList } from "@/tauri/commands/workflow";
 import { agentProviderModelListEnabled } from "@/tauri/commands/agent-provider-model";
+import { agentProviderList } from "@/tauri/commands/agent-provider";
 import { taskWfProcList } from "@/tauri/commands/task";
 import { useTaskWorkflowProgress } from "@/features/task/composables/useTaskWorkflowProgress";
 import { agentProviderModelFlag } from "@/models/agent-provider-model";
 import type { AgentProviderModel } from "@/models/agent-provider-model";
+import type { AgentProvider } from "@/models/agent-provider";
 import type { Workflow, WorkflowStep } from "@/models/workflow";
 import type { Task } from "@/models/task";
 import { useToast } from "@/shared/composables/useToast";
@@ -24,6 +26,7 @@ export function useCowork() {
 
   const workflows = ref<Workflow[]>([]);
   const models = ref<AgentProviderModel[]>([]);
+  const providers = ref<AgentProvider[]>([]);
   const selectedWorkflowId = ref<number | null>(null);
   const appliedWorkflowId = ref<number | null>(null);
   const steps = ref<WorkflowStep[]>([]);
@@ -55,8 +58,17 @@ export function useCowork() {
     }
   }
 
+  async function loadProviders() {
+    try {
+      providers.value = await agentProviderList();
+    } catch (e) {
+      error.value = friendlyError(e);
+    }
+  }
+
   void loadWorkflows();
   void loadModels();
+  void loadProviders();
 
   async function applyWorkflow() {
     if (selectedWorkflowId.value === null) return;
@@ -114,6 +126,22 @@ export function useCowork() {
     return model ? agentProviderModelFlag(model) : undefined;
   }
 
+  /** Từ model của step → provider tương ứng → cấu hình agent (command/preset/flag/env)
+   * để backend dựng đúng CLI. Trả `undefined` khi step chưa gán model (backend dùng mặc định). */
+  function resolveAgent(modelId: number | null): OpenTerminalAgent | undefined {
+    if (modelId === null) return undefined;
+    const model = models.value.find((m) => m.id === modelId);
+    if (!model) return undefined;
+    const provider = providers.value.find((p) => p.id === model.provider_id);
+    if (!provider) return undefined;
+    return {
+      command: provider.command,
+      args: provider.presets[0] ?? "",
+      modelFlag: provider.model_flag,
+      configEnv: provider.config_env,
+    };
+  }
+
   /**
    * Ghi nhận tiến trình workflow cho các task đã confirm khi mở terminal cho 1 step:
    *  - Tạo `task_wf_proc` cho (task, workflow đang áp dụng) nếu chưa có.
@@ -152,8 +180,9 @@ export function useCowork() {
       await registerTaskWorkflowProgress(step);
       await refreshCurrentStep();
       const modelFlag = resolveModelFlag(step.model_id);
+      const agent = resolveAgent(step.model_id);
       for (const task of confirmedTasks.value) {
-        await aiUsageOpenTerminal(configDir, workDir.value.trim(), buildTaskSkillPrompt(step, task), modelFlag);
+        await aiUsageOpenTerminal(configDir, workDir.value.trim(), buildTaskSkillPrompt(step, task), modelFlag, agent);
       }
     } catch (e) {
       error.value = friendlyError(e);

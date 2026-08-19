@@ -124,16 +124,32 @@ pub async fn ai_usage_save_settings(settings: AiUsageSettings) -> Result<(), App
     ai_acc_service::save_settings(settings).map_err(crate::app::error::log_err)
 }
 
-/// Mở terminal với `CLAUDE_CONFIG_DIR` trong working directory chỉ định.
+/// Mở terminal chạy agent CLI trong working directory chỉ định. Các tham số
+/// `command`/`args`/`model_flag`/`config_env` lấy từ `agent_providers` (DB);
+/// khi bỏ trống sẽ rơi về mặc định Claude để giữ tương thích ngược.
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 pub async fn ai_usage_open_terminal(
     config_dir: String,
     work_dir: String,
     prompt: Option<String>,
     model: Option<String>,
+    command: Option<String>,
+    args: Option<String>,
+    model_flag: Option<String>,
+    config_env: Option<String>,
 ) -> Result<(), AppErrorPayload> {
-    claude_terminal::open_terminal(&config_dir, &work_dir, prompt.as_deref(), model.as_deref())
-        .map_err(crate::app::error::log_err)
+    claude_terminal::open_terminal(
+        &config_dir,
+        &work_dir,
+        prompt.as_deref(),
+        model.as_deref(),
+        command.as_deref(),
+        args.as_deref(),
+        model_flag.as_deref(),
+        config_env.as_deref(),
+    )
+    .map_err(crate::app::error::log_err)
 }
 
 /// Mở terminal mới chạy `claude /login` với `CLAUDE_CONFIG_DIR` tuỳ chỉnh.

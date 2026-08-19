@@ -15,6 +15,12 @@ fn normalize_models(models: &[String]) -> Vec<String> {
         .collect()
 }
 
+/// Chuẩn hoá presets: chỉ trim từng phần tử. Giữ lại phần tử rỗng (`""`) vì đó là
+/// preset "không cờ" hợp lệ (chạy agent trần) — khác với model cần bỏ rỗng.
+fn normalize_presets(presets: &[String]) -> Vec<String> {
+    presets.iter().map(|p| p.trim().to_string()).collect()
+}
+
 /// Liệt kê toàn bộ provider, mới cập nhật gần nhất lên đầu.
 pub async fn list_providers() -> AppResult<Vec<AgentProvider>> {
     agent_provider_store::list_all().await
@@ -33,6 +39,7 @@ pub async fn create_provider(request: AgentProviderRequest) -> AppResult<AgentPr
     }
 
     let models = normalize_models(&request.models);
+    let presets = normalize_presets(&request.presets);
 
     agent_provider_store::insert(
         &name,
@@ -43,6 +50,9 @@ pub async fn create_provider(request: AgentProviderRequest) -> AppResult<AgentPr
         request.command.trim(),
         request.website.trim(),
         &models,
+        &presets,
+        request.model_flag.trim(),
+        request.config_env.trim(),
         request.enabled,
     )
     .await
@@ -68,6 +78,7 @@ pub async fn update_provider(
     }
 
     let models = normalize_models(&request.models);
+    let presets = normalize_presets(&request.presets);
 
     agent_provider_store::update(
         id,
@@ -79,6 +90,9 @@ pub async fn update_provider(
         request.command.trim(),
         request.website.trim(),
         &models,
+        &presets,
+        request.model_flag.trim(),
+        request.config_env.trim(),
         request.enabled,
     )
     .await

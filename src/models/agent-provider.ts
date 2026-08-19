@@ -23,6 +23,12 @@ export interface AgentProvider {
   website: string;
   /** Danh sách model được hỗ trợ. */
   models: string[];
+  /** Các cờ CLI dựng sẵn (preset); phần tử đầu là mặc định khi launch. */
+  presets: string[];
+  /** Cờ chỉ định model khi chạy CLI, VD: "--model". Rỗng = không truyền model. */
+  model_flag: string;
+  /** Tên biến môi trường trỏ config dir, VD: "CLAUDE_CONFIG_DIR". Rỗng = không set. */
+  config_env: string;
   /** Có cho phép sử dụng trong hệ thống hay không. */
   enabled: boolean;
   created_at: string;
@@ -39,6 +45,9 @@ export interface AgentProviderRequest {
   command: string;
   website: string;
   models: string[];
+  presets: string[];
+  model_flag: string;
+  config_env: string;
   enabled: boolean;
 }
 

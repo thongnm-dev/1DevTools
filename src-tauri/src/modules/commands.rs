@@ -47,6 +47,8 @@ mod commands {
     pub mod agent_provider_commands;
     /// Commands cho AI Agent Provider Model (CRUD + bật/tắt cho phép sử dụng).
     pub mod agent_provider_model_commands;
+    /// Commands cho Master Data (CRUD danh mục dùng chung).
+    pub mod master_data_commands;
     /// Commands cho module cài đặt người dùng (get/save profile + preferences).
     pub mod settings_commands;
 }

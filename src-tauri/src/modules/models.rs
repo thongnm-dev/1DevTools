@@ -43,6 +43,8 @@ mod models {
     pub mod agent_provider;
     /// Model cho AI Agent Provider Model (các model của provider được phép dùng).
     pub mod agent_provider_model;
+    /// Model cho Master Data (danh mục dùng chung của ứng dụng).
+    pub mod master_data;
     /// Model cho module cài đặt người dùng.
     pub mod settings;
 }
