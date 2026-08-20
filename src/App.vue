@@ -138,7 +138,7 @@ watch(
       left: shell.isSidebarCollapsed.value ? '72px' : '240px',
       top: shell.isSidebarCollapsed.value ? '10px' : '20px',
       transform: 'translateX(-50%)',
-      zIndex: 9999,
+      zIndex: 30,
     }"
       class="flex p-4 h-7 w-7 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-text shadow-md transition-all duration-200 hover:bg-sidebar-hover hover:text-sidebar-text-active"
       :title="shell.isSidebarCollapsed.value ? t('shell.expandSidebar') : t('shell.collapseSidebar')" @click="shell.toggleSidebar()">
