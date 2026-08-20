@@ -11,37 +11,6 @@ fn default_string() -> String {
     String::new()
 }
 
-/// Loại skill — phân theo domain/mục đích sử dụng.
-/// Các giá trị cũ (implement, review, test, release, docs) sẽ fallback về Custom.
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Default)]
-pub enum SkillType {
-    #[serde(rename = "general")]
-    General,
-    #[serde(rename = "frontend")]
-    Frontend,
-    #[serde(rename = "backend")]
-    Backend,
-    #[serde(rename = "mobile")]
-    Mobile,
-    #[serde(rename = "devops")]
-    DevOps,
-    #[serde(rename = "translation")]
-    Translation,
-    #[serde(rename = "design")]
-    Design,
-    #[serde(rename = "writing")]
-    Writing,
-    #[serde(rename = "data")]
-    Data,
-    /// Catch-all cho giá trị cũ và loại tùy chỉnh
-    #[serde(other)]
-    #[default]
-    Custom,
-}
-
-// Backward compat alias
-pub type SkillCategory = SkillType;
-
 /// Một skill — thư viện global, tái sử dụng cho mọi workspace/workflow.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Skill {
@@ -51,7 +20,9 @@ pub struct Skill {
     pub description: String,
     #[serde(default = "default_skill_icon")]
     pub icon: String,
-    pub category: SkillType,
+    /// Danh mục skill — tên (`name`) một mục `master_data` với `keygroup = "SKILL_TYPE"`.
+    #[serde(default = "default_string")]
+    pub category: String,
     /// Tech stack cụ thể, VD: "Vue 3", "FastAPI", "Flutter" ...
     #[serde(default = "default_string")]
     pub stack: String,
@@ -72,7 +43,8 @@ pub struct SkillRequest {
     pub description: String,
     #[serde(default = "default_skill_icon")]
     pub icon: String,
-    pub category: SkillType,
+    #[serde(default = "default_string")]
+    pub category: String,
     #[serde(default = "default_string")]
     pub stack: String,
     #[serde(default)]

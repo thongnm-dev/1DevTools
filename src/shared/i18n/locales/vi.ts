@@ -1314,6 +1314,15 @@ export default {
     emptyState: "Chưa có skill nào. Tạo mới để dùng lại cho các session agent.",
     noDescription: "Chưa có mô tả",
     copyInstructions: "Copy hướng dẫn",
+    search: {
+      keyword: "Từ khoá",
+      keywordPlaceholder: "Tìm theo tên, mô tả, hoặc tag...",
+      category: "Danh mục",
+      allCategory: "Tất cả danh mục",
+    },
+    table: {
+      count: "{count} skill",
+    },
     category: {
       general: "Chung",
       frontend: "Frontend",

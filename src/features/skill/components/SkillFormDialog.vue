@@ -7,12 +7,14 @@ import InputText from "primevue/inputtext";
 import Textarea from "primevue/textarea";
 import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
+import type { MasterData } from "@/models/master-data";
 import type { Skill, SkillType, SkillRequest } from "@/models/skill";
-import { DEFAULT_SKILL_ICON, SKILL_TYPE_META, STACK_SUGGESTIONS } from "@/models/skill";
+import { DEFAULT_SKILL_ICON, STACK_SUGGESTIONS } from "@/models/skill";
 
 const props = defineProps<{
   visible: boolean;
   skill: Skill | null;
+  categories: MasterData[];
 }>();
 
 const emit = defineEmits<{
@@ -20,18 +22,18 @@ const emit = defineEmits<{
   save: [request: SkillRequest];
 }>();
 
-const { t } = useI18n();
+const { t, te } = useI18n();
 
-const SKILL_TYPES: SkillType[] = [
-  "general", "frontend", "backend", "mobile", "devops",
-  "translation", "design", "writing", "data", "custom",
-];
+function categoryLabel(category: string): string {
+  const key = `skill.category.${category}`;
+  return te(key) ? t(key) : category;
+}
 
 const typeOptions = computed(() =>
-  SKILL_TYPES.map((value) => ({
-    value,
-    label: t(`skill.category.${value}`),
-    icon: SKILL_TYPE_META[value].icon,
+  props.categories.map((category) => ({
+    value: category.name,
+    label: categoryLabel(category.name),
+    icon: category.icon || DEFAULT_SKILL_ICON,
   })),
 );
 
@@ -48,8 +50,8 @@ const showIconPicker = ref(false);
 const fullscreen = ref(false);
 
 // Resize (giữ kích thước giữa các lần mở)
-const dialogWidth = ref(560);
-const dialogHeight = ref(600);
+const dialogWidth = ref(1200);
+const dialogHeight = ref(720);
 const MIN_WIDTH = 400;
 const MIN_HEIGHT = 340;
 let cleanupResize: (() => void) | null = null;

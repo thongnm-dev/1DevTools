@@ -101,6 +101,22 @@ UPDATE agent_providers SET
     config_env = ''
 WHERE code = 'gemini-cli' AND (presets IS NULL OR presets = '{}');
 
+-- ── Danh mục Skill (master_data, keygroup = 'SKILL_TYPE') ───────────────────
+-- Thay cho danh sách category hardcode trước đây trong `src/models/skill.ts`
+-- (SKILL_TYPE_META). Nhãn hiển thị vẫn lấy qua i18n `skill.category.<name>`.
+INSERT INTO master_data (name, icon, keygroup, display_order, description) VALUES
+    ('general',     'pi pi-star',      'SKILL_TYPE', 1,  'General-purpose skill'),
+    ('frontend',    'pi pi-desktop',   'SKILL_TYPE', 2,  'Frontend development'),
+    ('backend',     'pi pi-server',    'SKILL_TYPE', 3,  'Backend development'),
+    ('mobile',      'pi pi-mobile',    'SKILL_TYPE', 4,  'Mobile development'),
+    ('devops',      'pi pi-wrench',    'SKILL_TYPE', 5,  'DevOps / infrastructure'),
+    ('translation', 'pi pi-language',  'SKILL_TYPE', 6,  'Translation'),
+    ('design',      'pi pi-palette',   'SKILL_TYPE', 7,  'Design'),
+    ('writing',     'pi pi-file-edit', 'SKILL_TYPE', 8,  'Writing'),
+    ('data',        'pi pi-chart-bar', 'SKILL_TYPE', 9,  'Data'),
+    ('custom',      'pi pi-cog',       'SKILL_TYPE', 10, 'Custom / other')
+ON CONFLICT (name) DO NOTHING;
+
 -- ── Model mặc định cho provider đã seed (chỉ seed khi bảng còn rỗng) ─────────
 INSERT INTO agent_provider_models (provider_id, name, code, version, description)
 SELECT ap.id, v.name, v.code, v.version, v.description

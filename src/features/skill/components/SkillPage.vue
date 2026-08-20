@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
+import Select from "primevue/select";
 import Fieldset from "primevue/fieldset";
 import SkillFormDialog from "./SkillFormDialog.vue";
 import SkillDeleteDialog from "./SkillDeleteDialog.vue";
@@ -10,21 +11,32 @@ import { useSkill } from "../composables/useSkill";
 import { useToast } from "@/shared/composables/useToast";
 import { friendlyError } from "@/tauri/commands/_base";
 import type { Skill, SkillType, SkillRequest } from "@/models/skill";
-import { SKILL_TYPE_META } from "@/models/skill";
+import { CATEGORY_BADGE_PALETTE } from "@/models/skill";
 
 type ViewMode = "grid" | "list";
 const viewMode = ref<ViewMode>("grid");
 
-const { t } = useI18n();
+const { t, te } = useI18n();
 const toast = useToast();
 const ctrl = useSkill();
 
+const categoryOptions = computed(() => [
+  { label: t("skill.search.allCategory"), value: "All" },
+  ...ctrl.categories.value.map((category) => ({
+    label: categoryLabel(category.name),
+    value: category.name,
+  })),
+]);
+
 function categoryBadgeClass(category: SkillType): string {
-  return SKILL_TYPE_META[category]?.badgeClass ?? "bg-canvas text-muted";
+  const index = ctrl.categories.value.findIndex((c) => c.name === category);
+  if (index === -1) return "bg-canvas text-muted";
+  return CATEGORY_BADGE_PALETTE[index % CATEGORY_BADGE_PALETTE.length];
 }
 
 function categoryLabel(category: SkillType): string {
-  return t(`skill.category.${category}`);
+  const key = `skill.category.${category}`;
+  return te(key) ? t(key) : category;
 }
 
 // --- Add/Edit dialog ---
@@ -86,14 +98,35 @@ async function executeDelete() {
 
     <!-- Search fieldset -->
     <Fieldset class="rounded-lg border border-divider bg-panel p-4 shadow-md fieldset-nested" :legend="t('common.searchLegend')" toggleable>
-      <span class="flex items-center gap-2 rounded-md border border-divider bg-canvas px-2">
-        <i class="pi pi-search text-xs text-muted" />
-        <InputText
-          v-model="ctrl.searchQuery.value"
-          class="embedded-input w-full border-0 !bg-transparent !py-1.5 !text-xs"
-          :placeholder="t('skill.searchPlaceholder')"
-        />
-      </span>
+      <div class="grid gap-3">
+        <div class="grid gap-3 lg:grid-cols-2">
+          <label>
+            <span class="text-xs font-bold text-muted">{{ t("skill.search.keyword") }}</span>
+            <InputText
+              class="mt-1 w-full"
+              :placeholder="t('skill.search.keywordPlaceholder')"
+              :model-value="ctrl.filters.value.keyword"
+              @update:model-value="ctrl.filters.value = { ...ctrl.filters.value, keyword: ($event as string) ?? '' }"
+              @keyup.enter="ctrl.search()"
+            />
+          </label>
+          <label>
+            <span class="text-xs font-bold text-muted">{{ t("skill.search.category") }}</span>
+            <Select
+              class="mt-1 w-full"
+              :options="categoryOptions"
+              option-label="label"
+              option-value="value"
+              :model-value="ctrl.filters.value.category"
+              @update:model-value="ctrl.filters.value = { ...ctrl.filters.value, category: $event }"
+            />
+          </label>
+        </div>
+        <div class="flex items-center justify-end gap-2">
+          <Button icon="pi pi-refresh" :label="t('common.reset')" severity="secondary" outlined size="small" @click="ctrl.resetFilters()" />
+          <Button icon="pi pi-search" :label="t('common.search')" size="small" @click="ctrl.search()" />
+        </div>
+      </div>
     </Fieldset>
 
     <!-- Skills panel -->
@@ -103,7 +136,7 @@ async function executeDelete() {
       <div class="flex shrink-0 items-center gap-2 border-b border-divider px-3 py-2">
         <span class="flex-1 text-xs font-semibold text-default">
           {{ t('skill.title') }}
-          <span class="ml-1 text-muted">({{ ctrl.filteredSkills.value.length }})</span>
+          <span class="ml-1 text-muted">{{ t('skill.table.count', { count: ctrl.filteredSkills.value.length }) }}</span>
         </span>
 
         <!-- Sort controls -->
@@ -217,6 +250,7 @@ async function executeDelete() {
     <SkillFormDialog
       :visible="showDialog"
       :skill="editingSkill"
+      :categories="ctrl.categories.value"
       @update:visible="showDialog = $event"
       @save="saveSkill"
     />

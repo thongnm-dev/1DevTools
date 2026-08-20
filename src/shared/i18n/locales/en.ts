@@ -1310,6 +1310,15 @@ export default {
     emptyState: "No skills yet. Create one to reuse across agent sessions.",
     noDescription: "No description",
     copyInstructions: "Copy instructions",
+    search: {
+      keyword: "Keyword",
+      keywordPlaceholder: "Search by name, description, or tag...",
+      category: "Category",
+      allCategory: "All categories",
+    },
+    table: {
+      count: "{count} skills",
+    },
     category: {
       general: "General",
       frontend: "Frontend",
