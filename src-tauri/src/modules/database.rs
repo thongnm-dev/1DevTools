@@ -33,6 +33,8 @@ mod database {
     pub mod workspace_task_store;
     /// Lưu trữ cục bộ (JSON file) thư viện Skill.
     pub mod skill_store;
+    /// Lưu trữ cục bộ (JSON file) thư viện Rule.
+    pub mod rule_store;
     /// Lưu trữ cục bộ (JSON file) thư viện Prompt.
     pub mod prompt_store;
     /// Data access cho bảng `agent_providers` (PostgreSQL).

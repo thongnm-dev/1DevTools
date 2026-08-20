@@ -132,6 +132,12 @@ export const appRoutes: AppRoute[] = [
     subtitle: "Reusable instructions you can load into an agent session.",
   },
   {
+    key: "rule",
+    path: "/rule",
+    title: "Rule",
+    subtitle: "Reusable markdown reference files you can attach to a Skill.",
+  },
+  {
     key: "prompt",
     path: "/prompt",
     title: "Prompt",
@@ -260,6 +266,11 @@ export const vueRoutes: RouteRecordRaw[] = [
     path: "/skill",
     component: () => import("@/features/skill/components/SkillPage.vue"),
     meta: { key: "skill" as MenuKey },
+  },
+  {
+    path: "/rule",
+    component: () => import("@/features/rule/components/RulePage.vue"),
+    meta: { key: "rule" as MenuKey },
   },
   {
     path: "/prompt",

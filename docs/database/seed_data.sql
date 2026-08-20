@@ -46,17 +46,18 @@ INSERT INTO menu_configs (key, title, path, icon, menu_group, is_visible, displa
     ('ai-usage',        'AI Usage',    '/ai/usage',               'pi-chart-bar',  '—',          TRUE, 6),
     ('workflow',        'Workflow',    '/workflow',               'pi-sitemap',    '—',          TRUE, 7),
     ('skill',           'Skill',       '/skill',                  'pi-book',       '—',          TRUE, 8),
-    ('prompt',          'Prompt',      '/prompt',                 'pi-comment',    '—',          TRUE, 9),
-    ('ai-tasks',        'AI Tasks',    '/ai/tasks',               'pi-check-square', '—',        TRUE, 10),
-    ('ai-cowork',       'AI Cowork',   '/ai/cowork',              'pi-objects-column', '—',      TRUE, 11),
-    ('ai-providers',    'AI Providers','/governance/providers',           'pi-android',    'Governance', TRUE, 12),
-    ('ai-provider-models','Provider Models','/governance/provider-models', 'pi-box',        'Governance',TRUE, 13),
-    ('gov-users',       'Users',       '/governance/users',       'pi-users',      'Governance', TRUE, 14),
-    ('gov-roles',       'Roles',       '/governance/roles',       'pi-shield',     'Governance', TRUE, 15),
-    ('gov-menus',       'Menus',       '/governance/menus',       'pi-list',       'Governance', TRUE, 16),
-    ('gov-permissions', 'Permissions', '/governance/permissions', 'pi-key',        'Governance', TRUE, 17),
-    ('app-config',      'App Config',  '/governance/app-config',  'pi-sliders-h',  'Governance', TRUE, 18),
-    ('master-data',     'Master Data', '/governance/master-data', 'pi-database',   'Governance', TRUE, 19)
+    ('rule',            'Rule',        '/rule',                   'pi-file-edit',  '—',          TRUE, 9),
+    ('prompt',          'Prompt',      '/prompt',                 'pi-comment',    '—',          TRUE, 10),
+    ('ai-tasks',        'AI Tasks',    '/ai/tasks',               'pi-check-square', '—',        TRUE, 11),
+    ('ai-cowork',       'AI Cowork',   '/ai/cowork',              'pi-objects-column', '—',      TRUE, 12),
+    ('ai-providers',    'AI Providers','/governance/providers',           'pi-android',    'Governance', TRUE, 13),
+    ('ai-provider-models','Provider Models','/governance/provider-models', 'pi-box',        'Governance',TRUE, 14),
+    ('gov-users',       'Users',       '/governance/users',       'pi-users',      'Governance', TRUE, 15),
+    ('gov-roles',       'Roles',       '/governance/roles',       'pi-shield',     'Governance', TRUE, 16),
+    ('gov-menus',       'Menus',       '/governance/menus',       'pi-list',       'Governance', TRUE, 17),
+    ('gov-permissions', 'Permissions', '/governance/permissions', 'pi-key',        'Governance', TRUE, 18),
+    ('app-config',      'App Config',  '/governance/app-config',  'pi-sliders-h',  'Governance', TRUE, 19),
+    ('master-data',     'Master Data', '/governance/master-data', 'pi-database',   'Governance', TRUE, 20)
 ON CONFLICT (key) DO NOTHING;
 
 -- ── Cấp toàn bộ menu cho role admin ────────────────────────────────────────

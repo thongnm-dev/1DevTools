@@ -7,7 +7,10 @@ import InputText from "primevue/inputtext";
 import Textarea from "primevue/textarea";
 import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
+import RulePickerDialog from "@/features/rule/components/RulePickerDialog.vue";
+import { ruleList } from "@/tauri/commands/rule";
 import type { MasterData } from "@/models/master-data";
+import type { Rule } from "@/models/rule";
 import type { Skill, SkillType, SkillRequest } from "@/models/skill";
 import { DEFAULT_SKILL_ICON, STACK_SUGGESTIONS } from "@/models/skill";
 
@@ -45,9 +48,26 @@ const icon = ref(DEFAULT_SKILL_ICON);
 const skillType = ref<SkillType>("general");
 const stack = ref("");
 const instructions = ref("");
+const ruleIds = ref<number[]>([]);
+const availableRules = ref<Rule[]>([]);
+const showRulePicker = ref(false);
 const tagsText = ref("");
 const showIconPicker = ref(false);
 const fullscreen = ref(false);
+
+const attachedRules = computed(() => availableRules.value.filter((r) => ruleIds.value.includes(r.id)));
+
+async function loadAvailableRules() {
+  try {
+    availableRules.value = await ruleList();
+  } catch {
+    availableRules.value = [];
+  }
+}
+
+function detachRule(id: number) {
+  ruleIds.value = ruleIds.value.filter((i) => i !== id);
+}
 
 // Resize (giữ kích thước giữa các lần mở)
 const dialogWidth = ref(1200);
@@ -97,6 +117,7 @@ watch(
       fullscreen.value = false;
       return;
     }
+    void loadAvailableRules();
     if (props.skill) {
       name.value = props.skill.name;
       description.value = props.skill.description;
@@ -104,6 +125,7 @@ watch(
       skillType.value = props.skill.category ?? "general";
       stack.value = props.skill.stack ?? "";
       instructions.value = props.skill.instructions;
+      ruleIds.value = [...props.skill.rule_ids];
       tagsText.value = props.skill.tags.join(", ");
     } else {
       name.value = "";
@@ -112,6 +134,7 @@ watch(
       skillType.value = "general";
       stack.value = "";
       instructions.value = "";
+      ruleIds.value = [];
       tagsText.value = "";
     }
   },
@@ -127,6 +150,7 @@ function save() {
     category: skillType.value,
     stack: stack.value.trim(),
     instructions: instructions.value,
+    rule_ids: [...ruleIds.value],
     tags: tagsText.value.split(",").map((s) => s.trim()).filter(Boolean),
   });
 }
@@ -240,6 +264,39 @@ function save() {
         />
       </label>
 
+      <!-- References (đính kèm rule có sẵn qua dialog chọn rule) -->
+      <div :class="['block', fullscreen && 'flex flex-1 flex-col']">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-muted">{{ t("skill.dialog.references") }}</span>
+          <Button
+            icon="pi pi-file-import"
+            :label="t('skill.dialog.selectRules')"
+            text
+            size="small"
+            @click="showRulePicker = true"
+          />
+        </div>
+
+        <p v-if="!attachedRules.length" class="mt-1 text-xs text-muted">
+          {{ t("skill.dialog.noRulesAttached") }}
+        </p>
+
+        <div v-else :class="['mt-1.5 flex flex-wrap content-start gap-1.5', fullscreen && 'flex-1 overflow-y-auto']">
+          <span
+            v-for="rule in attachedRules"
+            :key="rule.id"
+            :title="rule.description"
+            class="flex items-center gap-1.5 rounded-full border border-brand bg-brand/10 px-2.5 py-1 text-xs font-medium text-brand"
+          >
+            <i class="pi pi-file text-[11px]" />
+            {{ rule.name }}
+            <button type="button" class="text-brand/70 hover:text-red-500" :title="t('common.delete')" @click="detachRule(rule.id)">
+              <i class="pi pi-times text-[10px]" />
+            </button>
+          </span>
+        </div>
+      </div>
+
       <!-- Tags -->
       <label class="block">
         <span class="text-xs font-bold text-muted">{{ t("skill.dialog.tags") }}</span>
@@ -267,5 +324,13 @@ function save() {
     :selected="icon"
     @update:visible="showIconPicker = $event"
     @select="(picked: string) => (icon = 'pi ' + picked)"
+  />
+
+  <RulePickerDialog
+    :visible="showRulePicker"
+    :rules="availableRules"
+    :model-value="ruleIds"
+    @update:visible="showRulePicker = $event"
+    @update:model-value="ruleIds = $event"
   />
 </template>

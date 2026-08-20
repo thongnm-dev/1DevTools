@@ -16,3 +16,8 @@ export function skillUpdate(id: number, request: SkillRequest) {
 export function skillDelete(id: number) {
   return safeInvoke<void>("skill_delete", { id });
 }
+
+/** Xuất skill ra file markdown, trả về đường dẫn file để preview. */
+export function skillExport(id: number) {
+  return safeInvoke<string>("skill_export", { id });
+}

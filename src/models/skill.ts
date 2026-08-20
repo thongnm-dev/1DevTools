@@ -17,6 +17,12 @@ export interface Skill {
   category: SkillType;
   stack: string;
   instructions: string;
+  /**
+   * Id các Rule (`@/models/rule`) đính kèm — tương đương thư mục `references/`
+   * cạnh `SKILL.md`, nhưng đính kèm bằng cách chọn rule có sẵn (quản lý ở
+   * màn hình Rule riêng) thay vì nhập nội dung trực tiếp.
+   */
+  rule_ids: number[];
   tags: string[];
   created_at: string;
   updated_at: string;
@@ -31,6 +37,7 @@ export interface SkillRequest {
   category: SkillType;
   stack: string;
   instructions: string;
+  rule_ids: number[];
   tags: string[];
 }
 

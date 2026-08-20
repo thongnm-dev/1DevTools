@@ -7,9 +7,11 @@ import Select from "primevue/select";
 import Fieldset from "primevue/fieldset";
 import SkillFormDialog from "./SkillFormDialog.vue";
 import SkillDeleteDialog from "./SkillDeleteDialog.vue";
+import MarkdownPreviewDialog from "@/shared/components/MarkdownPreviewDialog.vue";
 import { useSkill } from "../composables/useSkill";
 import { useToast } from "@/shared/composables/useToast";
 import { friendlyError } from "@/tauri/commands/_base";
+import { skillExport } from "@/tauri/commands/skill";
 import type { Skill, SkillType, SkillRequest } from "@/models/skill";
 import { CATEGORY_BADGE_PALETTE } from "@/models/skill";
 
@@ -66,6 +68,19 @@ async function copyInstructions(skill: Skill) {
   try {
     await navigator.clipboard.writeText(skill.instructions);
     toast.success(t("skill.toast.copied"));
+  } catch (e) {
+    toast.error(friendlyError(e));
+  }
+}
+
+// --- Export to markdown + preview ---
+const showMarkdownPreview = ref(false);
+const markdownPreviewPath = ref("");
+
+async function exportSkill(skill: Skill) {
+  try {
+    markdownPreviewPath.value = await skillExport(skill.id);
+    showMarkdownPreview.value = true;
   } catch (e) {
     toast.error(friendlyError(e));
   }
@@ -207,6 +222,7 @@ async function executeDelete() {
               </div>
               <div class="flex shrink-0 items-center gap-0.5">
                 <Button icon="pi pi-copy" text rounded size="small" :title="t('skill.copyInstructions')" @click="copyInstructions(skill)" />
+                <Button icon="pi pi-file-export" text rounded size="small" :title="t('skill.exportMarkdown')" @click="exportSkill(skill)" />
                 <Button icon="pi pi-pencil" text rounded size="small" :title="t('common.edit')" @click="openEditDialog(skill)" />
                 <Button icon="pi pi-trash" text rounded size="small" severity="danger" :title="t('common.delete')" @click="confirmDelete(skill)" />
               </div>
@@ -260,6 +276,11 @@ async function executeDelete() {
       :skill="deleteTarget"
       @update:visible="showDeleteDialog = $event"
       @confirm="executeDelete"
+    />
+
+    <MarkdownPreviewDialog
+      v-model:visible="showMarkdownPreview"
+      :file-path="markdownPreviewPath"
     />
   </section>
 </template>

@@ -41,6 +41,8 @@ mod commands {
     pub mod workspace_task_commands;
     /// Commands cho thư viện Skill (CRUD).
     pub mod skill_commands;
+    /// Commands cho thư viện Rule (CRUD + export xem markdown).
+    pub mod rule_commands;
     /// Commands cho thư viện Prompt (CRUD + đếm lượt dùng).
     pub mod prompt_commands;
     /// Commands cho registry AI Agent Provider (CRUD + bật/tắt cho phép sử dụng).

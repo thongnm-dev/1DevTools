@@ -24,6 +24,7 @@ use commands::workflow_commands::*;
 use commands::workspace_commands::*;
 use commands::workspace_task_commands::*;
 use commands::skill_commands::*;
+use commands::rule_commands::*;
 use commands::agent_provider_commands::*;
 use commands::agent_provider_model_commands::*;
 use commands::master_data_commands::*;
@@ -240,6 +241,12 @@ fn build_invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + S
         skill_create,
         skill_update,
         skill_delete,
+        skill_export,
+        rule_list,
+        rule_create,
+        rule_update,
+        rule_delete,
+        rule_export,
         // === AI Agent Provider commands: CRUD + bật/tắt (JSON cục bộ) ===
         agent_provider_list,
         agent_provider_create,

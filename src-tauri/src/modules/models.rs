@@ -37,6 +37,8 @@ mod models {
     pub mod workspace_task;
     /// Model cho thư viện Skill (chỉ dẫn tái sử dụng cho agent).
     pub mod skill;
+    /// Model cho thư viện Rule (file markdown đính kèm, dùng làm reference cho Skill).
+    pub mod rule;
     /// Model cho thư viện Prompt (snippet tái sử dụng, hỗ trợ placeholder).
     pub mod prompt;
     /// Model cho registry AI Agent Provider (các loại AI Agent được phép dùng).

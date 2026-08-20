@@ -17,6 +17,7 @@ export type MenuKey =
   | "workflow"
   | "workspaces"
   | "skill"
+  | "rule"
   | "prompt"
   | "settings";
 
