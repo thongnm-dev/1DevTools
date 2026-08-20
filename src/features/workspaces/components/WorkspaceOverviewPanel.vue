@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useWorkspaceOverview } from "../composables/useWorkspaceOverview";
+import { useWorkspaceTerminal } from "../composables/useWorkspaceTerminal";
 import { TASK_CATEGORY_META, STEP_STATUS_META } from "@/models/task";
-import { baseName, statusMeta } from "@/features/git/utils/fileStatus";
 import type { Workspace } from "@/models/workspace";
 import type { GitRepo } from "@/models/git";
 
@@ -11,6 +11,7 @@ const props = defineProps<{ workspace: Workspace; repo: GitRepo | null }>();
 const { t } = useI18n();
 
 const overview = useWorkspaceOverview(props.workspace);
+const wsTerm = useWorkspaceTerminal();
 
 watch(
   () => props.repo,
@@ -20,6 +21,13 @@ watch(
   { immediate: true },
 );
 
+const collapsed = reactive({ tasks: false, plans: false, sessions: false });
+const topRowCollapsed = computed(() => collapsed.tasks && collapsed.plans);
+
+function toggleCollapse(key: keyof typeof collapsed): void {
+  collapsed[key] = !collapsed[key];
+}
+
 function categoryBadgeClass(category: string): string {
   return TASK_CATEGORY_META[category as keyof typeof TASK_CATEGORY_META]?.badgeClass ?? "bg-canvas text-muted";
 }
@@ -28,22 +36,68 @@ function stepStatusBadgeClass(status: string): string {
   return STEP_STATUS_META[status as keyof typeof STEP_STATUS_META]?.badgeClass ?? "bg-canvas text-muted";
 }
 
-function formatAt(at: string): string {
-  const date = new Date(at);
-  return Number.isNaN(date.getTime()) ? at : date.toLocaleString();
+// === Sessions: nhúng terminal sống trực tiếp trong lưới, thay cho panel Terminal riêng ===
+type SessionsLayout = "list" | "grid2" | "grid3";
+const sessionsLayout = ref<SessionsLayout>("grid2");
+const sessionsGridClass = computed(() => {
+  if (sessionsLayout.value === "list") return "flex flex-col gap-2";
+  if (sessionsLayout.value === "grid3") return "grid grid-cols-3 gap-2 auto-rows-[22rem]";
+  return "grid grid-cols-2 gap-2 auto-rows-[26rem]";
+});
+
+// Chỉ 1 tab được phóng to toàn màn hình tại một thời điểm — ô nhỏ trong lưới ẩn container của
+// tab đó đi (v-if) để tránh 2 nơi cùng tranh nhau "nhận nuôi" cùng một DOM container.
+const maximizedKey = ref<string | null>(null);
+const maximizedTab = computed(() => overview.sessions.value.find((tab) => tab.key === maximizedKey.value) ?? null);
+
+function toggleMaximize(key: string): void {
+  maximizedKey.value = maximizedKey.value === key ? null : key;
+}
+
+/** Gắn xterm vào container của 1 session — xem giải thích "chuyển nhà" ở `useTerminal.bindContainer`. */
+function bindSessionTerminal(key: string, el: Element | null): void {
+  if (el instanceof HTMLElement) void wsTerm.term.bindContainer(key, el);
+}
+
+function openNewTerminal(): void {
+  const title = `${props.workspace.name} ${overview.sessions.value.length + 1}`;
+  wsTerm.addTab(props.workspace.id, title, props.workspace.project_path);
+}
+
+function closeSessionTab(key: string): void {
+  if (maximizedKey.value === key) maximizedKey.value = null;
+  void wsTerm.closeTab(props.workspace.id, key);
 }
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto p-4">
-    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+  <div class="flex h-full min-h-0 flex-col gap-3 p-3">
+    <!-- Hàng 1: Tasks | Plans -->
+    <div :class="['flex min-h-0 gap-3', topRowCollapsed ? 'flex-none' : 'flex-1']">
       <!-- Tasks -->
-      <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm">
-        <div class="flex items-center justify-between gap-2 border-b border-divider px-4 py-3">
+      <section
+        :class="[
+          'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm',
+          collapsed.tasks ? 'self-start' : '',
+        ]"
+      >
+        <div class="flex shrink-0 items-center justify-between gap-2 border-b border-divider px-4 py-2">
           <h3 class="section-title">{{ t("workspaces.overview.tasks.title") }}</h3>
-          <span class="text-xs text-muted">{{ overview.linkedTasks.value.length }}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-muted">{{ overview.linkedTasks.value.length }}</span>
+            <button
+              type="button"
+              class="rounded p-0.5 text-muted transition-colors hover:bg-canvas hover:text-ink"
+              :title="collapsed.tasks ? t('workspaces.overview.expand') : t('workspaces.overview.collapse')"
+              @click="toggleCollapse('tasks')"
+            >
+              <svg viewBox="0 0 20 20" fill="none" class="h-3.5 w-3.5 transition-transform" :class="collapsed.tasks ? '-rotate-90' : ''">
+                <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
         </div>
-        <div class="flex max-h-72 flex-col gap-1.5 overflow-y-auto p-3">
+        <div v-show="!collapsed.tasks" class="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto p-3">
           <p v-if="!overview.linkedTasks.value.length" class="px-1 py-4 text-center text-xs text-muted">
             {{ t("workspaces.overview.tasks.empty") }}
           </p>
@@ -67,37 +121,30 @@ function formatAt(at: string): string {
         </div>
       </section>
 
-      <!-- Sessions -->
-      <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm">
-        <div class="flex items-center justify-between gap-2 border-b border-divider px-4 py-3">
-          <h3 class="section-title">{{ t("workspaces.overview.sessions.title") }}</h3>
-          <span class="text-xs text-muted">{{ overview.sessions.value.length }}</span>
-        </div>
-        <div class="flex max-h-72 flex-col gap-1.5 overflow-y-auto p-3">
-          <p v-if="!overview.sessions.value.length" class="px-1 py-4 text-center text-xs text-muted">
-            {{ t("workspaces.overview.sessions.empty") }}
-          </p>
-          <div
-            v-for="tab in overview.sessions.value"
-            :key="tab.key"
-            class="flex items-center gap-2 rounded-md border border-divider bg-canvas px-3 py-2"
-          >
-            <span :class="['h-2 w-2 shrink-0 rounded-full', tab.exited ? 'bg-muted' : 'bg-emerald-500']" />
-            <span class="min-w-0 flex-1 truncate text-xs text-ink">{{ tab.title }}</span>
-            <span class="shrink-0 text-[10px] text-muted">
-              {{ tab.exited ? t("workspaces.overview.sessions.exited") : t("workspaces.overview.sessions.running") }}
-            </span>
+      <!-- Plans -->
+      <section
+        :class="[
+          'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm',
+          collapsed.plans ? 'self-start' : '',
+        ]"
+      >
+        <div class="flex shrink-0 items-center justify-between gap-2 border-b border-divider px-4 py-2">
+          <h3 class="section-title">{{ t("workspaces.overview.plans.title") }}</h3>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-muted">{{ overview.plans.value.length }}</span>
+            <button
+              type="button"
+              class="rounded p-0.5 text-muted transition-colors hover:bg-canvas hover:text-ink"
+              :title="collapsed.plans ? t('workspaces.overview.expand') : t('workspaces.overview.collapse')"
+              @click="toggleCollapse('plans')"
+            >
+              <svg viewBox="0 0 20 20" fill="none" class="h-3.5 w-3.5 transition-transform" :class="collapsed.plans ? '-rotate-90' : ''">
+                <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
           </div>
         </div>
-      </section>
-
-      <!-- Plans -->
-      <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm">
-        <div class="flex items-center justify-between gap-2 border-b border-divider px-4 py-3">
-          <h3 class="section-title">{{ t("workspaces.overview.plans.title") }}</h3>
-          <span class="text-xs text-muted">{{ overview.plans.value.length }}</span>
-        </div>
-        <div class="flex max-h-72 flex-col gap-2 overflow-y-auto p-3">
+        <div v-show="!collapsed.plans" class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
           <p v-if="!overview.plans.value.length" class="px-1 py-4 text-center text-xs text-muted">
             {{ t("workspaces.overview.plans.empty") }}
           </p>
@@ -117,55 +164,150 @@ function formatAt(at: string): string {
           </div>
         </div>
       </section>
+    </div>
 
-      <!-- Activity -->
-      <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm">
-        <div class="flex items-center justify-between gap-2 border-b border-divider px-4 py-3">
-          <h3 class="section-title">{{ t("workspaces.overview.activity.title") }}</h3>
+    <!-- Hàng 2: Sessions (chiếm cả 2 cột) -->
+    <section
+      :class="[
+        'flex flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm',
+        collapsed.sessions ? 'flex-none' : 'min-h-0 flex-1',
+      ]"
+    >
+      <div class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-divider px-4 py-2">
+        <h3 class="section-title">{{ t("workspaces.overview.sessions.title") }}</h3>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-muted">{{ overview.sessions.value.length }}</span>
+
+          <div class="flex items-center gap-0.5 rounded-md border border-divider p-0.5">
+            <button
+              type="button"
+              class="flex h-5 w-5 items-center justify-center rounded text-[11px] transition-colors"
+              :class="sessionsLayout === 'list' ? 'bg-brand/10 text-brand' : 'text-muted hover:text-ink'"
+              :title="t('workspaces.overview.sessions.layoutList')"
+              @click="sessionsLayout = 'list'"
+            >
+              <i class="pi pi-list text-[11px]" />
+            </button>
+            <button
+              type="button"
+              class="flex h-5 w-5 items-center justify-center rounded text-[11px] font-semibold transition-colors"
+              :class="sessionsLayout === 'grid2' ? 'bg-brand/10 text-brand' : 'text-muted hover:text-ink'"
+              :title="t('workspaces.overview.sessions.layoutGrid2')"
+              @click="sessionsLayout = 'grid2'"
+            >
+              2
+            </button>
+            <button
+              type="button"
+              class="flex h-5 w-5 items-center justify-center rounded text-[11px] font-semibold transition-colors"
+              :class="sessionsLayout === 'grid3' ? 'bg-brand/10 text-brand' : 'text-muted hover:text-ink'"
+              :title="t('workspaces.overview.sessions.layoutGrid3')"
+              @click="sessionsLayout = 'grid3'"
+            >
+              3
+            </button>
+          </div>
+
+          <button
+            type="button"
+            class="flex items-center gap-1 rounded-md border border-divider px-2 py-1 text-[11px] text-secondary transition-colors hover:bg-canvas hover:text-ink"
+            :title="t('workspaces.overview.sessions.newTerminal')"
+            @click="openNewTerminal"
+          >
+            <i class="pi pi-plus text-[10px]" />
+            <span>{{ t("workspaces.overview.sessions.newTerminal") }}</span>
+          </button>
+
+          <button
+            type="button"
+            class="rounded p-0.5 text-muted transition-colors hover:bg-canvas hover:text-ink"
+            :title="collapsed.sessions ? t('workspaces.overview.expand') : t('workspaces.overview.collapse')"
+            @click="toggleCollapse('sessions')"
+          >
+            <svg viewBox="0 0 20 20" fill="none" class="h-3.5 w-3.5 transition-transform" :class="collapsed.sessions ? '-rotate-90' : ''">
+              <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
         </div>
-        <div class="flex max-h-72 flex-col gap-1.5 overflow-y-auto p-3">
-          <p v-if="!overview.activity.value.length" class="px-1 py-4 text-center text-xs text-muted">
-            {{ t("workspaces.overview.activity.empty") }}
-          </p>
-          <div v-for="(entry, index) in overview.activity.value" :key="index" class="flex items-start gap-2 text-xs">
-            <span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
-            <div class="min-w-0 flex-1">
-              <p class="truncate text-ink">{{ entry.text }}</p>
-              <p class="text-[10px] text-muted">{{ formatAt(entry.at) }}</p>
+      </div>
+
+      <div v-show="!collapsed.sessions" class="min-h-0 flex-1 overflow-y-auto p-3">
+        <div v-if="!overview.sessions.value.length" class="flex h-full flex-col items-center justify-center gap-2 text-xs text-muted">
+          <span>{{ t("workspaces.overview.sessions.empty") }}</span>
+          <button
+            type="button"
+            class="flex items-center gap-1.5 rounded-md border border-divider px-3 py-1.5 text-xs text-secondary transition-colors hover:bg-canvas hover:text-ink"
+            @click="openNewTerminal"
+          >
+            <i class="pi pi-plus text-[10px]" />
+            <span>{{ t("workspaces.overview.sessions.newTerminal") }}</span>
+          </button>
+        </div>
+
+        <div v-else :class="sessionsGridClass">
+          <div
+            v-for="tab in overview.sessions.value"
+            :key="tab.key"
+            :class="[
+              'flex flex-col overflow-hidden rounded-md border border-divider bg-[#0b0f19]',
+              sessionsLayout === 'list' ? 'h-[28rem] w-full shrink-0' : 'h-full w-full',
+            ]"
+          >
+            <div class="flex shrink-0 items-center gap-1.5 border-b border-white/10 px-2 py-1 text-[11px]">
+              <span :class="['h-1.5 w-1.5 shrink-0 rounded-full', tab.exited ? 'bg-white/30' : 'bg-emerald-500']" />
+              <span class="min-w-0 flex-1 truncate text-white/80">{{ tab.title }}</span>
+              <button
+                type="button"
+                class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                :title="t('workspaces.overview.sessions.maximize')"
+                @click="toggleMaximize(tab.key)"
+              >
+                <i class="pi pi-expand text-[10px]" />
+              </button>
+              <button
+                type="button"
+                class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+                :title="t('workspaces.overview.sessions.close')"
+                @click="closeSessionTab(tab.key)"
+              >
+                <i class="pi pi-times text-[10px]" />
+              </button>
+            </div>
+            <div
+              v-if="maximizedKey !== tab.key"
+              class="min-h-0 flex-1 p-1"
+              :ref="(el) => bindSessionTerminal(tab.key, el as Element | null)"
+            />
+            <div v-else class="flex min-h-0 flex-1 items-center justify-center text-[10px] text-white/30">
+              {{ t("workspaces.overview.sessions.maximize") }}…
             </div>
           </div>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- Files changed -->
-      <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm lg:col-span-2">
-        <div class="flex items-center justify-between gap-2 border-b border-divider px-4 py-3">
-          <h3 class="section-title">{{ t("workspaces.overview.files.title") }}</h3>
-          <span class="text-xs text-muted">{{ overview.files.value.length }}</span>
-        </div>
-        <p v-if="overview.gitError.value" class="banner-danger mx-4 mt-3">{{ overview.gitError.value }}</p>
-        <div v-else-if="!props.repo" class="px-3 py-8 text-center text-xs text-muted">
-          {{ t("workspaces.overview.files.notARepo") }}
-        </div>
-        <div v-else class="flex max-h-60 flex-col gap-1 overflow-y-auto p-3">
-          <p v-if="!overview.files.value.length" class="px-1 py-4 text-center text-xs text-muted">
-            {{ t("workspaces.overview.files.empty") }}
-          </p>
-          <div
-            v-for="file in overview.files.value"
-            :key="`${file.staged}-${file.path}`"
-            class="flex items-center gap-2 rounded-md border border-divider bg-canvas px-3 py-1.5 text-xs"
-          >
-            <span :class="['shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold', statusMeta(file.status).badge]">
-              {{ file.status }}
-            </span>
-            <span class="min-w-0 flex-1 truncate text-ink">{{ baseName(file.path) }}</span>
-            <span class="shrink-0 text-[10px] text-muted">
-              {{ file.staged ? t("workspaces.overview.files.staged") : t("workspaces.overview.files.unstaged") }}
-            </span>
+    <!-- Overlay phóng to 1 session terminal lên toàn màn hình -->
+    <Teleport to="body">
+      <div v-if="maximizedTab" class="fixed inset-0 z-50 flex flex-col bg-black/70 p-6">
+        <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-divider bg-[#0b0f19] shadow-float">
+          <div class="flex shrink-0 items-center gap-2 border-b border-white/10 px-3 py-2 text-xs">
+            <span :class="['h-1.5 w-1.5 shrink-0 rounded-full', maximizedTab?.exited ? 'bg-white/30' : 'bg-emerald-500']" />
+            <span class="min-w-0 flex-1 truncate text-white/80">{{ maximizedTab?.title }}</span>
+            <button
+              type="button"
+              class="flex h-6 w-6 items-center justify-center rounded text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+              :title="t('workspaces.overview.sessions.restore')"
+              @click="toggleMaximize(maximizedTab?.key ?? '')"
+            >
+              <i class="pi pi-times text-xs" />
+            </button>
           </div>
+          <div
+            class="min-h-0 flex-1 p-2"
+            :ref="(el) => bindSessionTerminal(maximizedTab?.key ?? '', el as Element | null)"
+          />
         </div>
-      </section>
-    </div>
+      </div>
+    </Teleport>
   </div>
 </template>

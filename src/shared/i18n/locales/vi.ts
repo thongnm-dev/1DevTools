@@ -1174,7 +1174,6 @@ export default {
     },
     sidebar: {
       overview: "Tổng quan",
-      terminal: "Terminal",
       explorer: "Explorer",
       agents: "Agents",
       ide: "IDE (chỉ xem)",
@@ -1193,6 +1192,8 @@ export default {
       unlink: "Bỏ khỏi workspace này",
     },
     overview: {
+      collapse: "Thu gọn",
+      expand: "Mở rộng",
       tasks: {
         title: "Tasks",
         empty: "Chưa có task nào được thêm vào workspace này.",
@@ -1202,6 +1203,13 @@ export default {
         empty: "Chưa có session terminal nào đang mở.",
         running: "Đang chạy",
         exited: "Đã thoát",
+        newTerminal: "Mở terminal mới",
+        layoutList: "Danh sách",
+        layoutGrid2: "2 cột",
+        layoutGrid3: "3 cột",
+        maximize: "Phóng to",
+        restore: "Thu nhỏ",
+        close: "Đóng",
       },
       plans: {
         title: "Plan",

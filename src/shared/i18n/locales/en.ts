@@ -1170,7 +1170,6 @@ export default {
     },
     sidebar: {
       overview: "Overview",
-      terminal: "Terminal",
       explorer: "Explorer",
       agents: "Agents",
       ide: "IDE (view only)",
@@ -1189,6 +1188,8 @@ export default {
       unlink: "Remove from this workspace",
     },
     overview: {
+      collapse: "Collapse",
+      expand: "Expand",
       tasks: {
         title: "Tasks",
         empty: "No tasks linked to this workspace yet.",
@@ -1198,6 +1199,13 @@ export default {
         empty: "No terminal sessions open.",
         running: "Running",
         exited: "Exited",
+        newTerminal: "New terminal",
+        layoutList: "List",
+        layoutGrid2: "2 columns",
+        layoutGrid3: "3 columns",
+        maximize: "Maximize",
+        restore: "Restore",
+        close: "Close",
       },
       plans: {
         title: "Plans",

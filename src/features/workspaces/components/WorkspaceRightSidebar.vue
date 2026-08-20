@@ -80,14 +80,6 @@ watch(cogOpen, (val) => {
 
     <button
       class="flex items-center justify-center rounded-md p-2 transition-colors"
-      :class="itemClass('terminal', activePanel)"
-      :title="t('workspaces.sidebar.terminal')"
-      @click="emit('select', 'terminal')"
-    >
-      <i class="pi pi-desktop text-sm" />
-    </button>
-    <button
-      class="flex items-center justify-center rounded-md p-2 transition-colors"
       :class="itemClass('agents', activePanel)"
       :title="t('workspaces.sidebar.agents')"
       @click="emit('select', 'agents')"
