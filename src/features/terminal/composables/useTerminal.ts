@@ -180,7 +180,6 @@ export function useTerminal() {
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
     term.open(el);
-    fitAddon.fit();
 
     const entry: TermEntry = { term, fit: fitAddon, ro: null, sessionId: null, el };
     entries.set(key, entry);
@@ -198,6 +197,15 @@ export function useTerminal() {
     const ro = new ResizeObserver(() => fit(key));
     ro.observe(el);
     entry.ro = ro;
+
+    // Đợi 2 animation frame trước khi đo/fit lần đầu: nếu container nằm trong flex/grid
+    // lồng nhiều tầng (vd. lưới nhiều terminal ở Sessions), `clientHeight` đọc ngay sau
+    // `term.open()` có thể phản ánh kích thước tạm thời trước khi trình duyệt hoàn tất
+    // layout pass cuối. Spawn PTY với rows/cols sai khiến một số CLI full-screen (vd.
+    // Claude Code) chỉ quyết định MỘT LẦN lúc khởi động có vẽ khung nhập lệnh hay không
+    // dựa trên kích thước ban đầu đó, và không tự "nâng cấp" giao diện dù sau này resize.
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    fitAddon.fit();
 
     const tab = tabs.value.find((t) => t.key === key);
     await spawnSession(key, tab?.startDir || undefined, tab?.env);

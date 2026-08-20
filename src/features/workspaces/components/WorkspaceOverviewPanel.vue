@@ -45,16 +45,17 @@ const sessionsGridClass = computed(() => {
   return "grid grid-cols-2 gap-2 auto-rows-[26rem]";
 });
 
-// Chỉ 1 tab được phóng to toàn màn hình tại một thời điểm — ô nhỏ trong lưới ẩn container của
-// tab đó đi (v-if) để tránh 2 nơi cùng tranh nhau "nhận nuôi" cùng một DOM container.
+// Chỉ 1 tab được phóng to toàn màn hình tại một thời điểm. Tile phóng to KHÔNG đổi DOM
+// container (không Teleport, không v-if lên phần tử chứa xterm) — chỉ đổi class sang
+// `fixed` để chiếm toàn màn hình, tránh gọi lại `term.open()` vào container khác (việc
+// "chuyển nhà" này từng khiến phiên hiện có bị mất trạng thái đang thao tác khi phóng to).
 const maximizedKey = ref<string | null>(null);
-const maximizedTab = computed(() => overview.sessions.value.find((tab) => tab.key === maximizedKey.value) ?? null);
 
 function toggleMaximize(key: string): void {
   maximizedKey.value = maximizedKey.value === key ? null : key;
 }
 
-/** Gắn xterm vào container của 1 session — xem giải thích "chuyển nhà" ở `useTerminal.bindContainer`. */
+/** Gắn xterm vào container của 1 session. */
 function bindSessionTerminal(key: string, el: Element | null): void {
   if (el instanceof HTMLElement) void wsTerm.term.bindContainer(key, el);
 }
@@ -245,12 +246,24 @@ function closeSessionTab(key: string): void {
         </div>
 
         <div v-else :class="sessionsGridClass">
+          <!-- Nền mờ phía sau khi có 1 session đang phóng to — dùng z-index thấp hơn tile
+               đang phóng to (z-[60]) một chút, tự nó không đụng tới DOM của xterm. -->
+          <div v-if="maximizedKey" class="fixed inset-0 z-[55] bg-black/70" @click="toggleMaximize(maximizedKey)" />
+
+          <!-- Mỗi tab CHỈ có đúng 1 container DOM (không v-if/Teleport) trong suốt vòng đời —
+               "phóng to" chỉ đổi class sang `fixed` để chiếm toàn màn hình, không bao giờ gọi
+               lại `term.open()` vào 1 phần tử khác (tránh mất trạng thái đang thao tác của
+               phiên khi chuyển qua lại giữa tile nhỏ và toàn màn hình). -->
           <div
             v-for="tab in overview.sessions.value"
             :key="tab.key"
             :class="[
               'flex flex-col overflow-hidden rounded-md border border-divider bg-[#0b0f19]',
-              sessionsLayout === 'list' ? 'h-[28rem] w-full shrink-0' : 'h-full w-full',
+              maximizedKey === tab.key
+                ? 'fixed inset-6 z-[60] shadow-float'
+                : sessionsLayout === 'list'
+                  ? 'h-[28rem] w-full shrink-0'
+                  : 'h-full w-full',
             ]"
           >
             <div class="flex shrink-0 items-center gap-1.5 border-b border-white/10 px-2 py-1 text-[11px]">
@@ -259,12 +272,13 @@ function closeSessionTab(key: string): void {
               <button
                 type="button"
                 class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-white/50 transition-colors hover:bg-white/10 hover:text-white"
-                :title="t('workspaces.overview.sessions.maximize')"
+                :title="maximizedKey === tab.key ? t('workspaces.overview.sessions.restore') : t('workspaces.overview.sessions.maximize')"
                 @click="toggleMaximize(tab.key)"
               >
-                <i class="pi pi-expand text-[10px]" />
+                <i :class="maximizedKey === tab.key ? 'pi pi-times' : 'pi pi-expand'" class="text-[10px]" />
               </button>
               <button
+                v-if="maximizedKey !== tab.key"
                 type="button"
                 class="flex h-5 w-5 shrink-0 items-center justify-center rounded text-white/50 transition-colors hover:bg-white/10 hover:text-white"
                 :title="t('workspaces.overview.sessions.close')"
@@ -273,41 +287,10 @@ function closeSessionTab(key: string): void {
                 <i class="pi pi-times text-[10px]" />
               </button>
             </div>
-            <div
-              v-if="maximizedKey !== tab.key"
-              class="min-h-0 flex-1 p-1"
-              :ref="(el) => bindSessionTerminal(tab.key, el as Element | null)"
-            />
-            <div v-else class="flex min-h-0 flex-1 items-center justify-center text-[10px] text-white/30">
-              {{ t("workspaces.overview.sessions.maximize") }}…
-            </div>
+            <div class="min-h-0 flex-1 p-1" :ref="(el) => bindSessionTerminal(tab.key, el as Element | null)" />
           </div>
         </div>
       </div>
     </section>
-
-    <!-- Overlay phóng to 1 session terminal lên toàn màn hình -->
-    <Teleport to="body">
-      <div v-if="maximizedTab" class="fixed inset-0 z-50 flex flex-col bg-black/70 p-6">
-        <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-divider bg-[#0b0f19] shadow-float">
-          <div class="flex shrink-0 items-center gap-2 border-b border-white/10 px-3 py-2 text-xs">
-            <span :class="['h-1.5 w-1.5 shrink-0 rounded-full', maximizedTab?.exited ? 'bg-white/30' : 'bg-emerald-500']" />
-            <span class="min-w-0 flex-1 truncate text-white/80">{{ maximizedTab?.title }}</span>
-            <button
-              type="button"
-              class="flex h-6 w-6 items-center justify-center rounded text-white/60 transition-colors hover:bg-white/10 hover:text-white"
-              :title="t('workspaces.overview.sessions.restore')"
-              @click="toggleMaximize(maximizedTab?.key ?? '')"
-            >
-              <i class="pi pi-times text-xs" />
-            </button>
-          </div>
-          <div
-            class="min-h-0 flex-1 p-2"
-            :ref="(el) => bindSessionTerminal(maximizedTab?.key ?? '', el as Element | null)"
-          />
-        </div>
-      </div>
-    </Teleport>
   </div>
 </template>
