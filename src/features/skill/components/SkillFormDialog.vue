@@ -251,7 +251,7 @@ function save() {
       <DialogFooter
         cancel-icon="pi pi-times"
         cancel-severity="danger"
-        :confirm-label="skill ? t('common.save') : t('skill.dialog.create')"
+        :confirm-label="skill ? t('common.save') : t('common.create')"
         :confirm-icon="skill ? 'pi pi-check' : 'pi pi-plus'"
         :confirm-disabled="!name.trim()"
         @cancel="emit('update:visible', false)"

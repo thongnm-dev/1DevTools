@@ -67,7 +67,7 @@ async function saveAndClose() {
       <DialogFooter
         cancel-icon="pi pi-times"
         cancel-severity="danger"
-        :confirm-label="ctrl.isCreating.value ? t('governance.roles.actions.create') : t('governance.roles.actions.save')"
+        :confirm-label="ctrl.isCreating.value ? t('common.create') : t('common.save')"
         :confirm-icon="ctrl.isCreating.value ? 'pi pi-plus' : 'pi pi-save'"
         @cancel="visible = false"
         @confirm="saveAndClose"

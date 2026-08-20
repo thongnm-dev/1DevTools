@@ -90,7 +90,7 @@ function groupCheckboxIcon(group: MenuGroup) {
         @click="ctrl.revert()"
       />
       <Button
-        :label="t('governance.permissions.actions.save')"
+        :label="t('common.save')"
         icon="pi pi-save"
         size="small"
         :loading="ctrl.saving.value"

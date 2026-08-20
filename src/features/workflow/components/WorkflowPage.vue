@@ -512,7 +512,7 @@ const listboxPt = {
               size="small"
               severity="danger"
               class="!h-6 !w-6 shrink-0 opacity-0 group-hover:opacity-100"
-              :title="t('workflow.delete')"
+              :title="t('common.delete')"
               @click.stop="confirmDeleteWorkflow(option)"
             />
           </template>
@@ -554,9 +554,9 @@ const listboxPt = {
             </div>
             <div class="ml-auto flex shrink-0 items-center gap-2">
               <Button icon="pi pi-objects-column" :label="t('workflow.autoLayout')" severity="secondary" size="small" @click="autoLayout" />
-              <Button icon="pi pi-pencil" :label="t('workflow.edit')" severity="secondary" size="small" @click="openEditWorkflowDialog" />
+              <Button icon="pi pi-pencil" :label="t('common.edit')" severity="secondary" size="small" @click="openEditWorkflowDialog" />
               <Button icon="pi pi-copy" :label="t('workflow.duplicate')" severity="secondary" size="small" @click="ctrl.duplicateWorkflow(ctrl.activeId.value!)" />
-              <Button icon="pi pi-trash" :label="t('workflow.delete')" severity="danger" text size="small" @click="confirmDeleteWorkflow()" />
+              <Button icon="pi pi-trash" :label="t('common.delete')" severity="danger" text size="small" @click="confirmDeleteWorkflow()" />
             </div>
           </div>
         </div>
@@ -712,7 +712,7 @@ const listboxPt = {
         <DialogFooter
           cancel-icon="pi pi-times"
           cancel-severity="danger"
-          :confirm-label="editingWorkflowId ? t('workflow.dialog.save') : t('workflow.dialog.create')"
+          :confirm-label="editingWorkflowId ? t('common.save') : t('common.create')"
           :confirm-icon="editingWorkflowId ? 'pi pi-check' : 'pi pi-plus'"
           :confirm-disabled="!wfName.trim()"
           @cancel="showWorkflowDialog = false"
@@ -833,7 +833,7 @@ const listboxPt = {
         <DialogFooter
           cancel-icon="pi pi-times"
           cancel-severity="danger"
-          :confirm-label="editingStepId ? t('workflow.step.save') : t('workflow.step.add')"
+          :confirm-label="editingStepId ? t('common.save') : t('workflow.step.add')"
           :confirm-icon="editingStepId ? 'pi pi-check' : 'pi pi-plus'"
           :confirm-disabled="!stepName.trim()"
           @cancel="showStepDialog = false"
@@ -876,7 +876,7 @@ const listboxPt = {
         <DialogFooter
           cancel-icon="pi pi-times"
           cancel-severity="danger"
-          :confirm-label="t('workflow.delete')"
+          :confirm-label="t('common.delete')"
           confirm-icon="pi pi-trash"
           confirm-severity="danger"
           @cancel="showDeleteDialog = false"

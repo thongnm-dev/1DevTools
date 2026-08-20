@@ -116,7 +116,7 @@ function launchTerminal() {
           rounded
           size="small"
           :loading="ctrl.refreshingId.value === account.id"
-          :title="t('aiUsage.actions.refresh')"
+          :title="t('common.refresh')"
           @click.stop="ctrl.refreshAccount(account.id)"
         />
         <Button

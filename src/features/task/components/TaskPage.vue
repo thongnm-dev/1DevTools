@@ -52,7 +52,7 @@ onMounted(() => ctrl.fetchTasks());
       <Button icon="pi pi-plus" :label="t('aiTasks.actions.addTask')" size="small" @click="openCreate" />
     </section>
 
-    <Fieldset class="rounded-lg border border-divider bg-panel p-4 shadow-md fieldset-nested" :legend="t('aiTasks.search.legend')" toggleable>
+    <Fieldset class="rounded-lg border border-divider bg-panel p-4 shadow-md fieldset-nested" :legend="t('common.searchLegend')" toggleable>
       <div class="grid gap-3">
         <div class="grid gap-3 lg:grid-cols-2">
           <label>
@@ -78,8 +78,8 @@ onMounted(() => ctrl.fetchTasks());
           </label>
         </div>
         <div class="flex items-center justify-end gap-2">
-          <Button icon="pi pi-refresh" :label="t('aiTasks.actions.reset')" severity="secondary" outlined size="small" @click="ctrl.resetFilters()" />
-          <Button icon="pi pi-search" :label="t('aiTasks.actions.search')" size="small" @click="ctrl.search()" />
+          <Button icon="pi pi-refresh" :label="t('common.reset')" severity="secondary" outlined size="small" @click="ctrl.resetFilters()" />
+          <Button icon="pi pi-search" :label="t('common.search')" size="small" @click="ctrl.search()" />
         </div>
       </div>
     </Fieldset>

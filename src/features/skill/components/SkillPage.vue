@@ -3,6 +3,7 @@ import { ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Button from "primevue/button";
 import InputText from "primevue/inputtext";
+import Fieldset from "primevue/fieldset";
 import SkillFormDialog from "./SkillFormDialog.vue";
 import SkillDeleteDialog from "./SkillDeleteDialog.vue";
 import { useSkill } from "../composables/useSkill";
@@ -76,26 +77,27 @@ async function executeDelete() {
 </script>
 
 <template>
-  <div class="flex flex-1 flex-col gap-3 overflow-hidden">
+  <section class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden">
+
+    <!-- Action bar -->
+    <section class="flex items-center justify-end rounded-lg border border-divider bg-panel p-4 shadow-sm">
+      <Button icon="pi pi-plus" :label="t('skill.newSkill')" size="small" @click="openCreateDialog" />
+    </section>
 
     <!-- Search fieldset -->
-    <fieldset class="shrink-0 rounded-lg border border-divider bg-panel px-3 pb-3 pt-2">
-      <legend class="px-1 text-[10px] font-semibold uppercase tracking-wide text-muted">{{ t('skill.searchLabel') }}</legend>
-      <div class="flex items-center gap-2">
-        <span class="flex flex-1 items-center gap-2 rounded-md border border-divider bg-canvas px-2">
-          <i class="pi pi-search text-xs text-muted" />
-          <InputText
-            v-model="ctrl.searchQuery.value"
-            class="embedded-input w-full border-0 !bg-transparent !py-1.5 !text-xs"
-            :placeholder="t('skill.searchPlaceholder')"
-          />
-        </span>
-        <Button icon="pi pi-plus" :label="t('skill.newSkill')" @click="openCreateDialog" />
-      </div>
-    </fieldset>
+    <Fieldset class="rounded-lg border border-divider bg-panel p-4 shadow-md fieldset-nested" :legend="t('common.searchLegend')" toggleable>
+      <span class="flex items-center gap-2 rounded-md border border-divider bg-canvas px-2">
+        <i class="pi pi-search text-xs text-muted" />
+        <InputText
+          v-model="ctrl.searchQuery.value"
+          class="embedded-input w-full border-0 !bg-transparent !py-1.5 !text-xs"
+          :placeholder="t('skill.searchPlaceholder')"
+        />
+      </span>
+    </Fieldset>
 
     <!-- Skills panel -->
-    <div class="flex flex-1 flex-col overflow-hidden rounded-lg border border-divider bg-panel">
+    <div class="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-divider bg-panel shadow-sm">
 
       <!-- Panel header -->
       <div class="flex shrink-0 items-center gap-2 border-b border-divider px-3 py-2">
@@ -172,8 +174,8 @@ async function executeDelete() {
               </div>
               <div class="flex shrink-0 items-center gap-0.5">
                 <Button icon="pi pi-copy" text rounded size="small" :title="t('skill.copyInstructions')" @click="copyInstructions(skill)" />
-                <Button icon="pi pi-pencil" text rounded size="small" :title="t('skill.edit')" @click="openEditDialog(skill)" />
-                <Button icon="pi pi-trash" text rounded size="small" severity="danger" :title="t('skill.delete')" @click="confirmDelete(skill)" />
+                <Button icon="pi pi-pencil" text rounded size="small" :title="t('common.edit')" @click="openEditDialog(skill)" />
+                <Button icon="pi pi-trash" text rounded size="small" severity="danger" :title="t('common.delete')" @click="confirmDelete(skill)" />
               </div>
             </div>
             <p class="line-clamp-2 text-xs text-muted">{{ skill.description || t("skill.noDescription") }}</p>
@@ -204,8 +206,8 @@ async function executeDelete() {
             </div>
             <div class="flex shrink-0 items-center gap-0.5">
               <Button icon="pi pi-copy" text rounded size="small" :title="t('skill.copyInstructions')" @click="copyInstructions(skill)" />
-              <Button icon="pi pi-pencil" text rounded size="small" :title="t('skill.edit')" @click="openEditDialog(skill)" />
-              <Button icon="pi pi-trash" text rounded size="small" severity="danger" :title="t('skill.delete')" @click="confirmDelete(skill)" />
+              <Button icon="pi pi-pencil" text rounded size="small" :title="t('common.edit')" @click="openEditDialog(skill)" />
+              <Button icon="pi pi-trash" text rounded size="small" severity="danger" :title="t('common.delete')" @click="confirmDelete(skill)" />
             </div>
           </div>
         </div>
@@ -225,5 +227,5 @@ async function executeDelete() {
       @update:visible="showDeleteDialog = $event"
       @confirm="executeDelete"
     />
-  </div>
+  </section>
 </template>

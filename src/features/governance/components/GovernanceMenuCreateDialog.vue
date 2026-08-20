@@ -146,7 +146,7 @@ async function createAndClose() {
       <DialogFooter
         cancel-icon="pi pi-times"
         cancel-severity="danger"
-        :confirm-label="t('governance.menus.actions.create')"
+        :confirm-label="t('common.create')"
         confirm-icon="pi pi-plus"
         :confirm-disabled="!canCreate"
         @cancel="visible = false"

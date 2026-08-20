@@ -113,7 +113,7 @@ async function saveAndClose() {
       <DialogFooter
         cancel-icon="pi pi-times"
         cancel-severity="danger"
-        :confirm-label="ctrl.isCreating.value ? t('masterData.actions.register') : t('masterData.actions.save')"
+        :confirm-label="ctrl.isCreating.value ? t('common.register') : t('common.save')"
         :confirm-icon="ctrl.isCreating.value ? 'pi pi-plus' : 'pi pi-save'"
         :confirm-disabled="!ctrl.draft.value.name.trim()"
         @cancel="visible = false"

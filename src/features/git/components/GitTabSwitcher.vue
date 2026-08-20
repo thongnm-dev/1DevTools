@@ -40,7 +40,7 @@ defineEmits<{
     </button>
     <button
       class="rounded p-1 text-muted transition-colors hover:bg-canvas hover:text-brand"
-      :title="t('git.tabs.refresh')"
+      :title="t('common.refresh')"
       @click="$emit('refresh')"
     >
       <i v-if="refreshing" class="pi pi-spinner pi-spin text-[11px]" />

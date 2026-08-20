@@ -298,7 +298,7 @@ async function saveAccount() {
       <DialogFooter
         cancel-icon="pi pi-times"
         cancel-severity="danger"
-        :confirm-label="ctrl.isSaving.value || ctrl.isCapturing.value ? t('aiUsage.addDialog.saving') : t('aiUsage.addDialog.save')"
+        :confirm-label="ctrl.isSaving.value || ctrl.isCapturing.value ? t('aiUsage.addDialog.saving') : t('common.save')"
         :confirm-disabled="!canSaveAccount || ctrl.isSaving.value || ctrl.isCapturing.value"
         @cancel="visible = false"
         @confirm="saveAccount"

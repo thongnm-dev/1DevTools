@@ -105,7 +105,7 @@ const selectPt = {
           size="small"
           severity="secondary"
           :loading="ctrl.loading.value"
-          :title="t('workspaces.plan.refresh')"
+          :title="t('common.refresh')"
           @click="ctrl.refresh()"
         />
         <Button

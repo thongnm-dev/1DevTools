@@ -144,7 +144,7 @@ async function removeCustomCommand(cmd: DevCommand) {
     <div class="flex items-center justify-end gap-1 px-2 py-1.5">
       <button
         class="rounded p-1 text-sidebar-text transition-colors hover:bg-sidebar-hover hover:text-sidebar-text-active"
-        :title="t('git.tabs.refresh')"
+        :title="t('common.refresh')"
         @click="refresh"
       >
         <i v-if="loading" class="pi pi-spinner pi-spin text-[10px]" />
@@ -221,7 +221,7 @@ async function removeCustomCommand(cmd: DevCommand) {
                 <template v-if="cmd.source === 'custom'">
                   <button
                     class="rounded p-0.5 text-sidebar-text transition-colors hover:bg-sidebar-hover hover:text-sidebar-text-active"
-                    :title="t('git.runner.edit')"
+                    :title="t('common.edit')"
                     @click="openEditDialog(cmd)"
                   >
                     <i class="pi pi-pencil text-[10px]" />

@@ -124,7 +124,7 @@ const selectPt = {
       <DialogFooter
         cancel-icon="pi pi-times"
         cancel-severity="danger"
-        :confirm-label="isEditing ? t('common.save') : t('workspaces.dialog.create')"
+        :confirm-label="isEditing ? t('common.save') : t('common.create')"
         :confirm-icon="isEditing ? 'pi pi-check' : 'pi pi-plus'"
         :confirm-disabled="!wsName.trim() || (!isEditing && selectedRepoId === null)"
         @cancel="visible = false"

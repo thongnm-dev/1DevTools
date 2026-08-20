@@ -144,7 +144,7 @@ watch(cogOpen, (val) => {
           class="ctx-menu-item"
           @click="cogAction('edit')"
         >
-          <i class="pi pi-pencil text-xs" /> {{ t("workspaces.edit") }}
+          <i class="pi pi-pencil text-xs" /> {{ t("common.edit") }}
         </button>
         <div class="my-1 border-t border-divider" />
         <button

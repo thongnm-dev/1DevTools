@@ -416,7 +416,7 @@ function openLogs(c: DockerContainer) {
             :loading="docker.loadingContainers.value || docker.loadingImages.value || docker.loadingProjects.value"
             @click="docker.refreshAll()"
           >
-            <i class="pi pi-sync mr-1.5" />{{ t("docker.page.refresh") }}
+            <i class="pi pi-sync mr-1.5" />{{ t("common.refresh") }}
           </Button>
           <Button size="small" outlined severity="danger" @click="toggleCleanupMenu">
             <i class="pi pi-trash mr-1.5" />{{ t("docker.page.cleanup") }}
@@ -703,7 +703,7 @@ function openLogs(c: DockerContainer) {
                       rounded
                       icon="pi pi-pencil"
                       severity="secondary"
-                      :title="t('docker.actions.edit')"
+                      :title="t('common.edit')"
                       @click="openEditProject(p)"
                     />
                     <Button

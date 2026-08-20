@@ -33,7 +33,7 @@ async function executeDelete() {
       <DialogFooter
         cancel-icon="pi pi-times"
         cancel-severity="danger"
-        :confirm-label="t('governance.users.actions.delete')"
+        :confirm-label="t('common.delete')"
         confirm-icon="pi pi-trash"
         confirm-severity="danger"
         @cancel="visible = false"

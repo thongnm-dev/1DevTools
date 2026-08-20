@@ -78,7 +78,7 @@ const groups = computed(() => {
             :title="t('aiUsage.actions.detectLocalTooltip')"
             @click="openDetect"
           />
-          <Button icon="pi pi-cog" :label="t('aiUsage.actions.settings')" severity="secondary" size="small" @click="showSettings = true" />
+          <Button icon="pi pi-cog" :label="t('common.settings')" severity="secondary" size="small" @click="showSettings = true" />
           <Button icon="pi pi-plus" :label="t('aiUsage.actions.addAccount')" size="small" @click="isDialogOpen = true" />
         </div>
       </div>

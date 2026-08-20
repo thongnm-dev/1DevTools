@@ -68,7 +68,7 @@ onMounted(() => ctrl.init());
     </section>
 
     <!-- Search fieldset -->
-    <Fieldset class="rounded-lg border border-divider bg-panel p-4 shadow-md fieldset-nested" :legend="t('governance.users.search.legend')" toggleable>
+    <Fieldset class="rounded-lg border border-divider bg-panel p-4 shadow-md fieldset-nested" :legend="t('common.searchLegend')" toggleable>
       <div class="grid gap-3">
         <div class="grid gap-3 lg:grid-cols-2">
           <label>
@@ -133,8 +133,8 @@ onMounted(() => ctrl.init());
           </label>
         </div>
         <div class="flex items-center justify-end gap-2">
-          <Button icon="pi pi-refresh" :label="t('governance.users.actions.reset')" severity="secondary" outlined size="small" @click="ctrl.resetFilters()" />
-          <Button icon="pi pi-search" :label="t('governance.users.actions.search')" size="small" @click="ctrl.search()" />
+          <Button icon="pi pi-refresh" :label="t('common.reset')" severity="secondary" outlined size="small" @click="ctrl.resetFilters()" />
+          <Button icon="pi pi-search" :label="t('common.search')" size="small" @click="ctrl.search()" />
         </div>
       </div>
     </Fieldset>

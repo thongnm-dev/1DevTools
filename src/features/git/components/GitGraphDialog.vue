@@ -210,7 +210,7 @@ function refClass(r: string) {
           />
           <button
             class="rounded p-1.5 text-muted transition-colors hover:bg-canvas hover:text-brand"
-            :title="t('git.dialogs.graph.refresh')"
+            :title="t('common.refresh')"
             @click="reloadGraph"
           >
             <i class="pi text-xs" :class="git.graphLoading.value ? 'pi-spinner pi-spin' : 'pi-refresh'" />

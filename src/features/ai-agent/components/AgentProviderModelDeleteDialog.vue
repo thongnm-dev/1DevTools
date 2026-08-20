@@ -34,7 +34,7 @@ const { t } = useI18n();
       <DialogFooter
         cancel-icon="pi pi-times"
         cancel-severity="danger"
-        :confirm-label="t('agentProviderModel.actions.delete')"
+        :confirm-label="t('common.delete')"
         confirm-icon="pi pi-trash"
         confirm-severity="danger"
         @cancel="visible = false"

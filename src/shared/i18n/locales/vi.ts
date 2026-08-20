@@ -21,6 +21,16 @@ export default {
     loading: "Đang tải...",
     noData: "Không có dữ liệu hiển thị",
     resize: "Kéo để đổi kích thước",
+    searchLegend: "Bộ lọc tìm kiếm",
+    reset: "Đặt lại",
+    search: "Tìm kiếm",
+    register: "Đăng ký",
+    create: "Tạo",
+    edit: "Sửa",
+    delete: "Xoá",
+    discard: "Hủy bỏ",
+    refresh: "Làm mới",
+    settings: "Cài đặt",
   },
   auth: {
     login: {
@@ -272,7 +282,6 @@ export default {
     tabs: {
       history: "History",
       runner: "Runner",
-      refresh: "Làm mới",
     },
     runner: {
       title: "Runner",
@@ -285,7 +294,6 @@ export default {
       closePanel: "Đóng panel output",
       done: "Xong",
       failed: "Thất bại",
-      edit: "Sửa",
       remove: "Xóa",
       addDialogTitle: "Thêm lệnh tùy chỉnh",
       editDialogTitle: "Sửa lệnh tùy chỉnh",
@@ -536,7 +544,6 @@ export default {
         title: "Visualization — đồ thị commit",
         commitCount: "{count} commit (tất cả branch)",
         limitLabel: "Số lượng:",
-        refresh: "Làm mới",
         loading: "Đang tải…",
         noCommits: "Không có commit.",
         copySha: "Copy SHA",
@@ -592,7 +599,6 @@ export default {
         filterOpen: "Đang mở",
         filterClosed: "Đã đóng",
         filterAll: "Tất cả",
-        refresh: "Làm mới",
         privateRepoHint: "Dùng credential git đã lưu để truy cập repo riêng tư.",
         loading: "Đang tải…",
         empty: "Không có Pull Request nào.",
@@ -716,7 +722,6 @@ export default {
       title: "Docker",
       notRunning: "Docker chưa chạy",
       startDocker: "Khởi động Docker",
-      refresh: "Làm mới",
       cleanup: "Dọn dẹp",
       buildImage: "Build image",
       addProject: "Thêm project",
@@ -753,7 +758,6 @@ export default {
       build: "Build",
       composeUp: "Compose up",
       composeDown: "Compose down",
-      edit: "Sửa",
       more: "Thao tác khác",
       cleanBuild: "Build sạch (bỏ cache, kéo lại base image mới nhất)",
       push: "Push lên registry",
@@ -870,10 +874,8 @@ export default {
     actions: {
       detectLocal: "Dò local",
       detectLocalTooltip: "Dò các login Claude đã đăng nhập trên máy",
-      settings: "Cài đặt",
       addAccount: "Thêm account",
       deleteAccount: "Xoá account",
-      refresh: "Làm mới",
       setActive: "Đặt active",
       copyToken: "Copy token",
       openTerminal: "Mở terminal",
@@ -925,7 +927,6 @@ export default {
       showApiKey: "Hiện API key",
       apiKeyHint: "Loại (API / Admin / OAuth) được tự nhận từ prefix của key.",
       saving: "Đang lưu...",
-      save: "Lưu",
     },
     settings: {
       header: "Cài đặt auto-switch",
@@ -957,9 +958,6 @@ export default {
   },
   governance: {
     users: {
-      search: {
-        legend: "Tìm kiếm",
-      },
       form: {
         username: "Tên đăng nhập",
         usernamePlaceholder: "tên đăng nhập",
@@ -997,13 +995,9 @@ export default {
       },
       actions: {
         addUser: "Thêm người dùng",
-        reset: "Đặt lại",
-        search: "Tìm kiếm",
         resetPassword: "Đặt lại mật khẩu",
         deleteUser: "Xóa người dùng",
         create: "Tạo mới",
-        save: "Lưu",
-        delete: "Xóa",
       },
       dialog: {
         addTitle: "Thêm người dùng",
@@ -1020,7 +1014,6 @@ export default {
     },
     menus: {
       form: {
-        search: "Tìm kiếm",
         searchPlaceholder: "Tiêu đề, khóa hoặc đường dẫn",
         group: "Nhóm",
         groupPlaceholder: "— (không), Tools, Governance",
@@ -1051,11 +1044,9 @@ export default {
         empty: "Không có menu nào khớp với bộ lọc hiện tại.",
       },
       actions: {
-        reset: "Đặt lại",
         resetTitle: "Đặt lại về mặc định",
         add: "Thêm menu",
         addTitle: "Đăng ký menu mới",
-        create: "Tạo",
       },
       dialog: {
         editTitle: "Chỉnh sửa Menu",
@@ -1074,7 +1065,6 @@ export default {
       actions: {
         revert: "Hoàn tác",
         revertTitle: "Bỏ các thay đổi chưa lưu",
-        save: "Lưu",
         allowAll: "Cho phép tất cả",
         clearAll: "Xóa tất cả",
         denyAll: "Từ chối tất cả",
@@ -1129,7 +1119,6 @@ export default {
         actions: "Thao tác",
       },
       search: {
-        legend: "Tìm kiếm",
         namePlaceholder: "Tên vai trò",
       },
       form: {
@@ -1140,11 +1129,6 @@ export default {
       },
       actions: {
         addRole: "Thêm vai trò",
-        reset: "Đặt lại",
-        search: "Tìm kiếm",
-        delete: "Xóa",
-        create: "Tạo",
-        save: "Lưu",
       },
       dialog: {
         addTitle: "Thêm vai trò",
@@ -1166,8 +1150,6 @@ export default {
         valuePlaceholder: "giá trị",
       },
       actions: {
-        discard: "Hủy bỏ",
-        save: "Lưu",
         addEntry: "Thêm mục",
         addSection: "Thêm phần",
       },
@@ -1183,7 +1165,6 @@ export default {
     title: "Workspaces",
     newWorkspace: "Workspace mới",
     close: "Đóng",
-    edit: "Sửa",
     deleteWorkspace: "Xoá workspace",
     settings: "Cài đặt workspace",
     emptyState: "Chưa mở workspace nào. Thêm project để bắt đầu.",
@@ -1246,7 +1227,6 @@ export default {
       complete: "hoàn thành",
       steps: "bước",
       tasks: "tasks",
-      refresh: "Làm mới",
       edit: "Sửa tasks trong plan",
       delete: "Bỏ task khỏi plan",
       dialog: {
@@ -1289,7 +1269,6 @@ export default {
       namePlaceholder: "VD: My Project",
       icon: "Icon",
       browseIcons: "Chọn icon",
-      create: "Tạo",
     },
     toast: {
       created: "Đã tạo workspace",
@@ -1323,7 +1302,6 @@ export default {
   },
   skill: {
     title: "Skills",
-    searchLabel: "Tìm kiếm",
     searchPlaceholder: "Tìm skill...",
     newSkill: "Skill mới",
     viewGrid: "Xem dạng lưới",
@@ -1336,8 +1314,6 @@ export default {
     emptyState: "Chưa có skill nào. Tạo mới để dùng lại cho các session agent.",
     noDescription: "Chưa có mô tả",
     copyInstructions: "Copy hướng dẫn",
-    edit: "Sửa",
-    delete: "Xoá",
     category: {
       general: "Chung",
       frontend: "Frontend",
@@ -1366,7 +1342,6 @@ export default {
       instructionsPlaceholder: "Chỉ dẫn dạng markdown mà agent cần theo...",
       tags: "Tags",
       tagsPlaceholder: "tag1, tag2, tag3",
-      create: "Tạo",
       fullscreen: "Toàn màn hình",
       exitFullscreen: "Thoát toàn màn hình",
     },
@@ -1385,20 +1360,11 @@ export default {
     title: "Danh mục",
     subtitle: "Quản lý các danh mục dùng chung trong ứng dụng.",
     search: {
-      legend: "Bộ lọc tìm kiếm",
       keyword: "Từ khoá",
       keywordPlaceholder: "Tìm theo tên, nhóm khoá, hoặc mô tả...",
     },
     filters: {
       allKeygroups: "Tất cả nhóm",
-    },
-    actions: {
-      register: "Đăng ký",
-      search: "Tìm kiếm",
-      reset: "Đặt lại",
-      edit: "Sửa",
-      delete: "Xoá",
-      save: "Lưu",
     },
     table: {
       title: "Danh mục",
@@ -1441,7 +1407,6 @@ export default {
     title: "AI Agent Provider",
     subtitle: "Đăng ký và quản lý loại AI Agent nào được phép sử dụng trong hệ thống.",
     search: {
-      legend: "Điều kiện tìm kiếm",
       keyword: "Từ khoá",
       keywordPlaceholder: "Tìm theo tên, mã, hoặc lệnh...",
     },
@@ -1509,14 +1474,8 @@ export default {
       message: 'Bạn có chắc muốn xoá "{name}"? Hành động này không thể hoàn tác.',
     },
     actions: {
-      register: "Đăng ký",
-      save: "Lưu",
-      edit: "Sửa",
-      delete: "Xoá",
       enable: "Bật",
       disable: "Tắt",
-      search: "Tìm kiếm",
-      reset: "Đặt lại",
     },
     toast: {
       created: "Đã đăng ký provider",
@@ -1528,7 +1487,6 @@ export default {
     title: "Model của AI Provider",
     subtitle: "Đăng ký và quản lý model nào của provider được phép sử dụng trong hệ thống.",
     search: {
-      legend: "Điều kiện tìm kiếm",
       keyword: "Từ khoá",
       keywordPlaceholder: "Tìm theo tên model, mã, hoặc phiên bản...",
     },
@@ -1576,14 +1534,8 @@ export default {
       message: 'Bạn có chắc muốn xoá "{name}"? Hành động này không thể hoàn tác.',
     },
     actions: {
-      register: "Đăng ký",
-      save: "Lưu",
-      edit: "Sửa",
-      delete: "Xoá",
       enable: "Bật",
       disable: "Tắt",
-      search: "Tìm kiếm",
-      reset: "Đặt lại",
     },
     errors: {
       providerRequired: "Vui lòng chọn provider.",
@@ -1600,8 +1552,6 @@ export default {
     emptyState: "Chưa có prompt nào. Tạo mới để dùng lại.",
     usedCount: "đã dùng {count} lần",
     copy: "Copy",
-    edit: "Sửa",
-    delete: "Xoá",
     dialog: {
       newTitle: "Prompt mới",
       editTitle: "Sửa Prompt",
@@ -1615,7 +1565,6 @@ export default {
       noVariables: "không có",
       tags: "Tags",
       tagsPlaceholder: "tag1, tag2, tag3",
-      create: "Tạo",
     },
     deleteConfirm: {
       title: "Xác nhận xoá",
@@ -1637,9 +1586,7 @@ export default {
     emptyState: "Chưa chọn workflow. Tạo mới để bắt đầu.",
     createWorkflow: "Tạo Workflow",
     autoLayout: "Sắp xếp tự động",
-    edit: "Sửa",
     duplicate: "Nhân bản",
-    delete: "Xoá",
     noDescription: "Chưa có mô tả",
     addStep: "Thêm bước",
     latest: "Bước cuối",
@@ -1653,8 +1600,6 @@ export default {
       namePlaceholder: "VD: Feature Development",
       description: "Mô tả",
       descriptionPlaceholder: "Mô tả ngắn cho workflow này",
-      create: "Tạo",
-      save: "Lưu",
     },
     step: {
       newTitle: "Thêm bước",
@@ -1682,7 +1627,6 @@ export default {
       isLatest: "Bước cuối cùng",
       isLatestHint: "Đánh dấu đây là bước cuối cùng của workflow.",
       add: "Thêm",
-      save: "Lưu",
     },
     stepType: {
       skill: "Skill",
@@ -1716,7 +1660,6 @@ export default {
   },
   aiTasks: {
     search: {
-      legend: "Tìm kiếm",
       keyword: "Từ khoá",
       keywordPlaceholder: "Mã task, tên, hoặc loại",
       status: "Trạng thái",
@@ -1749,10 +1692,6 @@ export default {
     },
     actions: {
       addTask: "Thêm task",
-      reset: "Đặt lại",
-      search: "Tìm kiếm",
-      create: "Tạo",
-      save: "Lưu",
     },
     dialog: {
       addTitle: "Thêm Task",

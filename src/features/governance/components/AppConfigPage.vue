@@ -38,7 +38,7 @@ onMounted(() => ctrl.init());
       <div class="flex items-center gap-2">
         <Button
           icon="pi pi-refresh"
-          :label="t('governance.appConfig.actions.discard')"
+          :label="t('common.discard')"
           severity="secondary"
           outlined
           size="small"
@@ -47,7 +47,7 @@ onMounted(() => ctrl.init());
         />
         <Button
           icon="pi pi-save"
-          :label="t('governance.appConfig.actions.save')"
+          :label="t('common.save')"
           size="small"
           :disabled="!ctrl.isDirty.value"
           @click="handleSave"

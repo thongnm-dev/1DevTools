@@ -53,7 +53,7 @@ async function executeResetPassword() {
       <DialogFooter
         cancel-icon="pi pi-times"
         cancel-severity="danger"
-        :confirm-label="t('governance.users.actions.reset')"
+        :confirm-label="t('common.reset')"
         confirm-icon="pi pi-key"
         :confirm-disabled="!resetPwValue.trim()"
         @cancel="visible = false"

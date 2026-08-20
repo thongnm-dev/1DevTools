@@ -18,6 +18,16 @@ export default {
     loading: "Loading...",
     noData: "No data to display",
     resize: "Drag to resize",
+    searchLegend: "Search filters",
+    reset: "Reset",
+    search: "Search",
+    register: "Register",
+    create: "Create",
+    edit: "Edit",
+    delete: "Delete",
+    discard: "Discard",
+    refresh: "Refresh",
+    settings: "Settings",
   },
   auth: {
     login: {
@@ -268,7 +278,6 @@ export default {
     tabs: {
       history: "History",
       runner: "Runner",
-      refresh: "Refresh",
     },
     runner: {
       title: "Runner",
@@ -281,7 +290,6 @@ export default {
       closePanel: "Close output panel",
       done: "Done",
       failed: "Failed",
-      edit: "Edit",
       remove: "Remove",
       addDialogTitle: "Add custom command",
       editDialogTitle: "Edit custom command",
@@ -532,7 +540,6 @@ export default {
         title: "Visualization — commit graph",
         commitCount: "{count} commits (all branches)",
         limitLabel: "Count:",
-        refresh: "Refresh",
         loading: "Loading…",
         noCommits: "No commits.",
         copySha: "Copy SHA",
@@ -588,7 +595,6 @@ export default {
         filterOpen: "Open",
         filterClosed: "Closed",
         filterAll: "All",
-        refresh: "Refresh",
         privateRepoHint: "Uses the saved git credential to access private repos.",
         loading: "Loading…",
         empty: "No Pull Requests.",
@@ -712,7 +718,6 @@ export default {
       title: "Docker",
       notRunning: "Docker is not running",
       startDocker: "Start Docker",
-      refresh: "Refresh",
       cleanup: "Clean up",
       buildImage: "Build image",
       addProject: "Add project",
@@ -749,7 +754,6 @@ export default {
       build: "Build",
       composeUp: "Compose up",
       composeDown: "Compose down",
-      edit: "Edit",
       more: "More actions",
       cleanBuild: "Clean and build (no cache, pull latest base image)",
       push: "Push to registry",
@@ -866,10 +870,8 @@ export default {
     actions: {
       detectLocal: "Detect local",
       detectLocalTooltip: "Scan for Claude logins already signed in on this machine",
-      settings: "Settings",
       addAccount: "Add Account",
       deleteAccount: "Delete account",
-      refresh: "Refresh",
       setActive: "Set active",
       copyToken: "Copy token",
       openTerminal: "Open terminal",
@@ -921,7 +923,6 @@ export default {
       showApiKey: "Show API key",
       apiKeyHint: "The type (API / Admin / OAuth) is detected automatically from the key prefix.",
       saving: "Saving...",
-      save: "Save",
     },
     settings: {
       header: "Auto-switch settings",
@@ -953,9 +954,6 @@ export default {
   },
   governance: {
     users: {
-      search: {
-        legend: "Search",
-      },
       form: {
         username: "Username",
         usernamePlaceholder: "username",
@@ -993,13 +991,9 @@ export default {
       },
       actions: {
         addUser: "Add user",
-        reset: "Reset",
-        search: "Search",
         resetPassword: "Reset password",
         deleteUser: "Delete user",
         create: "Create",
-        save: "Save",
-        delete: "Delete",
       },
       dialog: {
         addTitle: "Add User",
@@ -1016,7 +1010,6 @@ export default {
     },
     menus: {
       form: {
-        search: "Search",
         searchPlaceholder: "Title, key, or path",
         group: "Group",
         groupPlaceholder: "— (none), Tools, Governance",
@@ -1047,11 +1040,9 @@ export default {
         empty: "No menus match the current filter.",
       },
       actions: {
-        reset: "Reset",
         resetTitle: "Reset to defaults",
         add: "Add menu",
         addTitle: "Register a new menu",
-        create: "Create",
       },
       dialog: {
         editTitle: "Edit Menu",
@@ -1070,7 +1061,6 @@ export default {
       actions: {
         revert: "Revert",
         revertTitle: "Discard unsaved changes",
-        save: "Save",
         allowAll: "Allow all",
         clearAll: "Clear all",
         denyAll: "Deny all",
@@ -1125,7 +1115,6 @@ export default {
         actions: "Actions",
       },
       search: {
-        legend: "Search",
         namePlaceholder: "Role name",
       },
       form: {
@@ -1136,11 +1125,6 @@ export default {
       },
       actions: {
         addRole: "Add role",
-        reset: "Reset",
-        search: "Search",
-        delete: "Delete",
-        create: "Create",
-        save: "Save",
       },
       dialog: {
         addTitle: "Add Role",
@@ -1162,8 +1146,6 @@ export default {
         valuePlaceholder: "value",
       },
       actions: {
-        discard: "Discard",
-        save: "Save",
         addEntry: "Add entry",
         addSection: "Add section",
       },
@@ -1179,7 +1161,6 @@ export default {
     title: "Workspaces",
     newWorkspace: "New workspace",
     close: "Close",
-    edit: "Edit",
     deleteWorkspace: "Delete workspace",
     settings: "Workspace settings",
     emptyState: "No workspace open. Add a project to get started.",
@@ -1242,7 +1223,6 @@ export default {
       complete: "complete",
       steps: "steps",
       tasks: "tasks",
-      refresh: "Refresh",
       edit: "Edit plan tasks",
       delete: "Remove task from plan",
       dialog: {
@@ -1285,7 +1265,6 @@ export default {
       namePlaceholder: "e.g. My Project",
       icon: "Icon",
       browseIcons: "Browse icons",
-      create: "Create",
     },
     toast: {
       created: "Workspace created",
@@ -1319,7 +1298,6 @@ export default {
   },
   skill: {
     title: "Skills",
-    searchLabel: "Search",
     searchPlaceholder: "Search skills...",
     newSkill: "New skill",
     viewGrid: "Grid view",
@@ -1332,8 +1310,6 @@ export default {
     emptyState: "No skills yet. Create one to reuse across agent sessions.",
     noDescription: "No description",
     copyInstructions: "Copy instructions",
-    edit: "Edit",
-    delete: "Delete",
     category: {
       general: "General",
       frontend: "Frontend",
@@ -1362,7 +1338,6 @@ export default {
       instructionsPlaceholder: "Markdown instructions the agent should follow...",
       tags: "Tags",
       tagsPlaceholder: "comma, separated, tags",
-      create: "Create",
       fullscreen: "Fullscreen",
       exitFullscreen: "Exit fullscreen",
     },
@@ -1381,20 +1356,11 @@ export default {
     title: "Master Data",
     subtitle: "Manage shared categories used across the app.",
     search: {
-      legend: "Search filters",
       keyword: "Keyword",
       keywordPlaceholder: "Search by name, key group, or description...",
     },
     filters: {
       allKeygroups: "All key groups",
-    },
-    actions: {
-      register: "Register",
-      search: "Search",
-      reset: "Reset",
-      edit: "Edit",
-      delete: "Delete",
-      save: "Save",
     },
     table: {
       title: "Categories",
@@ -1437,7 +1403,6 @@ export default {
     title: "AI Agent Providers",
     subtitle: "Register and control which AI agents can be used across the system.",
     search: {
-      legend: "Search filters",
       keyword: "Keyword",
       keywordPlaceholder: "Search by name, code, or command...",
     },
@@ -1505,14 +1470,8 @@ export default {
       message: 'Are you sure you want to delete "{name}"? This action cannot be undone.',
     },
     actions: {
-      register: "Register",
-      save: "Save",
-      edit: "Edit",
-      delete: "Delete",
       enable: "Enable",
       disable: "Disable",
-      search: "Search",
-      reset: "Reset",
     },
     toast: {
       created: "Provider registered",
@@ -1524,7 +1483,6 @@ export default {
     title: "AI Provider Models",
     subtitle: "Register and control which provider models can be used across the system.",
     search: {
-      legend: "Search filters",
       keyword: "Keyword",
       keywordPlaceholder: "Search by model name, code, or version...",
     },
@@ -1572,14 +1530,8 @@ export default {
       message: 'Are you sure you want to delete "{name}"? This action cannot be undone.',
     },
     actions: {
-      register: "Register",
-      save: "Save",
-      edit: "Edit",
-      delete: "Delete",
       enable: "Enable",
       disable: "Disable",
-      search: "Search",
-      reset: "Reset",
     },
     errors: {
       providerRequired: "Please select a provider.",
@@ -1596,8 +1548,6 @@ export default {
     emptyState: "No prompts yet. Create one to reuse across sessions.",
     usedCount: "used {count}x",
     copy: "Copy",
-    edit: "Edit",
-    delete: "Delete",
     dialog: {
       newTitle: "New Prompt",
       editTitle: "Edit Prompt",
@@ -1611,7 +1561,6 @@ export default {
       noVariables: "none",
       tags: "Tags",
       tagsPlaceholder: "comma, separated, tags",
-      create: "Create",
     },
     deleteConfirm: {
       title: "Confirm Delete",
@@ -1633,9 +1582,7 @@ export default {
     emptyState: "No workflow selected. Create one to get started.",
     createWorkflow: "Create Workflow",
     autoLayout: "Auto layout",
-    edit: "Edit",
     duplicate: "Duplicate",
-    delete: "Delete",
     noDescription: "No description",
     addStep: "Add step",
     latest: "Latest",
@@ -1649,8 +1596,6 @@ export default {
       namePlaceholder: "e.g. Feature Development",
       description: "Description",
       descriptionPlaceholder: "Brief description of this workflow",
-      create: "Create",
-      save: "Save",
     },
     step: {
       newTitle: "Add Step",
@@ -1678,7 +1623,6 @@ export default {
       isLatest: "Latest step",
       isLatestHint: "Mark this as the final step of the workflow.",
       add: "Add",
-      save: "Save",
     },
     stepType: {
       skill: "Skill",
@@ -1712,7 +1656,6 @@ export default {
   },
   aiTasks: {
     search: {
-      legend: "Search",
       keyword: "Keyword",
       keywordPlaceholder: "Task code, name, or category",
       status: "Status",
@@ -1745,10 +1688,6 @@ export default {
     },
     actions: {
       addTask: "Add task",
-      reset: "Reset",
-      search: "Search",
-      create: "Create",
-      save: "Save",
     },
     dialog: {
       addTitle: "Add Task",

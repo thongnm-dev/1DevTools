@@ -66,13 +66,13 @@ onMounted(() => ctrl.init());
         <h3 class="section-title">{{ t("masterData.title") }}</h3>
         <p class="mt-0.5 text-xs text-muted">{{ t("masterData.subtitle") }}</p>
       </div>
-      <Button icon="pi pi-plus" :label="t('masterData.actions.register')" size="small" @click="openCreate" />
+      <Button icon="pi pi-plus" :label="t('common.register')" size="small" @click="openCreate" />
     </section>
 
     <!-- Search fieldset -->
     <Fieldset
       class="rounded-lg border border-divider bg-panel p-4 shadow-md fieldset-nested"
-      :legend="t('masterData.search.legend')"
+      :legend="t('common.searchLegend')"
       toggleable
     >
       <div class="grid gap-3">
@@ -100,8 +100,8 @@ onMounted(() => ctrl.init());
           </label>
         </div>
         <div class="flex items-center justify-end gap-2">
-          <Button icon="pi pi-refresh" :label="t('masterData.actions.reset')" severity="secondary" outlined size="small" @click="ctrl.resetFilters()" />
-          <Button icon="pi pi-search" :label="t('masterData.actions.search')" size="small" @click="ctrl.search()" />
+          <Button icon="pi pi-refresh" :label="t('common.reset')" severity="secondary" outlined size="small" @click="ctrl.resetFilters()" />
+          <Button icon="pi pi-search" :label="t('common.search')" size="small" @click="ctrl.search()" />
         </div>
       </div>
     </Fieldset>
@@ -156,8 +156,8 @@ onMounted(() => ctrl.init());
         <Column :header="t('masterData.table.actions')" header-class="text-center" body-class="text-center" :style="{ width: '90px' }">
           <template #body="{ data }">
             <div class="flex items-center justify-center gap-1">
-              <IconActionButton icon="pi pi-pencil" severity="secondary" :title="t('masterData.actions.edit')" @click.stop="openEdit(data.id)" />
-              <IconActionButton icon="pi pi-trash" severity="danger" :title="t('masterData.actions.delete')" @click.stop="confirmDelete(data)" />
+              <IconActionButton icon="pi pi-pencil" severity="secondary" :title="t('common.edit')" @click.stop="openEdit(data.id)" />
+              <IconActionButton icon="pi pi-trash" severity="danger" :title="t('common.delete')" @click.stop="confirmDelete(data)" />
             </div>
           </template>
         </Column>

@@ -120,8 +120,8 @@ async function executeDelete() {
           </div>
           <div class="flex shrink-0 items-center gap-0.5">
             <Button icon="pi pi-copy" text rounded size="small" :title="t('prompt.copy')" @click="ctrl.copyPrompt(prompt)" />
-            <Button icon="pi pi-pencil" text rounded size="small" :title="t('prompt.edit')" @click="openEditDialog(prompt)" />
-            <Button icon="pi pi-trash" text rounded size="small" severity="danger" :title="t('prompt.delete')" @click="confirmDelete(prompt)" />
+            <Button icon="pi pi-pencil" text rounded size="small" :title="t('common.edit')" @click="openEditDialog(prompt)" />
+            <Button icon="pi pi-trash" text rounded size="small" severity="danger" :title="t('common.delete')" @click="confirmDelete(prompt)" />
           </div>
         </div>
       </div>
@@ -173,7 +173,7 @@ async function executeDelete() {
         <DialogFooter
           cancel-icon="pi pi-times"
           cancel-severity="danger"
-          :confirm-label="editingId !== null ? t('common.save') : t('prompt.dialog.create')"
+          :confirm-label="editingId !== null ? t('common.save') : t('common.create')"
           :confirm-icon="editingId !== null ? 'pi pi-check' : 'pi pi-plus'"
           :confirm-disabled="!title.trim()"
           @cancel="showDialog = false"
@@ -200,7 +200,7 @@ async function executeDelete() {
         <DialogFooter
           cancel-icon="pi pi-times"
           cancel-severity="danger"
-          :confirm-label="t('prompt.delete')"
+          :confirm-label="t('common.delete')"
           confirm-icon="pi pi-trash"
           confirm-severity="danger"
           @cancel="showDeleteDialog = false"

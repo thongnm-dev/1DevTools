@@ -38,7 +38,7 @@ function openCreate() {
     <!-- Top bar -->
     <section class="flex flex-wrap items-end gap-3 rounded-lg border border-divider bg-panel p-4 shadow-sm">
       <label class="block min-w-0 flex-1">
-        <span class="text-xs font-bold text-muted">{{ t("governance.menus.form.search") }}</span>
+        <span class="text-xs font-bold text-muted">{{ t("common.search") }}</span>
         <span class="mt-1 flex h-10 items-center gap-2 rounded-md border border-divider bg-panel px-3 focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20">
           <i class="pi pi-search shrink-0 text-muted" />
           <InputText
@@ -59,7 +59,7 @@ function openCreate() {
           <option v-for="g in ctrl.groups.value" :key="g" :value="g">{{ g }}</option>
         </select>
       </label>
-      <Button icon="pi pi-refresh" :label="t('governance.menus.actions.reset')" severity="secondary" outlined size="small" :title="t('governance.menus.actions.resetTitle')" @click="ctrl.resetToDefault()" />
+      <Button icon="pi pi-refresh" :label="t('common.reset')" severity="secondary" outlined size="small" :title="t('governance.menus.actions.resetTitle')" @click="ctrl.resetToDefault()" />
       <Button icon="pi pi-plus" :label="t('governance.menus.actions.add')" size="small" :title="t('governance.menus.actions.addTitle')" @click="openCreate()" />
     </section>
 
