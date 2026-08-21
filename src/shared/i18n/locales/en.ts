@@ -4,8 +4,8 @@ export default {
     backTo: "Back to {name}",
     profile: "Profile",
     logout: "Logout",
-    switchToLightMode: "Switch to light mode",
-    switchToDarkMode: "Switch to dark mode",
+    switchToLightMode: "Light mode",
+    switchToDarkMode: "Dark mode",
     switchLanguage: "Switch language",
     tauriRuntimeNotAvailable:
       "Tauri runtime is not available. Run with `npm run tauri:dev` or open the installed desktop app, not the Vite browser tab.",

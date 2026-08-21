@@ -7,8 +7,8 @@ export default {
     backTo: "Quay lại {name}",
     profile: "Hồ sơ",
     logout: "Đăng xuất",
-    switchToLightMode: "Chuyển sang giao diện sáng",
-    switchToDarkMode: "Chuyển sang giao diện tối",
+    switchToLightMode: "Sáng",
+    switchToDarkMode: "Tối",
     switchLanguage: "Đổi ngôn ngữ",
     tauriRuntimeNotAvailable:
       "Tauri runtime is not available. Run with `npm run tauri:dev` or open the installed desktop app, not the Vite browser tab.",

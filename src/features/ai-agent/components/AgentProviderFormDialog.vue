@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import Dialog from "primevue/dialog";
 import InputText from "primevue/inputtext";
@@ -7,6 +7,7 @@ import Textarea from "primevue/textarea";
 import Select from "primevue/select";
 import ToggleChip from "@/shared/components/ToggleChip.vue";
 import DialogFooter from "@/shared/components/DialogFooter.vue";
+import IconPickerDialog from "@/shared/components/IconPickerDialog.vue";
 import type { AgentProviderApi } from "../composables/useAgentProvider";
 import type { AgentProviderType } from "@/models/agent-provider";
 import { AGENT_PROVIDER_TYPES, AGENT_PROVIDER_TYPE_META } from "@/models/agent-provider";
@@ -16,15 +17,11 @@ const visible = defineModel<boolean>("visible", { default: false });
 
 const { t } = useI18n();
 
+const iconPickerVisible = ref(false);
+
 const typeOptions = computed(() =>
   AGENT_PROVIDER_TYPES.map((value) => ({ value, label: t(`agentProvider.type.${value}`) })),
 );
-
-// models[] <-> comma separated text
-const modelsText = computed({
-  get: () => props.ctrl.draft.value.models.join(", "),
-  set: (val: string) => props.ctrl.updateDraft("models", val.split(",").map((s) => s.trim()).filter(Boolean)),
-});
 
 // presets[] <-> one-per-line text. Giữ dòng trống (preset "chạy không cờ") nhưng
 // bỏ khoảng trắng thừa; chỉ loại các dòng chỉ chứa whitespace ở cuối.
@@ -110,35 +107,26 @@ async function saveAndClose() {
               placeholder="pi pi-android"
               @update:model-value="ctrl.updateDraft('icon', ($event as string) ?? '')"
             />
+            <button
+              type="button"
+              class="shrink-0 rounded p-1 text-muted transition-colors hover:bg-brand/10 hover:text-brand"
+              :title="t('iconPicker.header')"
+              @click="iconPickerVisible = true"
+            >
+              <i class="pi pi-th-large text-sm" />
+            </button>
           </div>
         </label>
       </div>
 
-      <div class="grid gap-4 md:grid-cols-2">
-        <label class="block">
-          <span class="text-xs font-bold text-muted">{{ t("agentProvider.form.command") }}</span>
-          <InputText
-            class="mt-1 w-full font-mono"
-            :model-value="ctrl.draft.value.command"
-            :placeholder="t('agentProvider.form.commandPlaceholder')"
-            @update:model-value="ctrl.updateDraft('command', ($event as string) ?? '')"
-          />
-        </label>
-        <label class="block">
-          <span class="text-xs font-bold text-muted">{{ t("agentProvider.form.website") }}</span>
-          <InputText
-            class="mt-1 w-full"
-            :model-value="ctrl.draft.value.website"
-            placeholder="https://..."
-            @update:model-value="ctrl.updateDraft('website', ($event as string) ?? '')"
-          />
-        </label>
-      </div>
-
       <label class="block">
-        <span class="text-xs font-bold text-muted">{{ t("agentProvider.form.models") }}</span>
-        <InputText v-model="modelsText" class="mt-1 w-full" :placeholder="t('agentProvider.form.modelsPlaceholder')" />
-        <span class="mt-1 block text-[11px] text-muted">{{ t("agentProvider.form.modelsHint") }}</span>
+        <span class="text-xs font-bold text-muted">{{ t("agentProvider.form.command") }}</span>
+        <InputText
+          class="mt-1 w-full font-mono"
+          :model-value="ctrl.draft.value.command"
+          :placeholder="t('agentProvider.form.commandPlaceholder')"
+          @update:model-value="ctrl.updateDraft('command', ($event as string) ?? '')"
+        />
       </label>
 
       <div class="grid gap-4 md:grid-cols-2">
@@ -214,4 +202,11 @@ async function saveAndClose() {
       />
     </template>
   </Dialog>
+
+  <IconPickerDialog
+    :visible="iconPickerVisible"
+    :selected="ctrl.draft.value.icon"
+    @update:visible="iconPickerVisible = $event"
+    @select="(icon: string) => ctrl.updateDraft('icon', 'pi ' + icon)"
+  />
 </template>

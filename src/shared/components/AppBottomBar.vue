@@ -10,11 +10,13 @@ import type { SystemInfo } from "@/models/system";
 
 const props = defineProps<{
   info: SystemInfo;
+  isSidebarCollapsed: boolean;
 }>();
 
 const emit = defineEmits<{
   logout: [];
   profile: [];
+  toggleCollapse: [];
 }>();
 
 const { t } = useI18n();
@@ -92,6 +94,15 @@ function formatDateTime(value: string): string {
     <button
       type="button"
       class="status-item flex items-center gap-2 rounded transition-colors hover:text-brand"
+      :title="isSidebarCollapsed ? t('shell.expandSidebar') : t('shell.collapseSidebar')"
+      @click="emit('toggleCollapse')"
+    >
+      <i :class="['pi shrink-0 text-brand', isSidebarCollapsed ? 'pi-chevron-right' : 'pi-chevron-left']" />
+    </button>
+    <div class="mx-0.5 h-4 w-px bg-divider" />
+    <button
+      type="button"
+      class="status-item flex items-center gap-2 rounded transition-colors hover:text-brand"
       :title="t('bottomBar.loginTooltip')"
       @click="togglePopover"
     >
@@ -106,13 +117,10 @@ function formatDateTime(value: string): string {
       <i class="pi pi-phone shrink-0 text-brand" />
       <strong class="min-w-0 truncate text-ink">{{ auth.user.phone }}</strong>
     </span>
+    <div class="mx-0.5 h-4 w-px bg-divider" />
     <span class="status-item flex items-center gap-2" :title="t('bottomBar.dateTimeTooltip')">
       <i class="pi pi-clock shrink-0 text-brand" />
       <strong class="min-w-0 truncate text-ink">{{ formatDateTime(props.info.timestamp) }}</strong>
-    </span>
-    <span class="status-item flex items-center gap-2" :title="t('bottomBar.ipTooltip')">
-      <i class="pi pi-globe shrink-0 text-brand" />
-      <strong class="min-w-0 truncate text-ink">{{ props.info.ip_address }}</strong>
     </span>
 
     <template v-if="updater.isTauri">

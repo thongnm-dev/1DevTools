@@ -14,7 +14,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   menuChange: [key: MenuKey];
-  toggleCollapse: [];
 }>();
 
 const menu = useMenuStore();
