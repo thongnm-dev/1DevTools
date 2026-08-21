@@ -287,7 +287,7 @@ function closeSessionTab(key: string): void {
                 <i class="pi pi-times text-[10px]" />
               </button>
             </div>
-            <div class="min-h-0 flex-1 p-1" :ref="(el) => bindSessionTerminal(tab.key, el as Element | null)" />
+            <div class="min-h-0 flex-1 overflow-hidden p-1" :ref="(el) => bindSessionTerminal(tab.key, el as Element | null)" />
           </div>
         </div>
       </div>
